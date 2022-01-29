@@ -419,6 +419,8 @@ class LatexContext:
                 source = "\n".join(["\\begin{{gather*}}\n{}\n\\end{{gather*}}".format(block) for block in blocks])
             elif mode == ParseMode.ALIGN:
                 source = "\n".join(["\\begin{{align*}}\n{}\n\\end{{align*}}".format(block) for block in blocks])
+            elif mode == ParseMode.TIKZ:
+                source = "\n".join(["\\begin{{tikzpicture}}\n{}\n\\end{{tikzpicture}}".format(block) for block in blocks])
             else:
                 # This should be impossible
                 raise ValueError("Unknown `mode` passed to LaTeX parser.")

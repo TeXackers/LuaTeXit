@@ -8,7 +8,7 @@ from .core.tex_utils import ParseMode
 
 @module.cmd("tex",
             desc="Render LaTeX code.",
-            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw'],
+            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz'],
             flags=['config', 'keepsourcefor', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
 async def cmd_tex(ctx, flags):
     """
@@ -18,6 +18,7 @@ async def cmd_tex(ctx, flags):
         {prefix}align <align block>
         {prefix}texsp <code>
         {prefix}texw <code>
+        {prefix}tikz <code>
     Description:
         Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
             For a quick introduction to using LaTeX, see one of the resources linked below.
@@ -37,6 +38,7 @@ async def cmd_tex(ctx, flags):
         align: Code is rendered in math mode, aligned in an `align*` environment.
         texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't pad the output (with transparent pixels) after compilation.
+        tikz: Code is rendered in a `tikzpicture` environment.
     Related:
         autotex, texconfig, preamble
     LaTeX Resources:
@@ -50,6 +52,7 @@ async def cmd_tex(ctx, flags):
         {prefix}tex This is a fraction: \\(\\frac{{1}}{{2}}\\)
         {prefix}, \\int^\\infty_0 f(x)~dx
         {prefix}align a + 1 &= 2\\\\ a &= 1
+        {prefix}tikz \\draw(0,0) circle (1);
     """
     # Handle flags
     if any(flags.values()):
@@ -104,6 +107,8 @@ async def cmd_tex(ctx, flags):
         parse_mode = ParseMode.GATHER
     elif lalias == 'align':
         parse_mode = ParseMode.ALIGN
+    elif lalias == 'tikz':
+        parse_mode = ParseMode.TIKZ
     elif lalias == 'texsp':
         flags["spoiler"] = True
     elif lalias == "texw":

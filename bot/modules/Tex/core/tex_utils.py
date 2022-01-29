@@ -20,3 +20,4 @@ class ParseMode(IntEnum):
     GATHER = 1
     ALIGN = 2
     DEPENDS = 3
+    TIKZ = 4

@@ -8,7 +8,7 @@ from .core.tex_utils import ParseMode
 
 @module.cmd("tex",
             desc="Render LaTeX code.",
-            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz'],
+            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz', 'luatex'],
             flags=['config', 'keepsourcefor', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
 async def cmd_tex(ctx, flags):
     """
@@ -19,6 +19,7 @@ async def cmd_tex(ctx, flags):
         {prefix}texsp <code>
         {prefix}texw <code>
         {prefix}tikz <code>
+        {prefix}luatex <code>
     Description:
         Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
             For a quick introduction to using LaTeX, see one of the resources linked below.
@@ -39,6 +40,7 @@ async def cmd_tex(ctx, flags):
         texsp: Same as `tex`, but ||spoiler|| the output image.
         texw: Don't pad the output (with transparent pixels) after compilation.
         tikz: Code is rendered in a `tikzpicture` environment.
+        luatex: Code is compiled using LuaLaTeX engine.
     Related:
         autotex, texconfig, preamble
     LaTeX Resources:
@@ -53,6 +55,7 @@ async def cmd_tex(ctx, flags):
         {prefix}, \\int^\\infty_0 f(x)~dx
         {prefix}align a + 1 &= 2\\\\ a &= 1
         {prefix}tikz \\draw(0,0) circle (1);
+        {prefix}luatex \luatexbanner
     """
     # Handle flags
     if any(flags.values()):
@@ -127,11 +130,22 @@ async def cmd_tex(ctx, flags):
             "\\`\\`\\`tex\ncode\n\\`\\`\\`"
         )
 
-    # Create the LatexContext
-    lctx = LatexContext(ctx, source, lguild, luser, **flags)
+    if ctx.alias == 'luatex':
 
-    # Make the LaTeX
-    await lctx.make()
+        # Create the LatexContext
+        lctx = LatexContext(ctx, source, lguild, luser, **flags)
+        
+        # Make the LaTeX using lutexcompile.sh
+        await lctx.luatexmake()
 
-    # Keep the command alive until the latex context dies
-    await lctx.lifetime()
+        # Keep the command alive until the latex context dies
+        await lctx.lifetime()
+    else:
+        # Create the LatexContext
+        lctx = LatexContext(ctx, source, lguild, luser, **flags)
+
+        # Make the LaTeX
+        await lctx.make()
+
+        # Keep the command alive until the latex context dies
+        await lctx.lifetime()

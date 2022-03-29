@@ -3,7 +3,7 @@ import asyncio
 import discord
 
 from cmdClient.lib import UserCancelled, ResponseTimedOut
-from wards import is_manager
+from wards import is_manager, is_reviewer
 
 from .module import latex_module as module
 
@@ -100,7 +100,7 @@ async def user_admin(ctx, userid):
     pending_preamble = pending_preamble_row[0] if pending_preamble_row else None
 
     # Setup the menu options and menu
-    menu_items = ["Show current preamble", "Set preamble", "Reset preamble"]
+    menu_items = ["Show current preamble", "Set preamble (manager)", "Reset preamble (manager)"]
     menu_message = "Preamble management menu for user {}".format(userid)
 
     # Add the judgement option if there is a pending preamble
@@ -131,6 +131,9 @@ async def user_admin(ctx, userid):
     elif result == 1:
         # Set the preamble. Takes file input as well as message input.
         # Also asks for confirmation before setting.
+
+        if not await is_manager.run(ctx):
+            return await ctx.error_reply("This can only be used by bot managers.")
 
         # Prompt for new preamble
         prompt = "Please enter or upload the new preamble, or type `c` now to cancel."
@@ -193,6 +196,10 @@ async def user_admin(ctx, userid):
                           source=preamble)
     elif result == 2:
         # Reset the current preamble to the default
+
+        if not await is_manager.run(ctx):
+            return await ctx.error_reply("This can only be used by bot managers.")
+
         preamble_data.insert(
             allow_replace=True,
             userid=userid,
@@ -248,6 +255,8 @@ async def guild_admin(ctx, guildid):
         2. Set preamble
         3. Reset preamble
     """
+    if not await is_manager.run(ctx):
+        return await ctx.error_reply("This can only be used by bot managers.")
     # Get the data interfaces, for faster access
     preamble_data = ctx.client.data.guild_latex_preambles
 
@@ -368,7 +377,7 @@ async def general_menu(ctx):
             desc="Administrate the LaTeX preamble system",
             aliases=["pa"],
             flags=["user==", "guild==", "menu", "approve=", "deny=", "a=", "d=", "r=="])
-@is_manager()
+@is_reviewer()
 async def cmd_preambleadmin(ctx, flags):
     """
     Usage``:

@@ -74,7 +74,6 @@ async def log_joined_guild(client, guild):
         mem3,
         mem4
     )
-    region = constants.region_map.get(guild.region, str(guild.region))
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     embed = discord.Embed(
@@ -86,7 +85,6 @@ async def log_joined_guild(client, guild):
     embed.set_thumbnail(url=icon)
 
     embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
-    embed.add_field(name="Region", value=region, inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
     embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)

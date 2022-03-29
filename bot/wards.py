@@ -28,6 +28,13 @@ async def is_manager(ctx, *args, **kwargs):
     return ctx.author.id in get_conf().getintlist("managers", [])
 
 
+@check(name="IS_REVIEWER",
+       msg="You must be a preamble reviewer to use this command!",
+       parents=[is_manager])
+async def is_reviewer(ctx, *args, **kwargs):
+    return ctx.author.id in get_conf().getintlist("reviewers", [])
+
+
 @check(name="IN_GUILD",
        msg="This command may only be used in a guild.")
 async def in_guild(ctx, *args, **kwargs):

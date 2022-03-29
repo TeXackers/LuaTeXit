@@ -6,7 +6,7 @@ import discord
 
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 
-from wards import is_manager
+from wards import is_manager, is_reviewer
 
 from utils.lib import split_text, mail
 from utils import interactive  # noqa
@@ -33,7 +33,7 @@ Here is a display equation: \[(a+b)^2 = a^2 + b^2\]
 
 def tex_pagination(text, basetitle="", header=None, timestamp=True,
                    author=None, time=None, colour=discord.Colour.dark_blue(),
-                   extra_fields=None):
+                   extra_fields=None, footer=""):
     """
     Break up source LaTeX code into a number of embedded pages,
     with the code in codeblocks of mximum 1k chars
@@ -65,6 +65,8 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
             for name, value in extra_fields:
                 if name and value:
                     embed.add_field(name=name, value=value, inline=False)
+        if footer is not None:
+            embed.set_footer(text=footer)
         return [embed]
 
     embeds = []
@@ -75,7 +77,7 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
                               author=author,
                               description=desc,
                               timestamp=time)
-        embed.set_footer(text="Page {}/{}".format(i+1, blocknum))
+        embed.set_footer(text="{} Page {}/{}".format(footer, i+1, blocknum))
         if author is not None:
             embed.set_author(name=author)
         if extra_fields is not None:
@@ -314,9 +316,9 @@ async def judgement_reactions(ctx, userid, msg):
         True, if the preamble was approved,
         False, if the preamble was denied.
     """
-    # Check that the context author has bot manager permissions
-    if not await is_manager.run(ctx):
-        raise ValueError("Attempt to add judgement reactions for non-manager.")
+    # Check that the context author has preamble reviewer permissions
+    if not await is_reviewer.run(ctx):
+        raise ValueError("Attempt to add judgement reactions for non-reviewer.")
 
     # Load reaction emojis
     approve = ctx.client.conf.emojis.getemoji('approve')

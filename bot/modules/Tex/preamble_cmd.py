@@ -31,7 +31,7 @@ async def cmd_preamble(ctx, flags):
         {prefix}preamble --reset
         {prefix}preamble --preset [presetname]
         {prefix}preamble --replace [code]
-        {prefix}preamble [--add] [code]
+        {prefix}preamble --add [code]
         {prefix}preamble --remove [code]
     Description:
         With no arguments or flags, displays the preamble used to compile your LaTeX.
@@ -256,7 +256,7 @@ async def cmd_preamble(ctx, flags):
             for_removal = "\n".join([lines[i] for i in to_remove])
             prompt = "Are you sure you want to remove the following lines from your preamble?"
             try:
-                result = await confirm(ctx, prompt, for_removal)
+                result = await confirm(ctx, prompt, for_removal, footer="Reply with y/n to confirm your preamble request.")
             except ResponseTimedOut:
                 return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
             if not result:
@@ -350,7 +350,7 @@ async def cmd_preamble(ctx, flags):
         # Confirm submission
         prompt = "Please confirm you want to replace your preamble with the following."
         try:
-            result = await confirm(ctx, prompt, new_submission)
+            result = await confirm(ctx, prompt, new_submission, footer="Reply with y/n to confirm your preamble request.")
         except ResponseTimedOut:
             return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
         if not result:
@@ -360,7 +360,7 @@ async def cmd_preamble(ctx, flags):
         return await ctx.reply(
             "Your preamble request has been sent to my managers for review.\n"
             "You will be messaged when your request is reviewed "
-            "(usually around `2`-`4` hours, depending on availability).\n"
+            "(usually around `1`-`2` hours, depending on availability).\n"
             "If you wish to retract your submission, please use `{}preamble --retract`.".format(ctx.best_prefix())
         )
 
@@ -438,7 +438,8 @@ async def cmd_preamble(ctx, flags):
                 prompt,
                 new_submission,
                 start_page=-1,
-                extra_fields=[("Warnings", warnings)] if warnings else None
+                extra_fields=[("Warnings", warnings)] if warnings else None,
+                footer="Reply with y/n to confirm your preamble request."
             )
         except ResponseTimedOut:
             return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
@@ -452,14 +453,14 @@ async def cmd_preamble(ctx, flags):
             "User wishes to add {} lines to their preamble".format(len(args.splitlines()))
         )
         return await ctx.reply(
-            "Your preamble request has been sent to my managers for review.\n"
+            "Your preamble request has been sent to my review team.\n"
             "You will be messaged when your request is reviewed "
-            "(usually around `2`-`4` hours, depending on availability).\n"
+            "(usually around `1`-`2` hours, depending on availability).\n"
             "If you wish to retract your submission, please use `{}preamble --retract`.".format(ctx.best_prefix())
         )
 
     # If the user doesn't want to edit their preamble, they must just want to view it
 
     title = "Your current preamble. Use {}texconfig to see the other LaTeX config options!".format(ctx.best_prefix())
-    await view_preamble(ctx, preamble, title, header=header,
-                        file_react=True, file_message="Current Preamble for {}".format(ctx.author))
+    await ctx.offer_delete(await view_preamble(ctx, preamble, title, header=header,
+                                               file_react=True, file_message="Current Preamble for {}".format(ctx.author)))

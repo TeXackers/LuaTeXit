@@ -6,7 +6,7 @@ from discord.http import Route
 from cmdClient import Context
 
 from wards import in_guild
-from constants import region_map, ParaCC
+from constants import ParaCC
 from utils.lib import emb_add_fields, paginate_list, strfdelta, prop_tabulate, format_activity, join_list
 
 from .module import info_module as module
@@ -308,9 +308,6 @@ async def cmd_guildinfo(ctx: Context, flags):
         embed.set_image(url=guild.icon_url)
         return await ctx.reply(embed=embed)
 
-    region = str(guild.region)
-    region = region_map.get(region, region)
-
     verif_descs = {
         "none": "Unrestricted",
         "low": "Must have a verified email",
@@ -360,10 +357,9 @@ async def cmd_guildinfo(ctx: Context, flags):
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - guild.created_at, minutes=True))
 
-    prop_list = ["Owner", "Region", "Icon", "Verification",
+    prop_list = ["Owner", "Icon", "Verification",
                  "2FA", "Roles", "Members", "Channels", "Server Boosts", "Created at", ""]
     value_list = [owner,
-                  region,
                   icon,
                   ver,
                   mfa,

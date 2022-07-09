@@ -9,7 +9,7 @@ from utils import ctx_addons  # noqa
 
 from ..module import latex_module as module
 
-from ..resources import default_preamble, failed_image_path, compile_script_path, luatex_compile_sript_path
+from ..resources import default_preamble, failed_image_path, compile_script_path
 
 """
 Provides a single context utility to compile LaTeX code from a user and return any error message
@@ -111,46 +111,6 @@ async def makeTeX(ctx, source, targetid, preamble=default_preamble, colour="defa
         "cd {path}\n"
         "{colour}\n"
         "{pad}").format(compile_script=compile_script_path,
-                        id=targetid, path=path,
-                        colour=colourschemes[colour] or "",
-                        pad=pad_script if pad else "").format(image="{}.png".format(targetid))
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
-
-
-@Context.util
-async def makeluaTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
-    log(
-        "Beginning LuaLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content='\n'.join(('\t' + line for line in source.splitlines()))
-        ),
-        level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid)
-    )
-
-    # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
-
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
-
-    fn = "{}/{}.tex".format(path, targetid)
-
-    with open(fn, 'w') as work:
-        work.write(to_compile.format(header=header, preamble=preamble, source=source))
-        work.close()
-
-    # Build compile script
-    script = (
-        "{compile_script} {id} || exit;\n"
-        "cd {path}\n"
-        "{colour}\n"
-        "{pad}").format(compile_script=luatex_compile_sript_path,
                         id=targetid, path=path,
                         colour=colourschemes[colour] or "",
                         pad=pad_script if pad else "").format(image="{}.png".format(targetid))

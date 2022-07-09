@@ -16,3 +16,6 @@ failed_image_path = os.path.join(__location__, "failed.png")
 
 # Store the path to the latex compile script
 compile_script_path = os.path.join(__location__, "texcompile.sh")
+
+# pdftex_compile_sript_path = os.path.join(__location__, "pdftexcompile.sh")
+luatex_compile_sript_path = os.path.join(__location__, "luatexcompile.sh")

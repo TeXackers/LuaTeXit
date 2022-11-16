@@ -9,7 +9,7 @@ with open(HELP_FILE, "r") as help_file:
 
 
 info = {
-    "dev_list": [299175087389802496, 408905098312548362],
+    "dev_list": [299175087389802496, 408905098312548362, 220148284168077312],
     "info_str": ("I am a high quality LaTeX rendering bot coded in discord.py.\n"
                  "Use `{prefix}help` for information on how to use me, "
                  "and `{prefix}list` to see all my commands!"),

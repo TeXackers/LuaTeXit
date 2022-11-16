@@ -1,6 +1,8 @@
 Hi {user.mention}!
 
-I am a high quality LaTeX rendering and utility bot created to enhance mathematical discussion.
+I am a high quality LaTeX rendering and utility bot created to enhance LaTeX experience on Discord.
+
+Unlike my upstream TeXit, I focus more on catering the LuaLaTeX and XeLaTeX experience.
 
 __**LaTeX**__
 Unless LaTeX recognition has been disabled for a server, I will recognise and render any LaTeX you type automatically.
@@ -10,7 +12,8 @@ If any LaTeX errors have occured, I will display what output is possible (with a
 Commands:
 ```
 {prefix}config latex enable/disable -- Enable or disable latex recognition for this server.
-{prefix}tex -- Manually render tex, and change your compile or display options.
+{prefix}luatex -- Manually render TeX code using LuaLaTeX.
+{prefix}xetex -- Manually render TeX code using XeLaTeX.
 {prefix}preamble -- Change your personal preamble (Define custom commands and add packages here!)
 {prefix}help tex -- See examples of use and all the options available!
 ```
@@ -25,10 +28,7 @@ Some of the utility features available:
 {prefix}notifyme -- Tells you when a message mentions you or matches other conditions
 ```
 
-There are heaps more features (including an entire suite of advanced moderation tools), but they won't fit into this message! 
-Plus, we are always growing and expanding, improving our features or adding new ones!
-
 Use `{prefix}list` to see all my commands and `{prefix}help cmd` to get detailed help for `cmd`.
 If you still have any questions, requests, comments, or other feedback, please let us know with the `{prefix}feedback` command or join our friendly support server at {support}
 
-You can invite me at {invite}. Also, if you really like me and would like to help keep me going, I greatly appreciate donations at <{donate}>.
+You can invite the upstream bot at {invite}. There is no need to donate me, but our upstream bot can get use some: <{donate}>.

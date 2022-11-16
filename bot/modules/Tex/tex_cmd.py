@@ -91,15 +91,15 @@ async def cmd_tex(ctx, flags):
         return await ctx.error_reply("Please use `{}help tex` for command help.".format(ctx.best_prefix()))
 
     # TODO: Warning about \begin{document} and \documentclass
-    if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
-        await ctx.error_reply(
-            "I compile the code you give me by putting it into a template LaTeX document, between "
-            "`\\begin{{document}}` and `\\end{{document}}` commands.\n"
-            "Please don't give me code that belongs outside of there!\nSee `{prefix}help tex` for some examples "
-            "of what I understand.\n\n"
-            "**If you want to modify the template to add packages or your own macros, "
-            "see `{prefix}help preamble`.**".format(prefix=ctx.best_prefix())
-        )
+    # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
+    #     await ctx.error_reply(
+    #         "I compile the code you give me by putting it into a template LaTeX document, between "
+    #         "`\\begin{{document}}` and `\\end{{document}}` commands.\n"
+    #         "Please don't give me code that belongs outside of there!\nSee `{prefix}help tex` for some examples "
+    #         "of what I understand.\n\n"
+    #         "**If you want to modify the template to add packages or your own macros, "
+    #         "see `{prefix}help preamble`.**".format(prefix=ctx.best_prefix())
+    #     )
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)

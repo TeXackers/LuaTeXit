@@ -42,7 +42,7 @@ colourschemes["trans_white"] = r"convert {image} +negate -bordercolor transparen
 colourschemes["trans_black"] = None
 colourschemes["transparent"] = colourschemes["trans_white"]
 
-colourschemes["default"] = colourschemes["grey"]
+colourschemes["default"] = colourschemes["light"]
 
 
 # Script which pads images to a minimum width of 1000
@@ -60,14 +60,16 @@ fi
 
 # Header for every LaTeX source file
 header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
+    \\usepackage{iftex}\
     \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
+    \n\\ifpdftex\\usepackage{hwemoji}\\fi\
     \n\\nonstopmode"
 
 """
 # Alternative header to support discord emoji, but not other unicode
 header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
     \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
-    \n\\usepackage{discord-emoji}
+    \n\\usepackage{hwemoji}
     \n\\nonstopmode"
 """
 

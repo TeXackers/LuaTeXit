@@ -5,7 +5,15 @@ from enum import Enum
 
 import discord
 
-from settings import GuildSetting, SettingList, Channel, MemberList, IntegerEnum, ColumnData, ListData
+from settings import (
+    GuildSetting,
+    SettingList,
+    Channel,
+    MemberList,
+    IntegerEnum,
+    ColumnData,
+    ListData,
+)
 from registry import tableInterface, tableSchema, Column, ColumnType
 
 from wards import guild_manager
@@ -23,10 +31,12 @@ class UserLogEvent(Enum):
 
 async def member_update_handler(client, before, after, from_user=False, guild=None):
     # Check the event is one we we can handle
-    if not (before.name != after.name
-            or (not from_user and before.nick != after.nick)
-            or before.avatar_url != after.avatar_url
-            or (not from_user and before.roles != after.roles)):
+    if not (
+        before.name != after.name
+        or (not from_user and before.nick != after.nick)
+        or before.avatar_url != after.avatar_url
+        or (not from_user and before.roles != after.roles)
+    ):
         return
 
     # Get the various guild settings, with appropriate return conditions
@@ -55,7 +65,11 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
             "`After:` {}\n".format(before.name, after.name)
         )
 
-    if not from_user and before.nick != after.nick and UserLogEvent.NICKNAME in userlog_events:
+    if (
+        not from_user
+        and before.nick != after.nick
+        and UserLogEvent.NICKNAME in userlog_events
+    ):
         # Handle nickname changes
         desc_lines.append(
             "**Nickname updated!**\n"
@@ -72,15 +86,23 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
         )
         image = after.avatar_url if after.avatar_url else None
 
-    if not from_user and before.roles != after.roles and UserLogEvent.ROLES in userlog_events:
+    if (
+        not from_user
+        and before.roles != after.roles
+        and UserLogEvent.ROLES in userlog_events
+    ):
         # Handle role changes
         added_roles = [role for role in after.roles if role not in before.roles]
         removed_roles = [role for role in before.roles if role not in after.roles]
         desc_lines.append("**Roles updated!**")
         if added_roles:
-            desc_lines.append("Added roles {}".format(", ".join(r.mention for r in added_roles)))
+            desc_lines.append(
+                "Added roles {}".format(", ".join(r.mention for r in added_roles))
+            )
         if removed_roles:
-            desc_lines.append("Removed roles {}".format(", ".join(r.mention for r in removed_roles)))
+            desc_lines.append(
+                "Removed roles {}".format(", ".join(r.mention for r in removed_roles))
+            )
 
     # Return if we have somehow ended up with an empty description
     if not desc_lines:
@@ -88,12 +110,12 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
 
     # Build log embed
     description = "{}\n{}".format(after.mention, "\n".join(desc_lines))
-    colour = (after.colour if after.colour.value else discord.Colour.light_grey())
+    colour = after.colour if after.colour.value else discord.Colour.light_grey()
 
-    embed = discord.Embed(color=colour, description=description, timestamp=datetime.now())
-    embed.set_author(
-        name="{} ({})".format(after, after.id)
+    embed = discord.Embed(
+        color=colour, description=description, timestamp=datetime.now()
     )
+    embed.set_author(name="{} ({})".format(after, after.id))
     if image is not None:
         embed.set_thumbnail(url=image)
 
@@ -105,26 +127,27 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
     except discord.NotFound:
         pass
     except Exception as e:
-        client.log("Failed to post user update log for member '{}' (uid:{}) in guild '{} (gid:{})."
-                   " Exception: {}".format(after,
-                                           after.id,
-                                           after.guild.name,
-                                           after.guild.id,
-                                           e.__repr__()),
-                   context="POST_USERLOG",
-                   level=logging.WARNING)
+        client.log(
+            "Failed to post user update log for member '{}' (uid:{}) in guild '{} (gid:{})."
+            " Exception: {}".format(
+                after, after.id, after.guild.name, after.guild.id, e.__repr__()
+            ),
+            context="POST_USERLOG",
+            level=logging.WARNING,
+        )
 
 
 async def user_update_handler(client, before, after):
     # Check the event is one we we can handle
-    if not (before.name != after.name
-            or before.avatar_url != after.avatar_url):
+    if not (before.name != after.name or before.avatar_url != after.avatar_url):
         return
     # Get the shared guilds
     guilds = [g for g in client.guilds if after in g.members]
 
     for guild in guilds:
-        asyncio.ensure_future(member_update_handler(client, before, after, from_user=True, guild=guild))
+        asyncio.ensure_future(
+            member_update_handler(client, before, after, from_user=True, guild=guild)
+        )
 
 
 @module.init_task
@@ -182,7 +205,7 @@ class _userlog_event(IntegerEnum):
         UserLogEvent.USERNAME: "Username",
         UserLogEvent.NICKNAME: "Nickname",
         UserLogEvent.AVATAR: "Avatar",
-        UserLogEvent.ROLES: "Roles"
+        UserLogEvent.ROLES: "Roles",
     }
 
 
@@ -195,9 +218,7 @@ class guild_userlog_events(ListData, SettingList, GuildSetting):
 
     name = "userlog_events"
     desc = "The event types to log in the userlog."
-    long_desc = (
-        "The event types to be logged into the userlog."
-    )
+    long_desc = "The event types to be logged into the userlog."
 
     accepts = "Comma separated list of userlog event types (listed below)."
     _setting = _userlog_event
@@ -217,33 +238,32 @@ class guild_userlog_events(ListData, SettingList, GuildSetting):
             "Roles": "New or removed roles for a member.",
         }
         table = prop_tabulate(*zip(*event_types.items()))
-        embed.add_field(
-            name="Userlog Event types",
-            value=table
-        )
+        embed.add_field(name="Userlog Event types", value=table)
         return embed
 
 
 # Define data schemas
 channel_schema = tableSchema(
     "guild_userupdate_channel",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.SNOWFLAKE),  # Channel to log the userupdates to
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("channelid", ColumnType.SNOWFLAKE),  # Channel to log the userupdates to
 )
 
 event_schema = tableSchema(
     "guild_userupdate_events",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('event', ColumnType.INT, primary=True, required=True),  # The event types to log
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column(
+        "event", ColumnType.INT, primary=True, required=True
+    ),  # The event types to log
 )
 
 ignores_schema = tableSchema(
     "guild_userupdate_ignores",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 
@@ -251,16 +271,20 @@ ignores_schema = tableSchema(
 @module.data_init_task
 def attach_userlog_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False),
-        "guild_userupdate_channel"
+        tableInterface.from_schema(
+            client.data, client.app, channel_schema, shared=False
+        ),
+        "guild_userupdate_channel",
     )
 
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, event_schema, shared=False),
-        "guild_userupdate_events"
+        "guild_userupdate_events",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ignores_schema, shared=False),
-        "guild_userupdate_ignores"
+        tableInterface.from_schema(
+            client.data, client.app, ignores_schema, shared=False
+        ),
+        "guild_userupdate_ignores",
     )

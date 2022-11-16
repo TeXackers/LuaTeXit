@@ -8,10 +8,12 @@ from wards import is_master
 from .module import bot_admin_module as module
 
 
-@module.cmd("snippet",
-            desc="View, run, or create a code snippet.",
-            aliases=['snippets'],
-            flags=['create', 'delete'])
+@module.cmd(
+    "snippet",
+    desc="View, run, or create a code snippet.",
+    aliases=["snippets"],
+    flags=["create", "delete"],
+)
 @is_master()
 async def snippet_cmd(ctx, flags):
     """
@@ -29,23 +31,27 @@ async def snippet_cmd(ctx, flags):
     """
     snip_interface = ctx.client.data.admin_snippets
     snips = snip_interface.select_where()
-    snipmap = {snip['name'].lower(): snip for snip in snips}
+    snipmap = {snip["name"].lower(): snip for snip in snips}
 
-    if flags['create']:
+    if flags["create"]:
         # Create a snippet
         name = await ctx.input("Please enter the snippet name, or `c` to cancel.")
-        if name.lower() == 'c':
+        if name.lower() == "c":
             return await ctx.error_reply("Cancelling.")
-        if ' ' in name:
+        if " " in name:
             return await ctx.error_reply("Snippet names cannot have spaces.")
 
-        desc = await ctx.input("Please enter the snippet description, or `c` to cancel.")
-        if desc.lower() == 'c':
+        desc = await ctx.input(
+            "Please enter the snippet description, or `c` to cancel."
+        )
+        if desc.lower() == "c":
             return await ctx.error_reply("Cancelling.")
 
-        content = await ctx.input("Please enter the snippet content, or `c` to cancel. (You have 10 minutes)",
-                                  timeout=600)
-        if content.lower() == 'c':
+        content = await ctx.input(
+            "Please enter the snippet content, or `c` to cancel. (You have 10 minutes)",
+            timeout=600,
+        )
+        if content.lower() == "c":
             return await ctx.error_reply("Cancelling.")
 
         snip_interface.insert(
@@ -53,14 +59,14 @@ async def snippet_cmd(ctx, flags):
             author=ctx.author.id,
             name=name,
             description=desc,
-            content=content
+            content=content,
         )
         await ctx.reply("Snippet `{}` saved.".format(name))
-    elif flags['delete']:
+    elif flags["delete"]:
         name = ctx.args
         if name.lower() not in snipmap:
             return await ctx.error_reply("Unknown snippet `{}`".format(name))
-        name = snipmap[name.lower()]['name']
+        name = snipmap[name.lower()]["name"]
 
         snip_interface.delete_where(name=name)
         await ctx.reply("Snippet deleted.")
@@ -72,16 +78,14 @@ async def snippet_cmd(ctx, flags):
         if name.lower() not in snipmap:
             return await ctx.error_reply("Unknown snippet `{}`".format(name))
 
-        snip = snipmap[name.lower()]['content']
+        snip = snipmap[name.lower()]["content"]
         snipargs = splits[1] if len(splits) > 1 else ""
 
         output, error = await _snip_async(ctx, snip, snipargs)
         await ctx.reply(
             "Ran snippet **{}**\n"
             "Output {}:\n"
-            "```py\n{}\n```".format(name,
-                                    "error" if error else "",
-                                    output)
+            "```py\n{}\n```".format(name, "error" if error else "", output)
         )
     else:
         # View snippets
@@ -89,34 +93,36 @@ async def snippet_cmd(ctx, flags):
             return await ctx.reply("There are no snippets set up.")
 
         snipstrs = [
-            "'{}' created by '{}':\n\t{}".format(snip['name'], snip['author'], snip['description'])
+            "'{}' created by '{}':\n\t{}".format(
+                snip["name"], snip["author"], snip["description"]
+            )
             for snip in snips
         ]
         return await ctx.reply("```\n{}\n```".format("\n".join(snipstrs)))
 
 
 async def _snip_async(ctx, snip, snipargs):
-    env = {'ctx': ctx, 'args': snipargs}
+    env = {"ctx": ctx, "args": snipargs}
     env.update(globals())
     old_stdout = sys.stdout
     redirected_output = sys.stdout = StringIO()
     result = None
     exec_string = "async def _temp_exec():\n"
-    exec_string += '\n'.join(' ' * 4 + line for line in snip.split('\n'))
+    exec_string += "\n".join(" " * 4 + line for line in snip.split("\n"))
     try:
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
         return result
-    _temp_exec = env['_temp_exec']
+    _temp_exec = env["_temp_exec"]
     try:
         returnval = await _temp_exec()
         value = redirected_output.getvalue()
         if returnval is None:
             result = (value, 0)
         else:
-            result = (value + '\n' + str(returnval), 0)
+            result = (value + "\n" + str(returnval), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
     finally:
@@ -126,10 +132,10 @@ async def _snip_async(ctx, snip, snipargs):
 
 schema = tableSchema(
     "admin_snippets",
-    Column('name', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('author', ColumnType.SNOWFLAKE, required=True),
-    Column('description', ColumnType.MSGSTRING, required=True),
-    Column('content', ColumnType.TEXT, required=True)
+    Column("name", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("author", ColumnType.SNOWFLAKE, required=True),
+    Column("description", ColumnType.MSGSTRING, required=True),
+    Column("content", ColumnType.TEXT, required=True),
 )
 
 
@@ -137,6 +143,5 @@ schema = tableSchema(
 @module.data_init_task
 def attach_snippet_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema),
-        "admin_snippets"
+        tableInterface.from_schema(client.data, client.app, schema), "admin_snippets"
     )

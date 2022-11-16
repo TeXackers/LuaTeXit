@@ -12,7 +12,9 @@ class paraSetting(ConfSetting):
     accept = ""  # Human readable string describing what the acceptable values are.
     category = ""  # Setting category
 
-    write_perm = "in_server_has_mod"  # Require to pass this check before reading a setting
+    write_perm = (
+        "in_server_has_mod"  # Require to pass this check before reading a setting
+    )
     read_perm = None  # TODO
 
     checks = checks  # Default checks dict is just checks
@@ -91,12 +93,19 @@ class paraSetting(ConfSetting):
         """
         A decorator for adding a required check to a function.
         """
+
         def decorator(func):
             nonlocal check
             if check not in cls.checks:
+
                 async def unknown_check(ctx, **kwargs):
-                    await ctx.log("Attempted to run the check {} which does not exist".format(check))
+                    await ctx.log(
+                        "Attempted to run the check {} which does not exist".format(
+                            check
+                        )
+                    )
                     return ("3", "There was an internal error: ERR_BAD_CONF_CHECK")
+
                 check = unknown_check
             else:
                 check = cls.checks[check]
@@ -108,5 +117,7 @@ class paraSetting(ConfSetting):
                     await func(cls, ctx, *argv, **kwargs)
                 else:
                     ctx.cmd_err = (err_code, err_msg)
+
             return wrapper
+
         return decorator

@@ -7,8 +7,12 @@ from . import guild_config  # noqa
 
 class LatexGuild:
     __slots__ = (
-        'id', 'autotex', 'autotex_level', 'require_codeblocks',
-        'latex_channels', 'preamble'
+        "id",
+        "autotex",
+        "autotex_level",
+        "require_codeblocks",
+        "latex_channels",
+        "preamble",
     )
     # Cache of all guilds the client requests
     cached_guilds = {}
@@ -27,7 +31,9 @@ class LatexGuild:
 
     def __init__(self, id, **kwargs):
         if self._client is None:
-            raise RuntimeError("Attempted to get a LatexGuild before data initialisation.")
+            raise RuntimeError(
+                "Attempted to get a LatexGuild before data initialisation."
+            )
 
         self.id = id
 
@@ -81,12 +87,12 @@ class LatexGuild:
         # Get latex channels
         rows = self._client.data.guild_latex_channels.select_where(guildid=self.id)
         if rows:
-            self.latex_channels = [row['channelid'] for row in rows]
+            self.latex_channels = [row["channelid"] for row in rows]
 
         # Get preamble
         rows = self._client.data.guild_latex_preambles.select_where(guildid=self.id)
         if rows:
-            self.preamble = rows[0]['preamble'] or self.preamble
+            self.preamble = rows[0]["preamble"] or self.preamble
 
     @classmethod
     def get(cls, id):

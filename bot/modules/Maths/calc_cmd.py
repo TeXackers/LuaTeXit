@@ -8,11 +8,10 @@ from .module import maths_module as module
 Provides the calc command
 """
 
-API_ADDR = 'http://api.mathjs.org/v4/'
+API_ADDR = "http://api.mathjs.org/v4/"
 
 
-@module.cmd("calc",
-            desc="Calculate short mathematical expressions.")
+@module.cmd("calc", desc="Calculate short mathematical expressions.")
 async def cmd_calc(ctx):
     """
     Usage``:
@@ -34,9 +33,8 @@ async def cmd_calc(ctx):
             "Please give me something to evaluate.\n"
             "See `{}help calc` for usage details.".format(ctx.best_prefix())
         )
-    exprs = ctx.args.split('\n')
-    request = {"expr": exprs,
-               "precision": 14}
+    exprs = ctx.args.split("\n")
+    request = {"expr": exprs, "precision": 14}
     async with aiohttp.ClientSession() as session:
         async with session.post(API_ADDR, data=json.dumps(request)) as resp:
             answer = await resp.json()
@@ -46,7 +44,14 @@ async def cmd_calc(ctx):
             "An unknown error occurred during calculation!"
         )
     if answer["error"]:
-        await ctx.reply("The following error occured while calculating:\n`{}`".format(
-            discord.utils.escape_mentions(answer["error"])))
+        await ctx.reply(
+            "The following error occured while calculating:\n`{}`".format(
+                discord.utils.escape_mentions(answer["error"])
+            )
+        )
         return
-    await ctx.reply("Result{}:\n```\n{}\n```".format("s" if len(exprs) > 1 else "", "\n".join(answer["result"])))
+    await ctx.reply(
+        "Result{}:\n```\n{}\n```".format(
+            "s" if len(exprs) > 1 else "", "\n".join(answer["result"])
+        )
+    )

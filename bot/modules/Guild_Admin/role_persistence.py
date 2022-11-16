@@ -14,9 +14,11 @@ from wards import guild_admin, guild_manager
 from .module import guild_admin_module as module
 
 
-@module.cmd("forgetrolesfor",
-            desc="Forget stored persistent roles for one or all members.",
-            flags=['all'])
+@module.cmd(
+    "forgetrolesfor",
+    desc="Forget stored persistent roles for one or all members.",
+    flags=["all"],
+)
 @guild_admin()
 async def cmd_forgetrolesfor(ctx, flags):
     """
@@ -30,9 +32,11 @@ async def cmd_forgetrolesfor(ctx, flags):
     Flags::
         all: Forget stored roles for all users.
     """
-    if flags['all']:
+    if flags["all"]:
         # Confirm deletion of all stored persistent roles
-        if await ctx.ask("Are you sure you want me to forget all the stored persistent roles for this guild?"):
+        if await ctx.ask(
+            "Are you sure you want me to forget all the stored persistent roles for this guild?"
+        ):
             # Delete all stored persistent roles
             ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id)
             await ctx.reply("Purged stored persistent roles for all users.")
@@ -47,10 +51,18 @@ async def cmd_forgetrolesfor(ctx, flags):
             user = await ctx.client.fetch_user(ctx.args)
 
             if not user:
-                return await ctx.error_reply("User `{}` is not known to Discord.".format(ctx.args))
+                return await ctx.error_reply(
+                    "User `{}` is not known to Discord.".format(ctx.args)
+                )
             else:
-                ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id, userid=user.id)
-                await ctx.reply("Purged stored persistent roles for {} (uid:`{}`).".format(user, user.id))
+                ctx.client.data.member_stored_roles.delete_where(
+                    guildid=ctx.guild.id, userid=user.id
+                )
+                await ctx.reply(
+                    "Purged stored persistent roles for {} (uid:`{}`).".format(
+                        user, user.id
+                    )
+                )
     else:
         await ctx.reply("Please see the help for this command for usage.")
 
@@ -68,12 +80,13 @@ class role_persistence(BoolData, Boolean, GuildSetting):
     name = "role_persistence"
     desc = "Whether roles will be given back to members who re-join."
 
-    long_desc = ("Whether roles will be stored when a member leaves and given back when the member rejoins. "
-                 "Any roles in the setting `role_persistence_ignores` will not be returned to them, "
-                 "and users may be forgotten with the command `forgetrolesfor`.")
+    long_desc = (
+        "Whether roles will be stored when a member leaves and given back when the member rejoins. "
+        "Any roles in the setting `role_persistence_ignores` will not be returned to them, "
+        "and users may be forgotten with the command `forgetrolesfor`."
+    )
 
-    _outputs = {True: "Enabled",
-                False: "Disabled"}
+    _outputs = {True: "Enabled", False: "Disabled"}
 
     _default = False
 
@@ -99,6 +112,7 @@ class role_persistence_ignores(ListData, RoleList, GuildSetting):
 
 # Define event handlers
 
+
 async def store_roles(client, member):
     """
     Store member roles when the member leaves.
@@ -111,7 +125,9 @@ async def store_roles(client, member):
         return
 
     # Delete the stored roles associated to this member
-    client.data.member_stored_roles.delete_where(guildid=member.guild.id, userid=member.id)
+    client.data.member_stored_roles.delete_where(
+        guildid=member.guild.id, userid=member.id
+    )
 
     # TODO: This is asking for some nasty clashes between different apps
     # We probably want to make it a db transaction, i.e. lock the table.
@@ -120,7 +136,7 @@ async def store_roles(client, member):
     if role_list:
         client.data.member_stored_roles.insert_many(
             *((member.guild.id, member.id, role) for role in role_list),
-            insert_keys=('guildid', 'userid', 'roleid')
+            insert_keys=("guildid", "userid", "roleid")
         )
 
 
@@ -136,16 +152,26 @@ async def restore_roles(client, member):
     # We could place an async lock on role modifications for the user
 
     # Retrieve the stored roles for this member
-    roles = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
+    roles = client.data.member_stored_roles.select_where(
+        guildid=member.guild.id, userid=member.id
+    )
     roleids = []
     for i in range(len(roles)):
         roleids.append(roles[i]["roleid"])
 
     if roleids:
         # Get the ignored roles
-        ignored = set(client.guild_config.role_persistence_ignores.get(client, member.guild.id).value)
+        ignored = set(
+            client.guild_config.role_persistence_ignores.get(
+                client, member.guild.id
+            ).value
+        )
         # Filter the roles
-        roleids = [roleid for roleid in roleids if roleid not in ignored and roleid != member.guild.default_role.id]
+        roleids = [
+            roleid
+            for roleid in roleids
+            if roleid not in ignored and roleid != member.guild.default_role.id
+        ]
 
     if roleids and member.guild.me.guild_permissions.manage_roles:
         # Get the associated roles, removing the nonexistent ones
@@ -153,8 +179,11 @@ async def restore_roles(client, member):
         roles = [role for role in roles if role is not None]
 
         # Retrieve my top role with manage role permissions
-        my_mr_roles = [role for role in member.guild.me.roles
-                       if role.permissions.manage_roles or role.permissions.administrator]
+        my_mr_roles = [
+            role
+            for role in member.guild.me.roles
+            if role.permissions.manage_roles or role.permissions.administrator
+        ]
 
         # Filter roles based on what I have permission to add
         if my_mr_roles:
@@ -166,59 +195,71 @@ async def restore_roles(client, member):
         # Add the roles if there are any left
         if roles:
             try:
-                await member.add_roles(*roles, reason="Restoring member roles (Role persistence)")
+                await member.add_roles(
+                    *roles, reason="Restoring member roles (Role persistence)"
+                )
             except Exception as e:
-                log("Failed to restore roles for new member '{}' (uid:{}) in guild '{} (gid:{})."
-                    " Exception: {}".format(member,
-                                            member.id,
-                                            member.guild.name,
-                                            member.guild.id,
-                                            e.__repr__()),
+                log(
+                    "Failed to restore roles for new member '{}' (uid:{}) in guild '{} (gid:{})."
+                    " Exception: {}".format(
+                        member,
+                        member.id,
+                        member.guild.name,
+                        member.guild.id,
+                        e.__repr__(),
+                    ),
                     context="RESTORE_ROLE",
-                    level=logging.WARNING)
+                    level=logging.WARNING,
+                )
 
 
 @module.init_task
 def attach_restore_roles(client):
-    client.add_after_event('member_remove', store_roles)
-    client.add_after_event('member_join', restore_roles)
+    client.add_after_event("member_remove", store_roles)
+    client.add_after_event("member_join", restore_roles)
 
 
 # Define data interfaces
 role_persistence_schema = tableSchema(
     "guild_role_persistence",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 role_persistence_ignores_schema = tableSchema(
     "guild_role_persistence_ignores",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 member_stored_roles_schema = tableSchema(
     "member_stored_roles",
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 
 @module.data_init_task
 def attach_rolepersistence_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, role_persistence_schema, shared=False),
-        "guild_role_persistence"
+        tableInterface.from_schema(
+            client.data, client.app, role_persistence_schema, shared=False
+        ),
+        "guild_role_persistence",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, role_persistence_ignores_schema, shared=False),
-        "guild_role_persistence_ignores"
+        tableInterface.from_schema(
+            client.data, client.app, role_persistence_ignores_schema, shared=False
+        ),
+        "guild_role_persistence_ignores",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_stored_roles_schema, shared=True),
-        "member_stored_roles"
+        tableInterface.from_schema(
+            client.data, client.app, member_stored_roles_schema, shared=True
+        ),
+        "member_stored_roles",
     )

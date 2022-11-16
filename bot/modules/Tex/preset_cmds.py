@@ -1,8 +1,10 @@
-@cmds.cmd("preamblepreset",
-          category="Maths",
-          short_help="Set your LaTeX preamble to a pre-built preset",
-          aliases=["ppr"])
-@cmds.execute("flags", flags=["use", "add", "remove", "show", 'modify'])
+@cmds.cmd(
+    "preamblepreset",
+    category="Maths",
+    short_help="Set your LaTeX preamble to a pre-built preset",
+    aliases=["ppr"],
+)
+@cmds.execute("flags", flags=["use", "add", "remove", "show", "modify"])
 async def cmd_ppr(ctx):
     """
     Usage:
@@ -28,7 +30,7 @@ async def cmd_ppr(ctx):
     # Preset administration
 
     # Handle adding a new preset
-    if ctx.flags['add']:
+    if ctx.flags["add"]:
         # Check for managerial permissions
         (code, msg) = await cmds.checks["manager_perm"](ctx)
         if code != 0:
@@ -61,11 +63,11 @@ async def cmd_ppr(ctx):
                     file_info = result_msg.attachments[0]
 
                     # Limit filesize to 16k
-                    if file_info['size'] >= 16000:
+                    if file_info["size"] >= 16000:
                         await ctx.reply("Attached file is too large to process.")
                         return
 
-                    async with aiohttp.get(file_info['url']) as r:
+                    async with aiohttp.get(file_info["url"]) as r:
                         preset = await r.text()
 
         # Remove the prompt and response messages
@@ -94,8 +96,8 @@ async def cmd_ppr(ctx):
             return
 
         # Write the preset to a file
-        file_name = os.path.join(preset_dir, name + '.tex')
-        with open(file_name, 'w') as f:
+        file_name = os.path.join(preset_dir, name + ".tex")
+        with open(file_name, "w") as f:
             f.write(preset)
 
         # Add the preset name to the local cache
@@ -106,7 +108,7 @@ async def cmd_ppr(ctx):
         return
 
     # Handle removing a preset
-    if ctx.flags['remove']:
+    if ctx.flags["remove"]:
         # Check for managerial permissions
         (code, msg) = await cmds.checks["manager_perm"](ctx)
         if code != 0:
@@ -136,10 +138,12 @@ async def cmd_ppr(ctx):
                 return
 
         # Confirm removal of the preset
-        resp = await ctx.ask("Are you sure you wish to remove the preamble preset {}?".format(name))
+        resp = await ctx.ask(
+            "Are you sure you wish to remove the preamble preset {}?".format(name)
+        )
         if resp:
             # Delete the preset from the file system
-            file_name = os.path.join(preset_dir, name + '.tex')
+            file_name = os.path.join(preset_dir, name + ".tex")
             os.remove(file_name)
 
             # Remove the preset from local cache
@@ -150,7 +154,7 @@ async def cmd_ppr(ctx):
         return
 
     # Handle modification of a preset
-    if ctx.flags['modify']:
+    if ctx.flags["modify"]:
         """
         This displays a menu with three options:
             1. Add to preset
@@ -187,8 +191,8 @@ async def cmd_ppr(ctx):
                 return
 
         # Get the actual contents of the preset
-        preset_file = os.path.join(preset_dir, name + '.tex')
-        with open(preset_file, 'r') as f:
+        preset_file = os.path.join(preset_dir, name + ".tex")
+        with open(preset_file, "r") as f:
             preset = f.read()
 
         # Build menu
@@ -202,11 +206,13 @@ async def cmd_ppr(ctx):
             return
         elif result == 0:
             # Adding lines to the preset
-            resp = await ctx.input("Please enter the material you wish to add to the preset", timeout=600)
+            resp = await ctx.input(
+                "Please enter the material you wish to add to the preset", timeout=600
+            )
             if not resp:
                 await ctx.reply("Query timed out, aborting.")
                 return
-            if resp.lower() == 'c':
+            if resp.lower() == "c":
                 await ctx.reply("User cancelled, aborting.")
                 return
 
@@ -216,7 +222,9 @@ async def cmd_ppr(ctx):
 
             # Generate a lined version of the preset
             lines = preset.splitlines()
-            lined_preset = "\n".join(("{:>2}. {}".format(i+1, line) for i, line in enumerate(lines)))
+            lined_preset = "\n".join(
+                ("{:>2}. {}".format(i + 1, line) for i, line in enumerate(lines))
+            )
 
             # Prompt for the lines to remove
             prompt = "Please enter the line numbers to remove, separated by commas, or type `c` now to cancel."
@@ -228,7 +236,7 @@ async def cmd_ppr(ctx):
             if response.lower() == "c":
                 await ctx.reply("User cancelled, aborting.")
                 return
-            nums = [num.strip() for num in response.split(',')]
+            nums = [num.strip() for num in response.split(",")]
             if not all(num.isdigit() for num in nums):
                 await ctx.reply("Couldn't understand your selection, aborting.")
                 return
@@ -238,7 +246,9 @@ async def cmd_ppr(ctx):
                 return
 
             to_remove = list(set(nums))
-            new_preset = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
+            new_preset = "\n".join(
+                [line for i, line in enumerate(lines) if i not in to_remove]
+            )
         elif result == 2:
             # Completely replace preamble preset
             prompt = "Please enter or upload the new preset, or type `c` now to cancel."
@@ -257,11 +267,11 @@ async def cmd_ppr(ctx):
                         file_info = result_msg.attachments[0]
 
                         # Limit filesize to 16k
-                        if file_info['size'] >= 16000:
+                        if file_info["size"] >= 16000:
                             await ctx.reply("Attached file is too large to process.")
                             return
 
-                        async with aiohttp.get(file_info['url']) as r:
+                        async with aiohttp.get(file_info["url"]) as r:
                             preset = await r.text()
 
             # Remove the prompt and response messages
@@ -276,7 +286,9 @@ async def cmd_ppr(ctx):
 
         if new_preset:
             # Confirm new content
-            prompt = "Please confirm the following update for the preset {}".format(name)
+            prompt = "Please confirm the following update for the preset {}".format(
+                name
+            )
             result = await confirm(ctx, prompt, new_preset)
             if result is None:
                 await ctx.reply("Query timed out, aborting.")
@@ -286,8 +298,8 @@ async def cmd_ppr(ctx):
                 return
 
             # Update the preset
-            file_name = os.path.join(preset_dir, name + '.tex')
-            with open(file_name, 'w') as f:
+            file_name = os.path.join(preset_dir, name + ".tex")
+            with open(file_name, "w") as f:
                 f.write(new_preset)
 
             # Notify the manager
@@ -296,13 +308,17 @@ async def cmd_ppr(ctx):
 
     # End of manager level preset administration
     # Whether we are applying or showing the presets
-    showing = not ctx.flags['use']  # We always want to show unless the use flag has been applied
+    showing = not ctx.flags[
+        "use"
+    ]  # We always want to show unless the use flag has been applied
 
     if not args:
         # Run through an interactive selection process
 
         # Selection header message
-        message = "Please select a preamble preset to {}!".format('view' if showing else 'apply')
+        message = "Please select a preamble preset to {}!".format(
+            "view" if showing else "apply"
+        )
 
         # Run the selector
         result = await ctx.selector(message, presets, allow_single=True)
@@ -318,13 +334,17 @@ async def cmd_ppr(ctx):
         selected = get_preset(args.strip())
 
         if not selected:
-            await ctx.reply("This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
+            await ctx.reply(
+                "This isn't a valid preset! Use {}ppr --show to see the current list of presets!".format(
+                    ctx.used_prefix
+                )
+            )
             return
 
     # selected now contains the name of a preset
     # Grab the actual preset from the preset directory
-    preset_file = os.path.join(preset_dir, selected + '.tex')
-    with open(preset_file, 'r') as f:
+    preset_file = os.path.join(preset_dir, selected + ".tex")
+    with open(preset_file, "r") as f:
         preset = f.read()
 
     if showing:
@@ -345,10 +365,14 @@ async def cmd_ppr(ctx):
             return
 
         # Set the preamble
-        current_preamble = await ctx.data.users_long.get(ctx.authid, 'latex_preamble')
-        await ctx.data.users_long.set(ctx.authid, 'previous_preamble', current_preamble)
-        await ctx.data.users_long.set(ctx.authid, 'latex_preamble', preset)
+        current_preamble = await ctx.data.users_long.get(ctx.authid, "latex_preamble")
+        await ctx.data.users_long.set(ctx.authid, "previous_preamble", current_preamble)
+        await ctx.data.users_long.set(ctx.authid, "latex_preamble", preset)
 
-        await ctx.reply("The preset has been applied!\
-                        \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
+        await ctx.reply(
+            "The preset has been applied!\
+                        \nTo revert to your previous preamble, use `{}preamble --revert`".format(
+                ctx.used_prefix
+            )
+        )
         await preamblelog(ctx, "Preamble preset {} was applied".format(selected))

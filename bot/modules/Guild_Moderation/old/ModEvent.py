@@ -6,6 +6,7 @@ class ModEvent:
     """
     TODO: Ticket numbers and stuff.
     """
+
     actions = {
         "ban": ("User Banned", discord.Colour.red()),
         "multi-ban": ("Users Banned", discord.Colour.red()),
@@ -20,7 +21,7 @@ class ModEvent:
         "unmute": ("User Unmuted", discord.Colour.green()),
         "multi-unmute": ("Users Unmuted", discord.Colour.green()),
         "softban": ("User Softbanned", discord.Colour.orange()),
-        "multi-softban": ("Users Softbanned", discord.Colour.orange())
+        "multi-softban": ("Users Softbanned", discord.Colour.orange()),
     }
 
     def __init__(self, ctx, action, mod, users, reason="None", timeout=None):
@@ -38,12 +39,24 @@ class ModEvent:
         """
         TODO: timeout in sensible form
         """
-        embed = discord.Embed(title=self.actions[self.action][0], color=self.actions[self.action][1], timestamp=self.init_time)
-        embed.add_field(name="User{}".format("s" if len(self.users) > 1 else ""), value="\n".join(self.user_strs), inline=False)
+        embed = discord.Embed(
+            title=self.actions[self.action][0],
+            color=self.actions[self.action][1],
+            timestamp=self.init_time,
+        )
+        embed.add_field(
+            name="User{}".format("s" if len(self.users) > 1 else ""),
+            value="\n".join(self.user_strs),
+            inline=False,
+        )
         if self.timeout is not None:
-            embed.add_field(name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False)
+            embed.add_field(
+                name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False
+            )
         embed.add_field(name="Reason", value=self.reason, inline=False)
-        embed.set_footer(icon_url=self.mod.avatar_url, text="Acting Moderator: {}".format(self.mod))
+        embed.set_footer(
+            icon_url=self.mod.avatar_url, text="Acting Moderator: {}".format(self.mod)
+        )
         self.embed = embed
         return embed
 

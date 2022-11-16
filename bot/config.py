@@ -19,11 +19,11 @@ class Conf:
         )
         self.config.read(configfile)
 
-        self.section_name = section_name if section_name in self.config else 'DEFAULT'
+        self.section_name = section_name if section_name in self.config else "DEFAULT"
 
         self.default = self.config["DEFAULT"]
         self.section = self.config[self.section_name]
-        self.emojis = self.config['EMOJIS'] if 'EMOJIS' in self.config else self.section
+        self.emojis = self.config["EMOJIS"] if "EMOJIS" in self.config else self.section
 
         # Config file recursion, read in configuration files specified in every "ALSO_READ" key.
         more_to_read = self.section.getlist("ALSO_READ", [])
@@ -32,8 +32,11 @@ class Conf:
             to_read = more_to_read.pop(0)
             read.add(to_read)
             self.config.read(to_read)
-            new_paths = [path for path in self.section.getlist("ALSO_READ", [])
-                         if path not in read and path not in more_to_read]
+            new_paths = [
+                path
+                for path in self.section.getlist("ALSO_READ", [])
+                if path not in read and path not in more_to_read
+            ]
             more_to_read.extend(new_paths)
 
         global conf
@@ -50,13 +53,13 @@ class Conf:
         return result.strip() if result else result
 
     def _getintlist(self, value):
-        return [int(item.strip()) for item in value.split(',')]
+        return [int(item.strip()) for item in value.split(",")]
 
     def _getlist(self, value):
-        return [item.strip() for item in value.split(',')]
+        return [item.strip() for item in value.split(",")]
 
     def write(self):
-        with open(self.configfile, 'w') as conffile:
+        with open(self.configfile, "w") as conffile:
             self.config.write(conffile)
 
 

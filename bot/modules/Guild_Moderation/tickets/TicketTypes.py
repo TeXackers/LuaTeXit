@@ -7,6 +7,7 @@ class TicketType(Enum):
     """
     Identifier for the different types of tickets
     """
+
     NOTE = 0
     TEMPMUTE = 1
     MUTE = 2
@@ -25,8 +26,10 @@ def describes_ticket(ttype: TicketType):
     """
     Decorator designating a Ticket child as the manager for a given TicketType.
     """
+
     def wrapper(cls):
         cls._ticket_type = ttype
         _type_map[ttype.value] = cls
         return cls
+
     return wrapper

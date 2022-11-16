@@ -7,18 +7,19 @@ import iso8601
 
 
 def load_into(bot):
-
     @bot.util
     def strfdelta(ctx, delta, sec=False, minutes=True, short=False):
-        output = [[delta.days, 'd' if short else ' day'],
-                  [delta.seconds // 3600, 'h' if short else ' hour']]
+        output = [
+            [delta.days, "d" if short else " day"],
+            [delta.seconds // 3600, "h" if short else " hour"],
+        ]
         if minutes:
-            output.append([delta.seconds // 60 % 60, 'm' if short else ' minute'])
+            output.append([delta.seconds // 60 % 60, "m" if short else " minute"])
         if sec:
-            output.append([delta.seconds % 60, 's' if short else ' second'])
+            output.append([delta.seconds % 60, "s" if short else " second"])
         for i in range(len(output)):
             if output[i][0] != 1 and not short:
-                output[i][1] += 's'
+                output[i][1] += "s"
         reply_msg = []
         if output[0][0] != 0:
             reply_msg.append("{}{} ".format(output[0][0], output[0][1]))
@@ -26,7 +27,9 @@ def load_into(bot):
             reply_msg.append("{}{} ".format(output[i][0], output[i][1]))
         if not short and reply_msg:
             reply_msg.append("and ")
-        reply_msg.append("{}{}".format(output[len(output) - 1][0], output[len(output) - 1][1]))
+        reply_msg.append(
+            "{}{}".format(output[len(output) - 1][0], output[len(output) - 1][1])
+        )
         return "".join(reply_msg)
 
     @bot.util
@@ -34,39 +37,55 @@ def load_into(bot):
         """
         Runs a command asynchronously in a subproccess shell.
         """
-        process = await asyncio.create_subprocess_shell(to_run, stdout=asyncio.subprocess.PIPE)
+        process = await asyncio.create_subprocess_shell(
+            to_run, stdout=asyncio.subprocess.PIPE
+        )
         if ctx.bot.DEBUG > 2:
-            await ctx.log("Running the shell command:\n{}\nwith pid {}".format(to_run, str(process.pid)))
+            await ctx.log(
+                "Running the shell command:\n{}\nwith pid {}".format(
+                    to_run, str(process.pid)
+                )
+            )
         stdout, stderr = await process.communicate()
         if ctx.bot.DEBUG > 2:
-            await ctx.log("Completed the shell command:\n{}\n{}".format(to_run, "with errors." if process.returncode != 0 else ""))
-        return stdout.decode(errors='backslashreplace').strip()
+            await ctx.log(
+                "Completed the shell command:\n{}\n{}".format(
+                    to_run, "with errors." if process.returncode != 0 else ""
+                )
+            )
+        return stdout.decode(errors="backslashreplace").strip()
 
     @bot.util
     async def tail(ctx, filename, n):
-        p1 = subprocess.Popen('tail -n ' + str(n) + ' ' + filename,
-                              shell=True, stdin=None, stdout=subprocess.PIPE)
+        p1 = subprocess.Popen(
+            "tail -n " + str(n) + " " + filename,
+            shell=True,
+            stdin=None,
+            stdout=subprocess.PIPE,
+        )
         out, err = p1.communicate()
         p1.stdout.close()
-        return out.decode('utf-8')
+        return out.decode("utf-8")
 
     @bot.util
     def convdatestring(datestring):
-        datestring = datestring.strip(' ,')
+        datestring = datestring.strip(" ,")
         datearray = []
-        funcs = {'d': lambda x: x * 24 * 60 * 60,
-                 'h': lambda x: x * 60 * 60,
-                 'm': lambda x: x * 60,
-                 's': lambda x: x}
-        currentnumber = ''
+        funcs = {
+            "d": lambda x: x * 24 * 60 * 60,
+            "h": lambda x: x * 60 * 60,
+            "m": lambda x: x * 60,
+            "s": lambda x: x,
+        }
+        currentnumber = ""
         for char in datestring:
             if char.isdigit():
                 currentnumber += char
             else:
-                if currentnumber == '':
+                if currentnumber == "":
                     continue
                 datearray.append((int(currentnumber), char))
-                currentnumber = ''
+                currentnumber = ""
         seconds = 0
         if currentnumber:
             seconds += int(currentnumber)
@@ -91,17 +110,19 @@ def load_into(bot):
         TODO: Make this more efficient
         """
         # Split across whitespace, keeping the whitespace
-        params = re.split(r'(\S+)', args)
+        params = re.split(r"(\S+)", args)
 
-        final_params = []  # Final list of command parameters, excluding flags and flag arguments
+        final_params = (
+            []
+        )  # Final list of command parameters, excluding flags and flag arguments
         final_flags = {}  # Dictionary of flags and flag values
         indexes = []  # Indices in the params list where the flags appear
         end_params = []  # The tail of the parameter list, after -- appears
 
         # Handle appearence of the flag terminator
         if "--" in params:
-            i = params.index('--')
-            end_params = params[i + 1:] if i < len(params) - 1 else []
+            i = params.index("--")
+            end_params = params[i + 1 :] if i < len(params) - 1 else []
             params = params[:i]
 
         # Find the param indicies of the flags
@@ -124,7 +145,7 @@ def load_into(bot):
 
         # Add any parameters that appear before the first flag
         if len(indexes) > 0:
-            final_params = params[0:indexes[0][0]]
+            final_params = params[0 : indexes[0][0]]
         else:
             final_params = params
 
@@ -133,43 +154,48 @@ def load_into(bot):
             # Get the parameters between this flag and the next, or the end
             if len(params) > index + 1:
                 if len(indexes) > i + 1:
-                    flag_params = params[index + 1:indexes[i + 1][0]]
+                    flag_params = params[index + 1 : indexes[i + 1][0]]
                 else:
-                    flag_params = params[index + 1:]
+                    flag_params = params[index + 1 :]
             else:
                 flag_params = []
 
             # Split these into flag arguments and final parameters depending on flag type
-            if flag.endswith('=='):
-                flag_arg = ''.join(flag_params).strip()
-            elif flag.endswith('='):
+            if flag.endswith("=="):
+                flag_arg = "".join(flag_params).strip()
+            elif flag.endswith("="):
                 # Find the first non-whitespace param, if it exists
-                j, arg = next(((j, arg) for j, arg in enumerate(flag_params) if arg.strip()), (len(flag_params), None))
+                j, arg = next(
+                    ((j, arg) for j, arg in enumerate(flag_params) if arg.strip()),
+                    (len(flag_params), None),
+                )
 
-                flag_arg = arg or ''
+                flag_arg = arg or ""
 
                 # If there are any more params, add them to the final bunch
                 if len(flag_params) > j + 1:
-                    final_params.append(''.join(flag_params[j+1:]).rstrip())
+                    final_params.append("".join(flag_params[j + 1 :]).rstrip())
             else:
                 flag_arg = True
-                final_params.append(''.join(flag_params).rstrip())
+                final_params.append("".join(flag_params).rstrip())
 
             # Set the flag arguments
-            final_flags[flag.strip('=')] = flag_arg
+            final_flags[flag.strip("=")] = flag_arg
 
         # Add any tail parameters
         final_params += end_params
 
         # Turn the parameter list into what we usually use, i.e. space split, and make the args
-        final_args = ''.join(final_params).strip()
-        final_params = final_args.split(' ')
+        final_args = "".join(final_params).strip()
+        final_params = final_args.split(" ")
         return (final_params, final_args, final_flags)
 
     @bot.util
     async def emb_add_fields(ctx, embed, emb_fields):
         for field in emb_fields:
-            embed.add_field(name=str(field[0]), value=str(field[1]), inline=bool(field[2]))
+            embed.add_field(
+                name=str(field[0]), value=str(field[1]), inline=bool(field[2])
+            )
 
     @bot.util
     async def get_raw_cmds(ctx):
@@ -180,7 +206,9 @@ def load_into(bot):
         return cmds
 
     @bot.util
-    async def pager(ctx, pages, embed=False, locked=True, destination=None, start_page=0, **kwargs):
+    async def pager(
+        ctx, pages, embed=False, locked=True, destination=None, start_page=0, **kwargs
+    ):
         """
         Replies with the first page and provides reactions to page back and forth.
         Reaction timeout is five minutes.
@@ -203,20 +231,27 @@ def load_into(bot):
         emo_prev = ctx.bot.objects["emoji_prev"]
 
         def check(reaction, user):
-            return (reaction.emoji in [emo_next, emo_prev]) and (not (user == ctx.me)) and (not locked or user == ctx.author)
+            return (
+                (reaction.emoji in [emo_next, emo_prev])
+                and (not (user == ctx.me))
+                and (not locked or user == ctx.author)
+            )
+
         try:
             await ctx.bot.add_reaction(out_msg, emo_prev)
             await ctx.bot.add_reaction(out_msg, emo_next)
         except discord.Forbidden:
-            await ctx.reply("Cannot page results because I do not have permissions to add emojis!")
+            await ctx.reply(
+                "Cannot page results because I do not have permissions to add emojis!"
+            )
             return
 
         async def paging():
             page = start_page
             while True:
-                res = await ctx.bot.wait_for_reaction(message=out_msg,
-                                                      timeout=300,
-                                                      check=check)
+                res = await ctx.bot.wait_for_reaction(
+                    message=out_msg, timeout=300, check=check
+                )
                 if res is None:
                     break
                 try:
@@ -238,6 +273,7 @@ def load_into(bot):
                 pass
             except discord.NotFound:
                 pass
+
         asyncio.ensure_future(paging())
         return out_msg
 
@@ -252,12 +288,14 @@ def load_into(bot):
 
     @bot.util
     def parse_dur(ctx, time_str):
-        funcs = {'d': lambda x: x * 24 * 60 * 60,
-                 'h': lambda x: x * 60 * 60,
-                 'm': lambda x: x * 60,
-                 's': lambda x: x}
+        funcs = {
+            "d": lambda x: x * 24 * 60 * 60,
+            "h": lambda x: x * 60 * 60,
+            "m": lambda x: x * 60,
+            "s": lambda x: x,
+        }
         time_str = time_str.strip(" ,")
-        found = re.findall(r'(\d+)\s?(\w+?)', time_str)
+        found = re.findall(r"(\d+)\s?(\w+?)", time_str)
         seconds = 0
         for bit in found:
             if bit[1] in funcs:
@@ -267,24 +305,42 @@ def load_into(bot):
     @bot.util
     def prop_tabulate(ctx, prop_list, value_list):
         max_len = max(len(prop) for prop in prop_list)
-        return "\n".join(["`{}{}{}`\t{}".format("​ " * (max_len - len(prop)),
-                                                prop,
-                                                ":" if len(prop) > 1 else "​ " * 2,
-                                                value_list[i]) for i, prop in enumerate(prop_list)])
+        return "\n".join(
+            [
+                "`{}{}{}`\t{}".format(
+                    "​ " * (max_len - len(prop)),
+                    prop,
+                    ":" if len(prop) > 1 else "​ " * 2,
+                    value_list[i],
+                )
+                for i, prop in enumerate(prop_list)
+            ]
+        )
 
     @bot.util
     def paginate_list(ctx, item_list, block_length=20, style="markdown", title=None):
-        lines = ["{0:<5}{1:<5}".format("{}.".format(i + 1), str(line)) for i, line in enumerate(item_list)]
-        page_blocks = [lines[i:i + block_length] for i in range(0, len(lines), block_length)]
+        lines = [
+            "{0:<5}{1:<5}".format("{}.".format(i + 1), str(line))
+            for i, line in enumerate(item_list)
+        ]
+        page_blocks = [
+            lines[i : i + block_length] for i in range(0, len(lines), block_length)
+        ]
         pages = []
         for i, block in enumerate(page_blocks):
             pagenum = "Page {}/{}".format(i + 1, len(page_blocks))
             if title:
-                header = "{} ({})".format(title, pagenum) if len(page_blocks) > 1 else title
+                header = (
+                    "{} ({})".format(title, pagenum) if len(page_blocks) > 1 else title
+                )
             else:
                 header = pagenum
             header_line = "=" * len(header)
-            full_header = "{}\n{}\n".format(header, header_line) if len(page_blocks) > 1 or title else ""
+            full_header = (
+                "{}\n{}\n".format(header, header_line)
+                if len(page_blocks) > 1 or title
+                else ""
+            )
             pages.append("```{}\n{}{}```".format(style, full_header, "\n".join(block)))
         return pages
 
@@ -292,25 +348,41 @@ def load_into(bot):
     def msg_string(ctx, msg, mask_link=False, line_break=False, tz=None, clean=True):
         timestr = "%I:%M %p, %d/%m/%Y"
         if tz:
-            time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
+            time = (
+                iso8601.parse_date(msg.timestamp.isoformat())
+                .astimezone(tz)
+                .strftime(timestr)
+            )
         else:
             time = msg.timestamp.strftime(timestr)
         user = str(msg.author)
         attach_list = [attach["url"] for attach in msg.attachments if "url" in attach]
         if mask_link:
             attach_list = ["[Link]({})".format(url) for url in attach_list]
-        attachments = "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
-        return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(time=time, user=user, line_break="\n" if line_break else "", message=msg.clean_content if clean else msg.content, attachments=attachments)
+        attachments = (
+            "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
+        )
+        return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(
+            time=time,
+            user=user,
+            line_break="\n" if line_break else "",
+            message=msg.clean_content if clean else msg.content,
+            attachments=attachments,
+        )
 
     @bot.util
     def msg_jumpto(ctx, msg):
-        return "https://discordapp.com/channels/{}/{}/{}".format(msg.server.id if msg.server else "@me", msg.channel.id, msg.id)
+        return "https://discordapp.com/channels/{}/{}/{}".format(
+            msg.server.id if msg.server else "@me", msg.channel.id, msg.id
+        )
 
     @bot.util
     async def get_avatar(ctx, user):
         if user.avatar:
             dancingpictures = "gif" if user.avatar.startswith("a_") else "png"
-            avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(user.id, user.avatar, dancingpictures)
+            avlink = "https://cdn.discordapp.com/avatars/{}/{}.{}?size=2048".format(
+                user.id, user.avatar, dancingpictures
+            )
         else:
             avlink = user.default_avatar_url
         return avlink
@@ -325,7 +397,7 @@ def load_into(bot):
     @bot.util
     async def has_mod(ctx, user):
         (code, msg) = await ctx.CH.checks["in_server_has_mod"](ctx)
-        return (code == 0)
+        return code == 0
 
     @bot.util
     def is_master(ctx, user):
@@ -333,15 +405,21 @@ def load_into(bot):
 
     @bot.util
     def is_exec(ctx, user):
-        return ctx.is_master(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("execWhiteList"))
+        return ctx.is_master(user) or (
+            int(user.id) in ctx.bot.bot_conf.getintlist("execWhiteList")
+        )
 
     @bot.util
     def is_dev(ctx, user):
-        return ctx.is_exec(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("developers"))
+        return ctx.is_exec(user) or (
+            int(user.id) in ctx.bot.bot_conf.getintlist("developers")
+        )
 
     @bot.util
     def is_manager(ctx, user):
-        return ctx.is_dev(user) or (int(user.id) in ctx.bot.bot_conf.getintlist("managers"))
+        return ctx.is_dev(user) or (
+            int(user.id) in ctx.bot.bot_conf.getintlist("managers")
+        )
 
     @bot.util
     async def offer_delete(ctx, out_msg, to_delete=None):
@@ -350,30 +428,40 @@ def load_into(bot):
         mod_role = await ctx.server_conf.mod_role.get(ctx) if ctx.server else None
 
         if ctx.server:
+
             def check(reaction, user):
                 if user == ctx.me:
                     return False
                 result = user == ctx.author
-                result = result or (mod_role and mod_role in [role.id for role in user.roles])
+                result = result or (
+                    mod_role and mod_role in [role.id for role in user.roles]
+                )
                 result = result or user.server_permissions.administrator
                 result = result or user.server_permissions.manage_messages
                 result = result or user == ctx.server.owner
                 return result
+
         else:
+
             def check(reaction, user):
                 return user == ctx.author
+
         try:
             await ctx.bot.add_reaction(out_msg, ctx.bot.objects["emoji_delete"])
         except discord.Forbidden:
             return
 
-        res = await ctx.bot.wait_for_reaction(message=out_msg,
-                                              emoji=ctx.bot.objects["emoji_delete"],
-                                              check=check,
-                                              timeout=300)
+        res = await ctx.bot.wait_for_reaction(
+            message=out_msg,
+            emoji=ctx.bot.objects["emoji_delete"],
+            check=check,
+            timeout=300,
+        )
         if res is None:
             try:
-                await ctx.bot.remove_reaction(out_msg, ctx.bot.objects["emoji_delete"], ctx.me)
+                await ctx.bot.remove_reaction(
+                    out_msg, ctx.bot.objects["emoji_delete"], ctx.me
+                )
             except Exception:
                 pass
         elif res.reaction.emoji == ctx.bot.objects["emoji_delete"]:
@@ -429,7 +517,7 @@ def load_into(bot):
                 blocks.append(text)
                 break
 
-            split_on = text[0:blocksize].rfind('\n')
+            split_on = text[0:blocksize].rfind("\n")
             split_on = blocksize if split_on == -1 else split_on
 
             blocks.append(text[0:split_on])

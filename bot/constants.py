@@ -22,7 +22,7 @@ region_map = {
     "frankfurt": "Frankfurt",
     "south-korea": "South Korea",
     "london": "London",
-    "amsterdam": "Amsterdam"
+    "amsterdam": "Amsterdam",
 }
 
 sorted_cats = [
@@ -36,16 +36,16 @@ sorted_cats = [
     "Moderation",
     "Mathematics",
     "Meta",
-    "Misc"
+    "Misc",
 ]
 
 sorted_conf_pages = [
     ("General", ["Guild settings", "Starboard", "LaTeX"]),
     ("Manual Moderation", ["Moderation", "Logging"]),
-    ("Join/Leave Messages", ["Join message", "Leave message"])
+    ("Join/Leave Messages", ["Join message", "Leave message"]),
 ]
 
 ParaCC = {
     "purple": discord.Colour(int("7927eb", 16)),
-    "blue": discord.Colour(int("00a7fe", 16))
+    "blue": discord.Colour(int("00a7fe", 16)),
 }

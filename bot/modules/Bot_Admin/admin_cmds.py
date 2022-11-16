@@ -28,24 +28,24 @@ Commands provided:
         View the source of the specified command.
 """
 
-status_dict = {"online": discord.Status.online,
-               "offline": discord.Status.offline,
-               "idle": discord.Status.idle,
-               "dnd": discord.Status.dnd,
-               "invisible": discord.Status.invisible}
+status_dict = {
+    "online": discord.Status.online,
+    "offline": discord.Status.offline,
+    "idle": discord.Status.idle,
+    "dnd": discord.Status.dnd,
+    "invisible": discord.Status.invisible,
+}
 
 
 activity_dict = {
     "playing": discord.ActivityType.playing,
     "streaming": discord.ActivityType.streaming,
     "listening": discord.ActivityType.listening,
-    "watching": discord.ActivityType.watching
+    "watching": discord.ActivityType.watching,
 }
 
 
-@module.cmd("shutdown",
-            desc="Shut down the client.",
-            aliases=["restart"])
+@module.cmd("shutdown", desc="Shut down the client.", aliases=["restart"])
 @is_manager()
 async def cmd_shutdown(ctx: Context):
     """
@@ -60,10 +60,12 @@ async def cmd_shutdown(ctx: Context):
     await ctx.client.logout()
 
 
-@module.cmd("setinfo",
-            desc="Set my game, avatar, and status",
-            aliases=["status", "setgame", "setstatus"],
-            flags=["type=", "desc==", "url==", "avatar==", "status="])
+@module.cmd(
+    "setinfo",
+    desc="Set my game, avatar, and status",
+    aliases=["status", "setgame", "setstatus"],
+    flags=["type=", "desc==", "url==", "avatar==", "status="],
+)
 @is_manager()
 async def cmd_setgame(ctx: Context, flags):
     """
@@ -95,21 +97,24 @@ async def cmd_setgame(ctx: Context, flags):
     activity = None
     if flags["desc"] or flags["type"]:
         activity = discord.Activity(
-            type=activity_dict[flags["type"]] if flags["type"] else discord.ActivityType.playing,
+            type=activity_dict[flags["type"]]
+            if flags["type"]
+            else discord.ActivityType.playing,
             name=flags["desc"] or None,
-            url=flags["url"] or None
+            url=flags["url"] or None,
         )
 
     # Change the presence
     if flags["status"] or activity:
-        await ctx.client.change_presence(status=flags["status"] or None, activity=activity)
+        await ctx.client.change_presence(
+            status=flags["status"] or None, activity=activity
+        )
 
     # Inform the user
     await ctx.reply("Updated!")
 
 
-@module.cmd("dm",
-            desc="Sends a direct message to a user, if possible.")
+@module.cmd("dm", desc="Sends a direct message to a user, if possible.")
 @is_master()
 async def cmd_dm(ctx: Context):
     """
@@ -149,8 +154,7 @@ async def cmd_dm(ctx: Context):
         await ctx.reply("Message sent!")
 
 
-@module.cmd("logs",
-            desc="Read and return the bot logs.")
+@module.cmd("logs", desc="Read and return the bot logs.")
 @is_master()
 async def cmd_logs(ctx: Context):
     """
@@ -160,7 +164,7 @@ async def cmd_logs(ctx: Context):
         Sends the logfile or the last `<lines>` lines of the log.
     """
     # Get the path to the log file from config
-    logpath = ctx.client.conf.get('LOGFILE')
+    logpath = ctx.client.conf.get("LOGFILE")
 
     if not ctx.args:
         # Attempt to send the logfile
@@ -168,7 +172,9 @@ async def cmd_logs(ctx: Context):
         try:
             await ctx.reply(file=logfile)
         except discord.HTTPException:
-            await ctx.error_reply("Could not send the logfile. Perhaps it was too large?")
+            await ctx.error_reply(
+                "Could not send the logfile. Perhaps it was too large?"
+            )
     else:
         # Retrieve the number of lines to send
         if not ctx.args.isdigit():
@@ -182,15 +188,14 @@ async def cmd_logs(ctx: Context):
         await ctx.pager(split_text(logs))
 
 
-@module.cmd("showcmd",
-            desc="Shows the source of a command.")
+@module.cmd("showcmd", desc="Shows the source of a command.")
 @is_master()
 async def cmd_showcmd(ctx: Context):
     """
-        Usage:
-            {prefix}showcmd <name>
-        Description:
-            Replies with the source for the specified command.
+    Usage:
+        {prefix}showcmd <name>
+    Description:
+        Replies with the source for the specified command.
     """
     if not ctx.arg_str:
         return await ctx.error_reply("Please provide a command name.")
@@ -202,7 +207,7 @@ async def cmd_showcmd(ctx: Context):
 
     cmd_func = command.func
     source = inspect.getsource(cmd_func)
-    source = source.replace('```', '[codeblock]')
-    blocks = split_text(source, 1800, syntax='python')
+    source = source.replace("```", "[codeblock]")
+    blocks = split_text(source, 1800, syntax="python")
 
     await ctx.offer_delete(await ctx.pager(blocks, locked=False))

@@ -19,10 +19,12 @@ async def giverole(ctx, role, **kwargs):
     return 0
 
 
-@cmds.cmd("giverole",
-          category="Moderation",
-          short_help="Give role(s) to a member",
-          aliases=["gr"])
+@cmds.cmd(
+    "giverole",
+    category="Moderation",
+    short_help="Give role(s) to a member",
+    aliases=["gr"],
+)
 @cmds.require("in_server")
 @cmds.require("in_server_has_mod")
 @cmds.execute("user_lookup", in_server=True)
@@ -44,14 +46,24 @@ async def cmd_giverole(ctx):
     if not user:
         await ctx.reply("No users matching that criteria were found.")
         return
-    await multi_action(ctx, ctx.params[1:], giverole, role_finder, role_result, "Adding Roles to `{}`...\n".format(user.name), user=user)
+    await multi_action(
+        ctx,
+        ctx.params[1:],
+        giverole,
+        role_finder,
+        role_result,
+        "Adding Roles to `{}`...\n".format(user.name),
+        user=user,
+    )
 
 
-@cmds.cmd("rolemod",
-          category="Moderation",
-          short_help="Modify role(s) for member(s)!",
-          aliases=["rmod"],
-          flags=["add==", "remove=="])
+@cmds.cmd(
+    "rolemod",
+    category="Moderation",
+    short_help="Modify role(s) for member(s)!",
+    aliases=["rmod"],
+    flags=["add==", "remove=="],
+)
 @cmds.require("in_server")
 @cmds.require("in_server_has_mod")
 async def cmd_rolemod(ctx):
@@ -66,23 +78,23 @@ async def cmd_rolemod(ctx):
         {prefix}rmod {msg.author.name} --add Owner, root --remove bots, member
         {prefix}rmod {msg.author.name} +Owner, root -bots, member
     """
-    if ctx.flags['add'] or ctx.flags['remove']:
+    if ctx.flags["add"] or ctx.flags["remove"]:
         userblock = ctx.arg_str
-        addblock = ctx.flags['add']
-        negblock = ctx.flags['remove']
+        addblock = ctx.flags["add"]
+        negblock = ctx.flags["remove"]
     else:
-        searchstr = ctx.arg_str + '+-'
-        plusi = searchstr.index('+')
-        remi = searchstr.index('-')
+        searchstr = ctx.arg_str + "+-"
+        plusi = searchstr.index("+")
+        remi = searchstr.index("-")
         mini = min(plusi, remi)
 
         userblock = searchstr[:mini]
-        remainder = searchstr[mini+1:-2]
+        remainder = searchstr[mini + 1 : -2]
 
         if mini == plusi:
-            addblock, _, negblock = remainder.partition('-')
+            addblock, _, negblock = remainder.partition("-")
         else:
-            negblock, _, addblock = remainder.partition('+')
+            negblock, _, addblock = remainder.partition("+")
 
     users = [user.strip() for user in userblock.split(",") if user.strip()]
     rolestrs = [(1, role.strip()) for role in addblock.split(",")]
@@ -118,16 +130,27 @@ async def cmd_rolemod(ctx):
             if i >= len(real_users):
                 started = True
                 user_lines.append("\tIdentifying `{}`".format(users[i]))
-                await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
+                await ctx.bot.edit_message(
+                    out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines)
+                )
                 user = await ctx.find_user(users[i], in_server=True, interactive=True)
                 real_users.append(user)
                 if user is None:
                     if ctx.cmd_err[0] != -1:
-                        user_lines[i] = "\t🚨 Couldn't find user `{}`, skipping".format(users[i])
+                        user_lines[i] = "\t🚨 Couldn't find user `{}`, skipping".format(
+                            users[i]
+                        )
                     else:
-                        user_lines[i] = "\t🗑 User selection aborted for `{}`, skipping".format(users[i])
+                        user_lines[
+                            i
+                        ] = "\t🗑 User selection aborted for `{}`, skipping".format(
+                            users[i]
+                        )
                         ctx.cmd_err = (0, "")
-                    await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
+                    await ctx.bot.edit_message(
+                        out_msg,
+                        "{}{}{}".format(intro, "\n".join(user_lines), error_lines),
+                    )
                     continue
             if real_users[i] is None:
                 continue
@@ -137,16 +160,27 @@ async def cmd_rolemod(ctx):
             try:
                 if role[0] > 0:
                     await ctx.bot.add_roles(user, role[1])
-                    user_lines[i] += "{}`+{}`".format("" if started else ", ", role[1].name)
+                    user_lines[i] += "{}`+{}`".format(
+                        "" if started else ", ", role[1].name
+                    )
                 else:
                     await ctx.bot.remove_roles(user, role[1])
-                    user_lines[i] += "{}`-{}`".format("" if started else ", ", role[1].name)
+                    user_lines[i] += "{}`-{}`".format(
+                        "" if started else ", ", role[1].name
+                    )
             except discord.Forbidden:
                 if not error_lines:
                     error_lines = "\nErrors:\n"
-                error_lines += ("\tI don't have permissions to {} `{}`!\n".format("add role `{}` to".format(role[1].name) if role[0] > 0 else "remove role `{}` from".format(role[1].name), user))
+                error_lines += "\tI don't have permissions to {} `{}`!\n".format(
+                    "add role `{}` to".format(role[1].name)
+                    if role[0] > 0
+                    else "remove role `{}` from".format(role[1].name),
+                    user,
+                )
                 await asyncio.sleep(1)
-            await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
+            await ctx.bot.edit_message(
+                out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines)
+            )
 
 
 def load_into(bot):

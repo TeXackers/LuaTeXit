@@ -33,8 +33,8 @@ class modrole(ColumnData, Role, GuildSetting):
 # Define data schema
 schema = tableSchema(
     "guild_modroles",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('roleid', ColumnType.SNOWFLAKE, primary=False, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("roleid", ColumnType.SNOWFLAKE, primary=False, required=True),
 )
 
 
@@ -43,5 +43,5 @@ schema = tableSchema(
 def attach_modrole_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_modroles"
+        "guild_modroles",
     )

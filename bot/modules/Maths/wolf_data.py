@@ -37,8 +37,8 @@ class guild_wolfid(ColumnData, String, GuildSetting):
 # Define data schema
 schema = tableSchema(
     "guild_wolfram_appid",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('appid', ColumnType.SHORTSTRING)
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("appid", ColumnType.SHORTSTRING),
 )
 
 
@@ -47,5 +47,5 @@ schema = tableSchema(
 def attach_wolf_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_wolfram_appid"
+        "guild_wolfram_appid",
     )

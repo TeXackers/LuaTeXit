@@ -9,6 +9,7 @@ server_conf = Conf("s_conf")
 
 class Server_Setting(paraSetting):
     long_setting = False  # Whether the setting is stored as a long string or not
+
     @classmethod
     async def read(cls, ctx):
         if cls.long_setting:
@@ -49,8 +50,7 @@ class Server_Setting_Starboard(Server_Setting, settingTypes.BOOL):
     category = "Starboard"
     default = False
 
-    outputs = {True: "Enabled",
-               False: "Disabled"}
+    outputs = {True: "Enabled", False: "Disabled"}
 
     @classmethod
     async def write(cls, ctx, value):
@@ -74,6 +74,7 @@ class Server_Setting_StarChan(Server_Setting, settingTypes.CHANNEL):
     category = "Starboard"
     default = None
 
+
 @server_conf.setting
 class Server_Setting_StarThresh(Server_Setting, settingTypes.INT):
     name = "starboard_threshold"
@@ -81,6 +82,7 @@ class Server_Setting_StarThresh(Server_Setting, settingTypes.INT):
     desc = "Minimum stars a message must have to be posted in the starboard channel"
     category = "Starboard"
     default = 2
+
 
 @server_conf.setting
 class Server_Setting_StarEmoji(Server_Setting, settingTypes.EMOJI):
@@ -153,10 +155,11 @@ class Server_Setting_Clean_Channels(Server_Setting, settingTypes.CHANNELLIST):
     async def write(cls, ctx, value):
         result = await super().write(ctx, value)
         cleaned = ctx.bot.objects["cleaned_channels"]
-        if (ctx.cmd_err and ctx.cmd_err[0] != 0):
+        if ctx.cmd_err and ctx.cmd_err[0] != 0:
             return
         cleaned[ctx.server.id] = value if value else []
         return result
+
 
 # Moderation settings
 
@@ -178,8 +181,7 @@ class Server_Setting_role_persistence(Server_Setting, settingTypes.BOOL):
     default = True
     category = "Moderation"
 
-    outputs = {True: "Enabled",
-               False: "Disabled"}
+    outputs = {True: "Enabled", False: "Disabled"}
 
 
 @server_conf.setting
@@ -203,10 +205,11 @@ class Server_Setting_Channel_Blacklist(Server_Setting, settingTypes.CHANNELLIST)
     async def write(cls, ctx, value):
         result = await super().write(ctx, value)
         blacklist = ctx.bot.objects["channel_blacklists"]
-        if (ctx.cmd_err and ctx.cmd_err[0] != 0):
+        if ctx.cmd_err and ctx.cmd_err[0] != 0:
             return
         blacklist[ctx.server.id] = value if value else []
         return result
+
 
 # Logging settings
 
@@ -255,6 +258,7 @@ class Server_Setting_userlog_ignore(Server_Setting, settingTypes.MEMBERLIST):
     default = None
     category = "Logging"
 
+
 # Join and leave message settings
 
 
@@ -298,6 +302,7 @@ class Server_Setting_Leave_Ch(Server_Setting, settingTypes.CHANNEL):
 
 # Maths related settings
 
+
 @server_conf.setting
 class Server_Setting_Latex_Listen(Server_Setting, settingTypes.BOOL):
     name = "latex_listen_enabled"
@@ -306,8 +311,7 @@ class Server_Setting_Latex_Listen(Server_Setting, settingTypes.BOOL):
     default = False
     category = "Mathematical settings"
 
-    outputs = {True: "Enabled",
-               False: "Disabled"}
+    outputs = {True: "Enabled", False: "Disabled"}
 
     @classmethod
     async def write(cls, ctx, value):
@@ -315,7 +319,9 @@ class Server_Setting_Latex_Listen(Server_Setting, settingTypes.BOOL):
         listens = ctx.bot.objects["server_tex_listeners"]
         if not (ctx.cmd_err and ctx.cmd_err[0] != 0):
             if value:
-                channels = await ctx.bot.data.servers.get(ctx.server.id, "maths_channels")
+                channels = await ctx.bot.data.servers.get(
+                    ctx.server.id, "maths_channels"
+                )
                 listens[str(ctx.server.id)] = channels if channels else []
             else:
                 listens.pop(ctx.server.id)
@@ -340,7 +346,7 @@ class Server_Setting_Maths_Channels(Server_Setting, settingTypes.CHANNELLIST):
     async def write(cls, ctx, value):
         result = await super().write(ctx, value)
         listens = ctx.bot.objects["server_tex_listeners"]
-        if (ctx.cmd_err and ctx.cmd_err[0] != 0):
+        if ctx.cmd_err and ctx.cmd_err[0] != 0:
             return
         listens[ctx.server.id] = value if value else []
         return result

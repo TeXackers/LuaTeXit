@@ -12,9 +12,11 @@ from .core.LatexGuild import LatexGuild
 from constants import ParaCC
 
 
-@module.cmd("texconfig",
-            desc="View or modify your personal LaTeX rendering options.",
-            aliases=['texflags', 'tc'])
+@module.cmd(
+    "texconfig",
+    desc="View or modify your personal LaTeX rendering options.",
+    aliases=["texflags", "tc"],
+)
 async def cmd_texconfig(ctx):
     """
     Usage``:
@@ -64,11 +66,10 @@ async def cmd_texconfig(ctx):
                     ctx.client,
                     ctx.author.id,
                     luser.settings[name]._data_from_value(
-                        ctx.client,
-                        ctx.author.id,
-                        getattr(luser, name)
-                    )
-                ) for name in properties
+                        ctx.client, ctx.author.id, getattr(luser, name)
+                    ),
+                )
+                for name in properties
             ]
         setting_table = prop_tabulate(properties, values)
 
@@ -99,18 +100,20 @@ async def cmd_texconfig(ctx):
                         "No personal preamble, using the custom guild preamble with `{}` lines."
                     ).format(len(lguild.preamble.splitlines()))
                 else:
-                    preamble_field = (
-                        "No personal or guild preamble, using the global default preamble."
-                    )
+                    preamble_field = "No personal or guild preamble, using the global default preamble."
 
-            preamble_field += "\nUse `{}preamble` to view or modify your preamble!".format(ctx.best_prefix())
+            preamble_field += (
+                "\nUse `{}preamble` to view or modify your preamble!".format(
+                    ctx.best_prefix()
+                )
+            )
 
         # We have all the components, build the embed and post
         embed = discord.Embed(
             title="Personal LaTeX configuration.",
             description=desc,
             timestamp=datetime.utcnow(),
-            color=ParaCC["purple"]
+            color=ParaCC["purple"],
         )
         embed.add_field(name="Preamble", value=preamble_field)
 
@@ -129,13 +132,14 @@ async def cmd_texconfig(ctx):
 
         # Retrieve the corresponding setting, if possible
         if option == "preamble":
-            return await ctx.error_reply("Use the `preamble` command to view or modify your preamble.")
+            return await ctx.error_reply(
+                "Use the `preamble` command to view or modify your preamble."
+            )
         elif option not in luser.settings:
             return await ctx.error_reply(
                 "I don't recognise the option `{}`. "
                 "Use `{}texconfig` to see the list of options.".format(
-                    option,
-                    ctx.best_prefix()
+                    option, ctx.best_prefix()
                 )
             )
         else:
@@ -150,9 +154,11 @@ async def cmd_texconfig(ctx):
             await setting.user_set(ctx, valuestr)
 
 
-@module.cmd("autotex",
-            desc="Toggle whether your LaTeX is automatically rendered.",
-            aliases=['texlisten'])
+@module.cmd(
+    "autotex",
+    desc="Toggle whether your LaTeX is automatically rendered.",
+    aliases=["texlisten"],
+)
 async def cmd_autotex(ctx):
     """
     Usage``:
@@ -181,41 +187,48 @@ async def cmd_autotex(ctx):
     luser = LatexUser.get(ctx.author.id)
 
     largs = ctx.args.lower()
-    if not largs or largs in ['on', 'off']:
+    if not largs or largs in ["on", "off"]:
         # No arguments, toggle the user's listening setting.
-        if largs == 'off' or (not largs and luser.autotex):
+        if largs == "off" or (not largs and luser.autotex):
             luser.settings["autotex"].save(ctx.client, ctx.author.id, False)
             await ctx.reply(
                 "You have *disabled* personal automatic LaTeX compilation.\n"
                 "Please be aware that LaTeX will still be rendered in guilds "
                 "with the `latex` setting enabled.\n"
-                "See `{}help autotex` for more information about automatic compilation.".format(ctx.best_prefix())
+                "See `{}help autotex` for more information about automatic compilation.".format(
+                    ctx.best_prefix()
+                )
             )
-        elif largs == 'on' or not (largs or luser.autotex):
+        elif largs == "on" or not (largs or luser.autotex):
             luser.settings["autotex"].save(ctx.client, ctx.author.id, True)
             await ctx.reply(
                 "You have *enabled* personal automatic LaTeX compilation, "
                 "with LaTeX recognition level `{}`.\n"
                 "Please be aware that automatic compilation may be restricted by guild settings.\n"
                 "See `{}help autotex` for more information about automatic compilation.".format(
-                    luser.autotex_level.name,
-                    ctx.best_prefix()
+                    luser.autotex_level.name, ctx.best_prefix()
                 )
             )
-    elif largs in ['codeblock', 'strict', 'weak']:
+    elif largs in ["codeblock", "strict", "weak"]:
         if not luser.autotex:
             luser.settings["autotex"].save(ctx.client, ctx.author.id, True)
         luser.settings["autotex_level"].save(
             ctx.client,
             ctx.author.id,
-            await luser.settings["autotex_level"]._parse_userstr(ctx, ctx.author.id, largs)
+            await luser.settings["autotex_level"]._parse_userstr(
+                ctx, ctx.author.id, largs
+            ),
         )
 
         await ctx.reply(
-            "You have enabled personal automatic LaTeX compilation with recognition level `{}`.".format(largs.upper())
+            "You have enabled personal automatic LaTeX compilation with recognition level `{}`.".format(
+                largs.upper()
+            )
         )
     else:
         await ctx.error_reply(
             "Unrecognised compilation level `{}`.\n"
-            "See `{}texconfig autotex_level` for the valid options.".format(largs, ctx.best_prefix())
+            "See `{}texconfig autotex_level` for the valid options.".format(
+                largs, ctx.best_prefix()
+            )
         )

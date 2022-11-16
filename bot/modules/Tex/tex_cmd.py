@@ -6,10 +6,20 @@ from .core.LatexUser import LatexUser
 from .core.tex_utils import ParseMode
 
 
-@module.cmd("tex",
-            desc="Render LaTeX code.",
-            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz', 'luatex', 'xetex'],
-            flags=['config', 'keepsourcefor', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
+@module.cmd(
+    "tex",
+    desc="Render LaTeX code.",
+    aliases=[",", "mtex", "align", "latex", "texsp", "texw", "tikz", "luatex", "xetex"],
+    flags=[
+        "config",
+        "keepsourcefor",
+        "color",
+        "colour",
+        "alwaysmath",
+        "allowother",
+        "name",
+    ],
+)
 async def cmd_tex(ctx, flags):
     """
     Usage``:
@@ -69,12 +79,12 @@ async def cmd_tex(ctx, flags):
         )
 
     # Handle empty and erroneous input
-    if ctx.alias == ',':
-        if not ctx.args.strip(','):
+    if ctx.alias == ",":
+        if not ctx.args.strip(","):
             # We shouldn't respond to any number of ',' characters on their own.
             return
     elif not ctx.args:
-        if ctx.alias == ',':
+        if ctx.alias == ",":
             # `,,` on its own might easily not be referring to us.
             return
         # else:
@@ -87,8 +97,10 @@ async def cmd_tex(ctx, flags):
         #     )
 
     # Handle `tex help`
-    if ctx.args.lower() in ['help', '--help']:
-        return await ctx.error_reply("Please use `{}help tex` for command help.".format(ctx.best_prefix()))
+    if ctx.args.lower() in ["help", "--help"]:
+        return await ctx.error_reply(
+            "Please use `{}help tex` for command help.".format(ctx.best_prefix())
+        )
 
     # TODO: Warning about \begin{document} and \documentclass
     # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
@@ -110,13 +122,13 @@ async def cmd_tex(ctx, flags):
     parse_mode = ParseMode.DOCUMENT
 
     lalias = ctx.alias.lower()
-    if lalias in [',', 'mtex']:
+    if lalias in [",", "mtex"]:
         parse_mode = ParseMode.GATHER
-    elif lalias == 'align':
+    elif lalias == "align":
         parse_mode = ParseMode.ALIGN
-    elif lalias == 'tikz':
+    elif lalias == "tikz":
         parse_mode = ParseMode.TIKZ
-    elif lalias == 'texsp':
+    elif lalias == "texsp":
         flags["spoiler"] = True
     elif lalias == "texw":
         flags["wide"] = True
@@ -134,20 +146,21 @@ async def cmd_tex(ctx, flags):
             "\\`\\`\\`tex\ncode\n\\`\\`\\`"
         )
 
-    if ctx.alias == 'luatex':
+    if ctx.alias == "luatex":
 
         # Create the LatexContext
         lctx = LatexContext(ctx, source, lguild, luser, **flags)
-        
+
         # Make the LaTeX using lutexcompile.sh
         await lctx.luatexmake()
 
         # Keep the command alive until the latex context dies
         await lctx.lifetime()
+
     elif ctx.alias == "xetex":
         # Create the LatexContext
         lctx = LatexContext(ctx, source, lguild, luser, **flags)
-        
+
         # Make the LaTeX using xetexcompile.sh
         await lctx.xetexmake()
 

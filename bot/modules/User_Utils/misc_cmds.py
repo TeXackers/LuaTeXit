@@ -3,6 +3,7 @@ import string
 
 import discord
 import aiohttp
+
 # from pytz import timezone
 
 from utils import seekers  # noqa
@@ -13,8 +14,7 @@ from wards import in_guild
 from .module import utils_module as module
 
 
-@module.cmd("echo",
-            desc="Sends what you tell me to!")
+@module.cmd("echo", desc="Sends what you tell me to!")
 async def cmd_echo(ctx):
     """
     Usage``:
@@ -25,12 +25,13 @@ async def cmd_echo(ctx):
         (Note: This command may be disabled with `{prefix}disablecmd echo`.)
     """
     await ctx.reply(
-        discord.utils.escape_mentions(ctx.args) if ctx.args else "I can't send an empty message!"
+        discord.utils.escape_mentions(ctx.args)
+        if ctx.args
+        else "I can't send an empty message!"
     )
 
 
-@module.cmd("secho",
-            desc="Deletes your message and echos it.")
+@module.cmd("secho", desc="Deletes your message and echos it.")
 async def cmd_secho(ctx):
     """
     Usage``:
@@ -49,12 +50,13 @@ async def cmd_secho(ctx):
         pass
 
     await ctx.reply(
-        discord.utils.escape_mentions(ctx.args) if ctx.args else "I can't send an empty message!"
+        discord.utils.escape_mentions(ctx.args)
+        if ctx.args
+        else "I can't send an empty message!"
     )
 
 
-@module.cmd("jumpto",
-            desc="Finds the given messageid and generates a jump link.")
+@module.cmd("jumpto", desc="Finds the given messageid and generates a jump link.")
 @in_guild()
 async def cmd_jumpto(ctx):
     """
@@ -75,7 +77,9 @@ async def cmd_jumpto(ctx):
     # Placeholder output
     embed = discord.Embed(
         colour=discord.Colour.green(),
-        description="Searching for message {}".format(ctx.client.conf.emojis.getemoji("loading"))
+        description="Searching for message {}".format(
+            ctx.client.conf.emojis.getemoji("loading")
+        ),
     )
     out_msg = await ctx.reply(embed=embed)
 
@@ -104,9 +108,7 @@ async def cmd_jumpto(ctx):
         await ctx.reply(embed=embed)
 
 
-@module.cmd("quote",
-            desc="Quotes a message by ID.",
-            flags=['a', 'r'])
+@module.cmd("quote", desc="Quotes a message by ID.", flags=["a", "r"])
 @in_guild()
 async def cmd_quote(ctx, flags):
     """
@@ -130,7 +132,9 @@ async def cmd_quote(ctx, flags):
     # Placeholder output
     embed = discord.Embed(
         colour=discord.Colour.green(),
-        description="Searching for message {}".format(ctx.client.conf.emojis.getemoji("loading"))
+        description="Searching for message {}".format(
+            ctx.client.conf.emojis.getemoji("loading")
+        ),
     )
     out_msg = await ctx.reply(embed=embed)
 
@@ -155,21 +159,29 @@ async def cmd_quote(ctx, flags):
         except discord.NotFound:
             await ctx.reply(embed=embed)
     else:
-        quote_content = message.content.replace("```", "[CODEBLOCK]") if flags['r'] else message.content
+        quote_content = (
+            message.content.replace("```", "[CODEBLOCK]")
+            if flags["r"]
+            else message.content
+        )
 
         header = "[Click to jump to message]({})".format(message.jump_url)
-        blocks = split_text(quote_content, 1000, code=flags['r'])
+        blocks = split_text(quote_content, 1000, code=flags["r"])
 
         embeds = []
         for block in blocks:
             desc = header + "\n" + block
-            embed = discord.Embed(colour=discord.Colour.light_grey(),
-                                  description=desc,
-                                  timestamp=message.created_at)
+            embed = discord.Embed(
+                colour=discord.Colour.light_grey(),
+                description=desc,
+                timestamp=message.created_at,
+            )
 
             if not flags["a"]:
-                embed.set_author(name="{user.name}".format(user=message.author),
-                                 icon_url=message.author.avatar_url)
+                embed.set_author(
+                    name="{user.name}".format(user=message.author),
+                    icon_url=message.author.avatar_url,
+                )
             embed.set_footer(text="Sent in #{}".format(message.channel.name))
             if message.attachments:
                 embed.set_image(url=message.attachments[0].proxy_url)
@@ -185,9 +197,11 @@ async def cmd_quote(ctx, flags):
             await ctx.pager(embeds, locked=False)
 
 
-@module.cmd("invitebot",
-            desc="Generates a bot invite link for a given bot or botid.",
-            aliases=["ibot"])
+@module.cmd(
+    "invitebot",
+    desc="Generates a bot invite link for a given bot or botid.",
+    aliases=["ibot"],
+)
 async def cmd_invitebot(ctx):
     """
     Usage``:
@@ -209,37 +223,37 @@ async def cmd_invitebot(ctx):
             return
         userid = user.id
     else:
-        return ctx.error_reply("Please supply a bot client id to get the invite link for.")
+        return ctx.error_reply(
+            "Please supply a bot client id to get the invite link for."
+        )
 
-    invite_link = "<https://discordapp.com/api/oauth2/authorize?client_id={}&permissions=0&scope=bot>".format(userid)
+    invite_link = "<https://discordapp.com/api/oauth2/authorize?client_id={}&permissions=0&scope=bot>".format(
+        userid
+    )
 
     if userid == ctx.author.id:
-        await ctx.reply('Hey, do you want to come hang out?')
+        await ctx.reply("Hey, do you want to come hang out?")
     elif userid == ctx.client.user.id:
         await ctx.reply(
             "Sure, I would love to!\n"
             "My official invite link is: {}\n"
             "If you don't want to invite me with my usual permissions, you can also use:\n"
-            "{}".format(
-                ctx.client.app_info['invite_link'],
-                invite_link
-            )
+            "{}".format(ctx.client.app_info["invite_link"], invite_link)
         )
     elif user is not None and not user.bot:
-        await ctx.reply(
-            "Maybe you could try asking them nicely?"
-        )
+        await ctx.reply("Maybe you could try asking them nicely?")
     else:
         await ctx.reply(
-            "Permissionless invitelink for `{}`:\n"
-            "{}".format(userid, invite_link)
+            "Permissionless invitelink for `{}`:\n" "{}".format(userid, invite_link)
         )
 
 
-@module.cmd("piggybank",
-            desc="Keep track of money added towards a goal.",
-            aliases=["bank"],
-            disabled=True)
+@module.cmd(
+    "piggybank",
+    desc="Keep track of money added towards a goal.",
+    aliases=["bank"],
+    disabled=True,
+)
 async def cmd_piggybank(ctx):
     """
     Sorry!:
@@ -255,9 +269,13 @@ async def cmd_piggybank(ctx):
         Or with no arguments, lists your current amount and progress to the goal.
     """
     await ctx.reply(
-        embed=discord.Embed(title="Sorry!",
-                            description="`piggybank` has been temporarily disabled pending the next update.")
+        embed=discord.Embed(
+            title="Sorry!",
+            description="`piggybank` has been temporarily disabled pending the next update.",
+        )
     )
+
+
 #     bank_amount = await ctx.data.users.get(ctx.authid, "piggybank_amount")
 #     transactions = await ctx.data.users_long.get(ctx.authid, "piggybank_history")
 #     goal = await ctx.data.users.get(ctx.authid, "piggybank_goal")
@@ -332,9 +350,7 @@ async def cmd_piggybank(ctx):
 #         await ctx.reply("Usage: {}piggybank [+|- <amount>] | [list] | [goal <amount>|none]".format(ctx.used_prefix))
 
 
-@module.cmd("colour",
-            desc="Displays information about a colour.",
-            aliases=["color"])
+@module.cmd("colour", desc="Displays information about a colour.", aliases=["color"])
 async def cmd_colour(ctx):
     """
     Usage``:
@@ -357,44 +373,56 @@ async def cmd_colour(ctx):
                 js = await r.json()
                 inverted = col_invert(hexstr)
                 prop_list = ["rgb", "hsl", "hsv", "cmyk", "XYZ"]
-                value_list = [js[prop]["value"][len(prop):] for prop in prop_list]
+                value_list = [js[prop]["value"][len(prop) :] for prop in prop_list]
                 desc = prop_tabulate(prop_list, value_list)
                 embed = discord.Embed(
                     title="Colour info for `#{}`".format(hexstr),
                     color=discord.Colour(int(hexstr, 16)),
-                    description=desc
+                    description=desc,
                 )
                 embed.set_thumbnail(
-                    url="http://placehold.it/150x150.png/{}/{}?text={}".format(hexstr, inverted, "%23" + hexstr)
+                    url="http://placehold.it/150x150.png/{}/{}?text={}".format(
+                        hexstr, inverted, "%23" + hexstr
+                    )
                 )
                 embed.add_field(
                     name="Closest named colour",
-                    value="`{}` (Hex `{}`)".format(js["name"]["value"], js["name"]["closest_named_hex"])
+                    value="`{}` (Hex `{}`)".format(
+                        js["name"]["value"], js["name"]["closest_named_hex"]
+                    ),
                 )
                 await ctx.reply(embed=embed)
             else:
-                await ctx.error_reply("Sorry, something went wrong while fetching your colour! Please try again later")
+                await ctx.error_reply(
+                    "Sorry, something went wrong while fetching your colour! Please try again later"
+                )
                 return
 
 
 def col_invert(color_to_convert):
-    table = str.maketrans('0123456789abcdef', 'fedcba9876543210')
+    table = str.maketrans("0123456789abcdef", "fedcba9876543210")
     return color_to_convert.lower().translate(table).upper()
 
 
-@module.cmd("names",
-            desc="Lists previous recorded names for a user.",
-            aliases=["namesfor", "whowas"],
-            disabled=True)
+@module.cmd(
+    "names",
+    desc="Lists previous recorded names for a user.",
+    aliases=["namesfor", "whowas"],
+    disabled=True,
+)
 async def cmd_names(ctx):
     """
     Sorry!:
         Feature temporarily disabled pending the next update.
     """
     await ctx.reply(
-        embed=discord.Embed(title="Sorry!",
-                            description="Name recording has been temporarily disabled pending the next update.")
+        embed=discord.Embed(
+            title="Sorry!",
+            description="Name recording has been temporarily disabled pending the next update.",
+        )
     )
+
+
 #     """
 #     Usage:
 #         {prefix}names [user]

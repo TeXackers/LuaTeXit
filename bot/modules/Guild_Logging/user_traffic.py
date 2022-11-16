@@ -41,13 +41,15 @@ async def join_logger(client, member):
     # Extract the required user information
     colour = member.colour if member.colour.value else discord.Colour.green()
     name = "{} {} ({})".format(
-        member,
-        client.conf.emojis.getemoji("bot") if member.bot else "",
-        member.mention
+        member, client.conf.emojis.getemoji("bot") if member.bot else "", member.mention
     )
     activity = format_activity(member)
-    presence = "{} {}".format(client.conf.emojis.getemoji(member.status.name), statusnames[member.status])
-    created_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.created_at, minutes=True))
+    presence = "{} {}".format(
+        client.conf.emojis.getemoji(member.status.name), statusnames[member.status]
+    )
+    created_ago = "({} ago)".format(
+        strfdelta(datetime.utcnow() - member.created_at, minutes=True)
+    )
     created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     devicestatus = {
@@ -57,7 +59,9 @@ async def join_logger(client, member):
     }
     if any(devicestatus.values()):
         # String if the member is "online" on one or more devices.
-        device = "Active on **{}**".format(join_list(string=[k for k, v in devicestatus.items() if v], nfs=True))
+        device = "Active on **{}**".format(
+            join_list(string=[k for k, v in devicestatus.items() if v], nfs=True)
+        )
     else:
         # String if the user isn't "online" on any device.
         device = "Not active on any device"
@@ -65,11 +69,19 @@ async def join_logger(client, member):
     member_count = "{} Users, {} Bots | {} total".format(
         len([m for m in member.guild.members if not m.bot]),
         len([m for m in member.guild.members if m.bot]),
-        member.guild.member_count
+        member.guild.member_count,
     )
 
     # Build the log embed
-    prop_list = ["User", "Presence", "Activity", "Device", "Created at", "", "Member Count"]
+    prop_list = [
+        "User",
+        "Presence",
+        "Activity",
+        "Device",
+        "Created at",
+        "",
+        "Member Count",
+    ]
     value_list = [name, presence, activity, device, created, created_ago, member_count]
     desc = prop_tabulate(prop_list, value_list)
 
@@ -77,11 +89,11 @@ async def join_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now()
+        timestamp=datetime.now(),
     )
     embed.set_author(
-        name="New {usertype} joined!".format(usertype='bot' if member.bot else 'user'),
-        url=member.avatar_url
+        name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"),
+        url=member.avatar_url,
     )
     embed.set_thumbnail(url=member.avatar_url)
 
@@ -92,14 +104,14 @@ async def join_logger(client, member):
     except discord.NotFound:
         pass
     except Exception as e:
-        client.log("Failed to post joinlog for member '{}' (uid:{}) in guild '{} (gid:{})."
-                   " Exception: {}".format(member,
-                                           member.id,
-                                           member.guild.name,
-                                           member.guild.id,
-                                           e.__repr__()),
-                   context="POST_JOINLOG",
-                   level=logging.WARNING)
+        client.log(
+            "Failed to post joinlog for member '{}' (uid:{}) in guild '{} (gid:{})."
+            " Exception: {}".format(
+                member, member.id, member.guild.name, member.guild.id, e.__repr__()
+            ),
+            context="POST_JOINLOG",
+            level=logging.WARNING,
+        )
 
 
 # member departure log event handler
@@ -114,7 +126,9 @@ async def departure_logger(client, member):
     colour = discord.Colour.red()
     avatar = member.avatar_url
 
-    joined_ago = "({} ago)".format(strfdelta(datetime.utcnow() - member.joined_at, minutes=True))
+    joined_ago = "({} ago)".format(
+        strfdelta(datetime.utcnow() - member.joined_at, minutes=True)
+    )
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 
     roles = [r.mention for r in member.roles if not r.is_default()]
@@ -124,7 +138,7 @@ async def departure_logger(client, member):
     member_count = "{} Users, {} Bots | {} total".format(
         len([m for m in member.guild.members if not m.bot]),
         len([m for m in member.guild.members if m.bot]),
-        member.guild.member_count
+        member.guild.member_count,
     )
 
     prop_list = ["Member", "Joined at", "", "Roles", "Member count"]
@@ -135,11 +149,11 @@ async def departure_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now()
+        timestamp=datetime.now(),
     )
     embed.set_author(
-        name="{usertype} left!".format(usertype='Bot' if member.bot else 'User'),
-        url=avatar
+        name="{usertype} left!".format(usertype="Bot" if member.bot else "User"),
+        url=avatar,
     )
     embed.set_thumbnail(url=avatar)
 
@@ -150,21 +164,21 @@ async def departure_logger(client, member):
     except discord.NotFound:
         pass
     except Exception as e:
-        client.log("Failed to post departure log for member '{}' (uid:{}) in guild '{} (gid:{})."
-                   " Exception: {}".format(member,
-                                           member.id,
-                                           member.guild.name,
-                                           member.guild.id,
-                                           e.__repr__()),
-                   context="POST_DEPARTURELOG",
-                   level=logging.WARNING)
+        client.log(
+            "Failed to post departure log for member '{}' (uid:{}) in guild '{} (gid:{})."
+            " Exception: {}".format(
+                member, member.id, member.guild.name, member.guild.id, e.__repr__()
+            ),
+            context="POST_DEPARTURELOG",
+            level=logging.WARNING,
+        )
 
 
 # Attach event handlers
 @module.init_task
 def attach_traffic_handlers(client):
-    client.add_after_event('member_join', join_logger)
-    client.add_after_event('member_remove', departure_logger)
+    client.add_after_event("member_join", join_logger)
+    client.add_after_event("member_remove", departure_logger)
 
 
 # Define configuration settings
@@ -178,7 +192,7 @@ class guild_joinlog(ColumnData, Channel, GuildSetting):
     name = "joinlog"
     desc = "Channel to log information about new members."
 
-    long_desc = ("Channel where information about new members is posted.")
+    long_desc = "Channel where information about new members is posted."
 
     _table_interface_name = "guild_logging_joins"
     _data_column = "channelid"
@@ -205,27 +219,29 @@ class guild_departurelog(ColumnData, Channel, GuildSetting):
 # Define data schemas
 member_traffic_schema = tableSchema(
     "member_traffic",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('userid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('first_joined', ColumnType.INT),  # Timestamp of first join seen or inferred
-    Column('last_joined', ColumnType.INT),  # Timestamp of join at last departure
-    Column('last_departure', ColumnType.INT),  # Timestamp of last departure
-    Column('departure_name', ColumnType.SHORTSTRING),  # Name of user at last departure
-    Column('departure_nickname', ColumnType.SHORTSTRING),  # Nickname of user at last departure
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("first_joined", ColumnType.INT),  # Timestamp of first join seen or inferred
+    Column("last_joined", ColumnType.INT),  # Timestamp of join at last departure
+    Column("last_departure", ColumnType.INT),  # Timestamp of last departure
+    Column("departure_name", ColumnType.SHORTSTRING),  # Name of user at last departure
+    Column(
+        "departure_nickname", ColumnType.SHORTSTRING
+    ),  # Nickname of user at last departure
 )
 
 join_log_schema = tableSchema(
     "guild_logging_joins",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.SNOWFLAKE, required=True),
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("channelid", ColumnType.SNOWFLAKE, required=True),
 )
 
 departure_log_schema = tableSchema(
     "guild_logging_departures",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.SNOWFLAKE, required=True),
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("channelid", ColumnType.SNOWFLAKE, required=True),
 )
 
 
@@ -233,16 +249,22 @@ departure_log_schema = tableSchema(
 @module.data_init_task
 def attach_traffic_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_traffic_schema, shared=True),
-        "member_traffic"
+        tableInterface.from_schema(
+            client.data, client.app, member_traffic_schema, shared=True
+        ),
+        "member_traffic",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, join_log_schema, shared=False),
-        "guild_logging_joins"
+        tableInterface.from_schema(
+            client.data, client.app, join_log_schema, shared=False
+        ),
+        "guild_logging_joins",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, departure_log_schema, shared=False),
-        "guild_logging_departures"
+        tableInterface.from_schema(
+            client.data, client.app, departure_log_schema, shared=False
+        ),
+        "guild_logging_departures",
     )

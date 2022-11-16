@@ -7,6 +7,7 @@ class propInterface(Interface):
     Basic key-value data interface supporting shared and unshared app data.
     Only supports integer keys, string property names, and string values.
     """
+
     def __init__(self, conn: Connector, table_name, keys, app_name):
         self.conn = conn
         self.table = table_name
@@ -39,16 +40,17 @@ class propInterface(Interface):
             "\tproperty {shortstrcol} NOT NULL,\n"
             "\tshared {boolcol} NOT NULL,\n"
             "\tPRIMARY KEY (property)\n"
-            ");".format(
-                table=self.maptable,
-                shortstrcol=shortstrcol,
-                boolcol=boolcol
-            ))
+            ");".format(table=self.maptable, shortstrcol=shortstrcol, boolcol=boolcol)
+        )
 
         # Generate property table schema
         # Key column list
         key_columns = ["{} {} NOT NULL".format(key, intcol) for key in self.keys]
-        key_column_str = "{},\n\t".format(",\n\t".join(keycol for keycol in key_columns)) if self.keys else ""
+        key_column_str = (
+            "{},\n\t".format(",\n\t".join(keycol for keycol in key_columns))
+            if self.keys
+            else ""
+        )
 
         # Key primary key list
         key_list = "{}, ".format(", ".join(self.keys)) if self.keys else ""
@@ -66,7 +68,7 @@ class propInterface(Interface):
                 shortstrcol=shortstrcol,
                 strcol=strcol,
                 key_list=key_list,
-                maptable=self.maptable
+                maptable=self.maptable,
             )
         )
 
@@ -122,9 +124,7 @@ class propInterface(Interface):
                         # Raise value error
                         raise ValueError(
                             "Incorrect shared value '{}' passed for property '{}' of table '{}'".format(
-                                shared,
-                                prop,
-                                self.table
+                                shared, prop, self.table
                             )
                         )
             else:
@@ -149,10 +149,7 @@ class propInterface(Interface):
 
         # Retrieve requested value
         results = self.conn.select_where(
-            self.table,
-            select_columns=['value'],
-            property=prop,
-            **key_dict
+            self.table, select_columns=["value"], property=prop, **key_dict
         )
 
         # Return the result, or None if there was no result
@@ -179,11 +176,7 @@ class propInterface(Interface):
 
         # Set or update the property
         return self.conn.insert(
-            self.table,
-            allow_replace=True,
-            property=prop,
-            value=value,
-            **key_dict
+            self.table, allow_replace=True, property=prop, value=value, **key_dict
         )
 
     def unset(self, *args):
@@ -202,21 +195,14 @@ class propInterface(Interface):
         key_dict = {keyname: key for (keyname, key) in zip(self.keys, keys)}
 
         # Delete value (if it exists)
-        return self.conn.delete_where(
-            self.table,
-            property=prop,
-            **key_dict
-        )
+        return self.conn.delete_where(self.table, property=prop, **key_dict)
 
     def get_all_with(self, prop):
         """
         Retrieves all rows matching the specified property
         """
         prop = self._map_prop(prop)
-        return self.conn.select_where(
-            self.table,
-            property=prop
-        )
+        return self.conn.select_where(self.table, property=prop)
 
     def select_where(self, **kwargs):
         """

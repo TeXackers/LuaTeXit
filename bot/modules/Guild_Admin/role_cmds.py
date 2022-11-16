@@ -6,9 +6,11 @@ from cmdClient import Context
 from .module import guild_admin_module as module
 
 
-@module.cmd("rmrole",
-            desc="Deletes the provided role",
-            aliases=["removerole", "remrole", "deleterole", "delrole"])
+@module.cmd(
+    "rmrole",
+    desc="Deletes the provided role",
+    aliases=["removerole", "remrole", "deleterole", "delrole"],
+)
 @guild_moderator()
 async def cmd_rmrole(ctx: Context):
     """
@@ -24,11 +26,17 @@ async def cmd_rmrole(ctx: Context):
         return
     # Various checks to avoid hard errors and prevent abuse.
     if role.managed:
-        return await ctx.error_reply("Roles managed by an integration cannot be deleted.")
+        return await ctx.error_reply(
+            "Roles managed by an integration cannot be deleted."
+        )
     if (role > ctx.author.top_role) and (ctx.guild.owner != ctx.author):
-        return await ctx.error_reply("You cannot delete a role above you in the role hierarchy.")
+        return await ctx.error_reply(
+            "You cannot delete a role above you in the role hierarchy."
+        )
     if role > ctx.guild.me.top_role:
-        return await ctx.error_reply("I cannot delete a role above me in the role hierarchy.")
+        return await ctx.error_reply(
+            "I cannot delete a role above me in the role hierarchy."
+        )
     if not ctx.guild.me.guild_permissions.manage_roles:
         return await ctx.error_reply("I lack the permissions to delete the role.")
     if role == ctx.guild.default_role:
@@ -36,14 +44,18 @@ async def cmd_rmrole(ctx: Context):
     try:
         await role.delete(reason=f"Moderator: {ctx.author}")
     except Exception:
-        return await ctx.error_reply("An unknown error occurred while attempting to delete the role. Please try again.")
+        return await ctx.error_reply(
+            "An unknown error occurred while attempting to delete the role. Please try again."
+        )
     await ctx.reply("Successfully deleted the role.")
 
 
-@module.cmd("editrole",
-            desc="Create or edit a server role.",
-            aliases=["erole", "roleedit", "roledit", "editr"],
-            flags=["colour=", "color=", "name==", "perm==", "hoist=", "mention=", "pos=="])
+@module.cmd(
+    "editrole",
+    desc="Create or edit a server role.",
+    aliases=["erole", "roleedit", "roledit", "editr"],
+    flags=["colour=", "color=", "name==", "perm==", "hoist=", "mention=", "pos=="],
+)
 @guild_moderator()
 async def cmd_editrole(ctx: Context, flags):
     """
@@ -72,23 +84,31 @@ async def cmd_editrole(ctx: Context, flags):
         return
     edits = {}
     if role >= ctx.guild.me.top_role:
-        return await ctx.error_reply("I can't edit a role equal to or above my top role.")
+        return await ctx.error_reply(
+            "I can't edit a role equal to or above my top role."
+        )
 
     if not ctx.guild.me.guild_permissions.manage_roles:
-        return await ctx.error_reply("I require the permission `Manage Roles` to run this command.")
+        return await ctx.error_reply(
+            "I require the permission `Manage Roles` to run this command."
+        )
 
     if flags["colour"] or flags["color"]:
         colour = flags["colour"] if flags["colour"] else flags["color"]
         hexstr = colour.strip("#")
         if not (len(hexstr) == 6 or all(c in string.hexdigits for c in hexstr)):
-            return await ctx.error_reply("Please provide a valid hex colour (e.g. #0047AB).")
+            return await ctx.error_reply(
+                "Please provide a valid hex colour (e.g. #0047AB)."
+            )
         edits["colour"] = discord.Colour(int(hexstr, 16))
 
     if flags["name"]:
         edits["name"] = flags["name"]
 
     if flags["perm"]:
-        return await ctx.reply("Sorry, perm modification is a work in progress. Please check back later!")
+        return await ctx.reply(
+            "Sorry, perm modification is a work in progress. Please check back later!"
+        )
 
     if flags["hoist"]:
         if flags["hoist"].lower() in ["enable", "yes", "on"]:
@@ -96,7 +116,9 @@ async def cmd_editrole(ctx: Context, flags):
         elif flags["hoist"].lower() in ["disable", "no", "off"]:
             hoist = False
         else:
-            return await ctx.error_reply("An invalid argument was passed to `--hoist`. Use `help editrole` for usage.")
+            return await ctx.error_reply(
+                "An invalid argument was passed to `--hoist`. Use `help editrole` for usage."
+            )
         edits["hoist"] = hoist
 
     if flags["mention"]:
@@ -105,7 +127,9 @@ async def cmd_editrole(ctx: Context, flags):
         elif flags["mention"].lower() in ["disable", "no", "off"]:
             mention = False
         else:
-            return await ctx.error_reply("An invalid argument was passed to `--mention`. Use `help editrole` for usage.")
+            return await ctx.error_reply(
+                "An invalid argument was passed to `--mention`. Use `help editrole` for usage."
+            )
         edits["mentionable"] = mention
 
     position = None
@@ -118,31 +142,59 @@ async def cmd_editrole(ctx: Context, flags):
         elif pos_flag.lower() == "down":
             position = role.position - 1
         elif pos_flag.startswith("above"):
-            target_role = await ctx.find_role((' '.join(pos_flag.split(' ')[1:])).strip(), create=False, interactive=True)
+            target_role = await ctx.find_role(
+                (" ".join(pos_flag.split(" ")[1:])).strip(),
+                create=False,
+                interactive=True,
+            )
             position = target_role.position + 1
         elif pos_flag.startswith("below"):
-            target_role = await ctx.find_role((' '.join(pos_flag.split(' ')[1:])).strip(), create=False, interactive=True)
+            target_role = await ctx.find_role(
+                (" ".join(pos_flag.split(" ")[1:])).strip(),
+                create=False,
+                interactive=True,
+            )
             position = target_role.position
         else:
-            return await ctx.error_reply("An invalid argument was passed to `--pos`. Use `help editrole` for usage.")
+            return await ctx.error_reply(
+                "An invalid argument was passed to `--pos`. Use `help editrole` for usage."
+            )
 
     if position is not None:
         if position > ctx.guild.me.top_role.position:
-            return await ctx.error_reply("The target position is higher than my top role.")
+            return await ctx.error_reply(
+                "The target position is higher than my top role."
+            )
         if position == 0:
-            return await ctx.error_reply("The role can't be below the default server role.")
+            return await ctx.error_reply(
+                "The role can't be below the default server role."
+            )
         try:
             await role.edit(position=position)
         except discord.Forbidden:
             return await ctx.error_reply("I lack the permissions to edit the role.")
         except discord.HTTPException:
-            return await ctx.error_reply("An unknown error occurred while trying to modify the role position.")
+            return await ctx.error_reply(
+                "An unknown error occurred while trying to modify the role position."
+            )
     if edits:
         try:
             await role.edit(**edits, reason=f"Moderator: {ctx.author}")
         except discord.Forbidden:
-            return await ctx.error_reply("I don't have enough permissions to make the specified edits.")
+            return await ctx.error_reply(
+                "I don't have enough permissions to make the specified edits."
+            )
 
-    if not (flags["colour"] or flags["color"] or flags["name"] or flags["perm"] or flags["hoist"] or flags["mention"] or flags["pos"]):
-        return await ctx.reply("Interactive role editing is a work in progress, please check back later!")
+    if not (
+        flags["colour"]
+        or flags["color"]
+        or flags["name"]
+        or flags["perm"]
+        or flags["hoist"]
+        or flags["mention"]
+        or flags["pos"]
+    ):
+        return await ctx.reply(
+            "Interactive role editing is a work in progress, please check back later!"
+        )
     await ctx.reply("The role was modified successfully.")

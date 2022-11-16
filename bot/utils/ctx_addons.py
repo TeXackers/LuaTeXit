@@ -10,7 +10,7 @@ from . import lib
 
 
 @Context.util
-async def embedreply(ctx, desc, colour=discord.Colour(0x9b59b6), **kwargs):
+async def embedreply(ctx, desc, colour=discord.Colour(0x9B59B6), **kwargs):
     """
     Simple helper to embed replies.
     All arguments are passed to the embed constructor.
@@ -74,7 +74,7 @@ async def _message_counter(client, channel, max_count):
     # Loop until the message counter reaches maximum
     count = 0
     while count < max_count:
-        await client.wait_for('message', check=_check)
+        await client.wait_for("message", check=_check)
         count += 1
     return
 
@@ -85,7 +85,7 @@ def log(ctx: Context, *args, **kwargs):
     Shortcut to the logger which automatically adds the context.
     """
     if "context" not in kwargs:
-        kwargs['context'] = "mid:{}".format(ctx.msg.id)
+        kwargs["context"] = "mid:{}".format(ctx.msg.id)
     logger.log(*args, **kwargs)
 
 
@@ -94,21 +94,23 @@ async def run_in_shell(ctx: Context, script):
     """
     Execute a script or command asynchronously in a subprocess shell.
     """
-    process = await asyncio.create_subprocess_shell(script, stdout=asyncio.subprocess.PIPE)
+    process = await asyncio.create_subprocess_shell(
+        script, stdout=asyncio.subprocess.PIPE
+    )
     ctx.log(
         "Executing the following script:\n{}\nwith pid '{}'.".format(
-            "\n".join("\t{}".format(line) for line in script.splitlines()),
-            process.pid
+            "\n".join("\t{}".format(line) for line in script.splitlines()), process.pid
         ),
-        level=logging.DEBUG
+        level=logging.DEBUG,
     )
     stdout, stderr = await process.communicate()
-    ctx.log("Completed the script with pid '{}'{}".format(
-        process.pid,
-        " with errors" if process.returncode != 0 else ""),
-        level=logging.DEBUG
+    ctx.log(
+        "Completed the script with pid '{}'{}".format(
+            process.pid, " with errors" if process.returncode != 0 else ""
+        ),
+        level=logging.DEBUG,
     )
-    return stdout.decode(errors='backslashreplace').strip()
+    return stdout.decode(errors="backslashreplace").strip()
 
 
 @Context.util
@@ -119,7 +121,9 @@ def best_prefix(ctx: Context):
     otherwise the default client prefix.
     """
     if ctx.guild:
-        prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
+        prefix = ctx.client.objects["guild_prefix_cache"].get(
+            ctx.guild.id, ctx.client.prefix
+        )
     else:
         prefix = ctx.client.prefix
     return prefix
@@ -133,10 +137,7 @@ def format_usage(ctx: Context):
     """
     usage = ctx.cmd.long_help[0][1]
     usage = usage.format(ctx=ctx, client=ctx.client, prefix=ctx.best_prefix())
-    return "**USAGE:**{}{}".format(
-        '\n' if '\n' in usage else ' ',
-        usage
-    )
+    return "**USAGE:**{}{}".format("\n" if "\n" in usage else " ", usage)
 
 
 @Context.util
@@ -195,19 +196,29 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
                 return False
             if user == ctx.guild.me:
                 return False
-            return ((user == ctx.author)
-                    or (user.permissions_in(ctx.ch).manage_messages)
-                    or (modrole and modrole in user.roles))
+            return (
+                (user == ctx.author)
+                or (user.permissions_in(ctx.ch).manage_messages)
+                or (modrole and modrole in user.roles)
+            )
+
     else:
+
         def check(reaction, user):
-            return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
+            return (
+                user == ctx.author
+                and reaction.message.id == react_msg.id
+                and reaction.emoji == emoji
+            )
 
     try:
         # Add the reaction to the message
         await react_msg.add_reaction(emoji)
 
         # Wait for the user to press the reaction
-        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
+        reaction, user = await ctx.client.wait_for(
+            "reaction_add", check=check, timeout=timeout
+        )
 
         # Since the check was satisfied, the reaction is correct. Delete the messages, ignoring any exceptions
         deleted = False
@@ -222,7 +233,9 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
         # If we couldn't bulk delete, delete them one by one
         if not deleted:
             try:
-                asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
+                asyncio.gather(
+                    *[message.delete() for message in to_delete], return_exceptions=True
+                )
             except Exception:
                 pass
     except (asyncio.TimeoutError, asyncio.CancelledError):
@@ -299,7 +312,7 @@ def clean_arg_str(ctx: Context):
     content = ctx.msg.clean_content
 
     if ctx.prefix == ctx.alias:
-        content = content[len(ctx.prefix):]
+        content = content[len(ctx.prefix) :]
 
     return content.partition(ctx.alias)[2].strip()
 
@@ -317,11 +330,13 @@ def usage_embed(ctx: Context, custom_usage=None):
         raise ValueError("Cannot extract usage from a non-command context.")
     if not custom_usage:
         fields = ctx.cmd.long_help
-        usage_field = next((pair for pair in fields if pair[0].startswith('Usage')), None)
+        usage_field = next(
+            (pair for pair in fields if pair[0].startswith("Usage")), None
+        )
         if usage_field is None:
             raise ValueError("Cannot extract usage from command with no usage field.")
-        if usage_field[0].endswith('``'):
-            value = "`{}`".format('`\n'.join(usage_field[1].splitlines()))
+        if usage_field[0].endswith("``"):
+            value = "`{}`".format("`\n".join(usage_field[1].splitlines()))
     else:
         value = custom_usage
     return discord.Embed(title="Usage", colour=discord.Color.red(), description=value)

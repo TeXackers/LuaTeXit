@@ -8,8 +8,7 @@ from .module import guild_moderation_module as module
 from .tickets import Ticket
 
 
-@module.cmd("tickets",
-            desc="List a user's moderation tickets.")
+@module.cmd("tickets", desc="List a user's moderation tickets.")
 @guild_moderator()
 async def cmd_tickets(ctx):
     """
@@ -25,13 +24,17 @@ async def cmd_tickets(ctx):
             That is, you need to have the `manage_guild` permission or the configured `modrole`.
     """
     if not ctx.args:
-        return await ctx.error_reply("Please provide a member or userid to show tickets for.")
+        return await ctx.error_reply(
+            "Please provide a member or userid to show tickets for."
+        )
 
     # Find the provided user
     user = await ctx.find_member(ctx.args, interactive=True, silent_notfound=True)
     if user is None:
         if not ctx.args.isdigit():
-            return await ctx.error_reply("No members found matching `{}`!".format(ctx.args))
+            return await ctx.error_reply(
+                "No members found matching `{}`!".format(ctx.args)
+            )
         else:
             userid = int(ctx.args)
     else:
@@ -40,33 +43,41 @@ async def cmd_tickets(ctx):
     # Fetch the tickets for the given user
     tickets = Ticket.fetch_tickets_where(guildid=ctx.guild.id, memberid=userid)
     if not tickets:
-        return await ctx.error_reply("No tickets found for `{}`!".format(user or userid))
+        return await ctx.error_reply(
+            "No tickets found for `{}`!".format(user or userid)
+        )
     tickets.reverse()
 
     # Build the ticket list pages
     title = "Tickets for {}".format(user or userid)
-    ticket_lines = ["[#{}]({}) ⎪ {} ⎪ `{:<8}` ⎪ {}".format(
-        ticket.ticketgid,
-        ticket.jumpto,
-        dt.fromtimestamp(ticket.created_at).strftime("%d/%m/%y"),
-        ticket._ticket_type.name,
-        ticket.reason.splitlines()[0] if len(ticket.reason.splitlines()[0]) < 45
-        else ticket.reason.splitlines()[0][:42] + '...'
-    ) for ticket in tickets]
-    pages = ['\n'.join(ticket_lines[i: i+10]) for i in range(0, len(ticket_lines), 10)]
+    ticket_lines = [
+        "[#{}]({}) ⎪ {} ⎪ `{:<8}` ⎪ {}".format(
+            ticket.ticketgid,
+            ticket.jumpto,
+            dt.fromtimestamp(ticket.created_at).strftime("%d/%m/%y"),
+            ticket._ticket_type.name,
+            ticket.reason.splitlines()[0]
+            if len(ticket.reason.splitlines()[0]) < 45
+            else ticket.reason.splitlines()[0][:42] + "...",
+        )
+        for ticket in tickets
+    ]
+    pages = [
+        "\n".join(ticket_lines[i : i + 10]) for i in range(0, len(ticket_lines), 10)
+    ]
     embeds = [
-        discord.Embed(title=title, description=page).set_footer(text="Page {}/{}".format(p+1, len(pages)))
+        discord.Embed(title=title, description=page).set_footer(
+            text="Page {}/{}".format(p + 1, len(pages))
+        )
         for p, page in enumerate(pages)
     ]
 
-    out_msg = await ctx.pager(embeds, content="Type a ticket number to see the full ticket.")
+    out_msg = await ctx.pager(
+        embeds, content="Type a ticket number to see the full ticket."
+    )
 
     display_task = asyncio.create_task(_ticket_display(ctx, tickets))
-    await _offer_cancel(
-        ctx,
-        out_msg,
-        display_task
-    )
+    await _offer_cancel(ctx, out_msg, display_task)
     try:
         await out_msg.edit(content="")
         await out_msg.clear_reactions()
@@ -89,8 +100,10 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
         # Wait for the user to press the reaction
         reaction, user = await ctx.client.wait_for(
             "reaction_add",
-            check=lambda r, u: (r.message == msg and r.emoji == emoji and u == ctx.author),
-            timeout=timeout
+            check=lambda r, u: (
+                r.message == msg and r.emoji == emoji and u == ctx.author
+            ),
+            timeout=timeout,
         )
 
         # Remove the reaction
@@ -125,10 +138,12 @@ async def _ticket_display(ctx, tickets):
             try:
                 result = await ctx.client.wait_for(
                     "message",
-                    check=lambda msg: (msg.author == ctx.author
-                                       and msg.channel == ctx.ch
-                                       and msg.content.isdigit()
-                                       and int(msg.content) in ticket_map)
+                    check=lambda msg: (
+                        msg.author == ctx.author
+                        and msg.channel == ctx.ch
+                        and msg.content.isdigit()
+                        and int(msg.content) in ticket_map
+                    ),
                 )
             except asyncio.TimeoutError:
                 return

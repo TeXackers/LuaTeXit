@@ -22,16 +22,26 @@ Handlers:
 
 async def log_left_guild(client: cmdClient, guild: discord.Guild):
     # Build embed
-    embed = discord.Embed(title="`{0.name} (ID: {0.id})`".format(guild),
-                          colour=discord.Colour.red(),
-                          timestamp=datetime.now())
+    embed = discord.Embed(
+        title="`{0.name} (ID: {0.id})`".format(guild),
+        colour=discord.Colour.red(),
+        timestamp=datetime.now(),
+    )
     embed.set_author(name="Left guild!")
     embed.set_thumbnail(url=guild.icon_url)
 
     # Add more specific information about the guild
-    embed.add_field(name="Owner", value="{0.name} (ID: {0.id})".format(guild.owner), inline=False)
-    embed.add_field(name="Members (cached)", value="{}".format(len(guild.members)), inline=False)
-    embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
+    embed.add_field(
+        name="Owner", value="{0.name} (ID: {0.id})".format(guild.owner), inline=False
+    )
+    embed.add_field(
+        name="Members (cached)", value="{}".format(len(guild.members)), inline=False
+    )
+    embed.add_field(
+        name="Now chatting in",
+        value="{} guilds".format(len(client.guilds)),
+        inline=False,
+    )
 
     # Retrieve the guild log channel and log the event
     log_chid = client.conf.get("guild_log_ch")
@@ -46,7 +56,9 @@ async def log_joined_guild(client, guild):
     bots = 0
     known = 0
     unknown = 0
-    other_members = list(set([mem.id for mem in client.get_all_members() if mem.guild != guild]))
+    other_members = list(
+        set([mem.id for mem in client.get_all_members() if mem.guild != guild])
+    )
 
     for member in guild.members:
         if member.bot:
@@ -65,21 +77,14 @@ async def log_joined_guild(client, guild):
     bots = "`{}`".format(bots)
     total = "`{}`".format(guild.member_count)
     mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(
-        known,
-        unknown,
-        bots,
-        total,
-        mem1,
-        mem2,
-        mem3,
-        mem4
+        known, unknown, bots, total, mem1, mem2, mem3, mem4
     )
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     embed = discord.Embed(
         title="`{0.name} (ID: {0.id})`".format(guild),
         colour=discord.Colour.green(),
-        timestamp=datetime.now()
+        timestamp=datetime.now(),
     )
     embed.set_author(name="Joined guild!")
     embed.set_thumbnail(url=icon)
@@ -87,7 +92,11 @@ async def log_joined_guild(client, guild):
     embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
     embed.add_field(name="Created at", value="{}".format(created), inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
-    embed.add_field(name="Now chatting in", value="{} guilds".format(len(client.guilds)), inline=False)
+    embed.add_field(
+        name="Now chatting in",
+        value="{} guilds".format(len(client.guilds)),
+        inline=False,
+    )
 
     # Retrieve the guild log channel and log the event
     log_chid = client.conf.get("guild_log_ch")
@@ -97,5 +106,5 @@ async def log_joined_guild(client, guild):
 
 @module.init_task
 def attach_guild_events(client):
-    client.add_after_event('guild_join', log_joined_guild)
-    client.add_after_event('guild_remove', log_left_guild)
+    client.add_after_event("guild_join", log_joined_guild)
+    client.add_after_event("guild_remove", log_left_guild)

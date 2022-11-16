@@ -55,13 +55,18 @@ async def give_autoroles(client: cmdClient, member: discord.Member):
     # Add the autoroles, if we can
     if autoroles and member.guild.me.guild_permissions.manage_roles:
         # Retrieve my top role with manage role permissions
-        my_mr_roles = [role for role in member.guild.me.roles
-                       if role.permissions.manage_roles or role.permissions.administrator]
+        my_mr_roles = [
+            role
+            for role in member.guild.me.roles
+            if role.permissions.manage_roles or role.permissions.administrator
+        ]
 
         # Filter autoroles based on what I have permission to add
         if my_mr_roles:
             max_mr_role = max(my_mr_roles)
-            autoroles = [role for role in autoroles if role is not None and role < max_mr_role]
+            autoroles = [
+                role for role in autoroles if role is not None and role < max_mr_role
+            ]
         else:
             autoroles = None
 
@@ -70,14 +75,18 @@ async def give_autoroles(client: cmdClient, member: discord.Member):
             try:
                 await member.add_roles(*autoroles, reason="Adding autoroles")
             except Exception as e:
-                log("Failed to add autoroles to new member '{}' (uid:{}) in guild '{} (gid:{})."
-                    " Exception: {}".format(member,
-                                            member.id,
-                                            member.guild.name,
-                                            member.guild.id,
-                                            e.__repr__()),
+                log(
+                    "Failed to add autoroles to new member '{}' (uid:{}) in guild '{} (gid:{})."
+                    " Exception: {}".format(
+                        member,
+                        member.id,
+                        member.guild.name,
+                        member.guild.id,
+                        e.__repr__(),
+                    ),
                     context="GIVE_AUTOROLE",
-                    level=logging.WARNING)
+                    level=logging.WARNING,
+                )
 
 
 # Register event handler
@@ -89,16 +98,16 @@ def attach_autorole_handler(client: cmdClient):
 # Define data schemas
 ar_schema = tableSchema(
     "guild_autoroles",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 bar_schema = tableSchema(
     "guild_bot_autoroles",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 
@@ -107,10 +116,10 @@ bar_schema = tableSchema(
 def attach_autorole_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, ar_schema, shared=False),
-        "guild_autoroles"
+        "guild_autoroles",
     )
 
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, bar_schema, shared=False),
-        "guild_bot_autoroles"
+        "guild_bot_autoroles",
     )

@@ -10,10 +10,12 @@ from .core.preamble_utils import preamblelog, view_preamble, confirm
 from .resources import default_preamble
 
 
-@module.cmd("guildpreamble",
-            desc="View or modify the guild's default LaTeX preamble",
-            aliases=['serverpreamble', 'gpreamble'],
-            flags=['reset', 'add', 'remove', 'replace'])
+@module.cmd(
+    "guildpreamble",
+    desc="View or modify the guild's default LaTeX preamble",
+    aliases=["serverpreamble", "gpreamble"],
+    flags=["reset", "add", "remove", "replace"],
+)
 @in_guild()
 async def cmd_gpreamble(ctx, flags):
     """
@@ -56,7 +58,9 @@ async def cmd_gpreamble(ctx, flags):
     # Handle resetting the preamble
     if flags["reset"]:
         if not await guild_admin.run(ctx):
-            return await ctx.error_reply("You need the `Administrator` permission to reset the guild preamble!")
+            return await ctx.error_reply(
+                "You need the `Administrator` permission to reset the guild preamble!"
+            )
 
         # Handle not having a preamble
         if not guild_preamble:
@@ -67,14 +71,16 @@ async def cmd_gpreamble(ctx, flags):
             resp = await ctx.ask(
                 "Are you sure you want to reset the guild preamble? "
                 "This is not reversible!",
-                timeout=60
+                timeout=60,
             )
         except ResponseTimedOut:
             return await ctx.error_reply(
                 "Timed out waiting for a response, the guild preamble was not modified."
             )
         if not resp:
-            return await ctx.error_reply("Cancelling preamble reset, the guild preamble was not modified.")
+            return await ctx.error_reply(
+                "Cancelling preamble reset, the guild preamble was not modified."
+            )
 
         # Now reset the preamble
         guild_preamble_data.delete_where(guildid=ctx.guild.id)
@@ -91,10 +97,12 @@ async def cmd_gpreamble(ctx, flags):
 
         # If the file is over 1MB, it probably isn't a valid preamble.
         if attachment.size >= 1000000:
-            return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
+            return await ctx.error_reply(
+                "Attached file is too large to process (over `1MB`)."
+            )
 
         try:
-            args = str(await attachment.read(), encoding='utf-8', errors="strict")
+            args = str(await attachment.read(), encoding="utf-8", errors="strict")
         except UnicodeError:
             return await ctx.error_reply(
                 "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
@@ -104,9 +112,11 @@ async def cmd_gpreamble(ctx, flags):
     args = args.strip()
 
     # Handle a request to remove material from the preamble
-    if flags['remove']:
+    if flags["remove"]:
         if not await guild_admin.run(ctx):
-            return await ctx.error_reply("You need the `Administrator` permission to modify the guild preamble!")
+            return await ctx.error_reply(
+                "You need the `Administrator` permission to modify the guild preamble!"
+            )
 
         to_remove = []  # List of line indicies to remove
         new_preamble = None
@@ -118,7 +128,7 @@ async def cmd_gpreamble(ctx, flags):
                 return await ctx.error_reply(
                     "The requested text doesn't appear in the guild preamble! Nothing to remove."
                 )
-            if '\n' in args:
+            if "\n" in args:
                 # If the requested string has multiple lines and appears, just remove all of them
                 new_preamble = preamble.replace(args, "")
             else:
@@ -127,27 +137,38 @@ async def cmd_gpreamble(ctx, flags):
         else:
             # If we aren't given anything to remove, prompt the user for which lines they want to remove
             # Generate a version of the current preamble with line numbers
-            lined_preamble = "\n".join(("{:>2}. {}".format(i+1, line) for i, line in enumerate(lines)))
+            lined_preamble = "\n".join(
+                ("{:>2}. {}".format(i + 1, line) for i, line in enumerate(lines))
+            )
 
             # Show this to the user and prompt them
-            prompt = ("Please enter the line numbers and ranges to remove, "
-                      "separated by commas, or type `c` now to cancel.\n"
-                      "(Example input: `1, 2-5, 10-20`)")
+            prompt = (
+                "Please enter the line numbers and ranges to remove, "
+                "separated by commas, or type `c` now to cancel.\n"
+                "(Example input: `1, 2-5, 10-20`)"
+            )
             prompt_msg = await view_preamble(ctx, lined_preamble, prompt)
 
             # Handle timeouts and negative response
             try:
                 response = await ctx.input(prompt_msg)
             except ResponseTimedOut:
-                return await ctx.error_reply("Prompt timed out. The guild preamble was not modified.")
+                return await ctx.error_reply(
+                    "Prompt timed out. The guild preamble was not modified."
+                )
             if response.lower() == "c":
-                return await ctx.error_reply("Preamble modification cancelled. The guild preamble was not updated.")
+                return await ctx.error_reply(
+                    "Preamble modification cancelled. The guild preamble was not updated."
+                )
 
             # Parse provided selection
             parse_failure = False
 
             # First sanity check input
-            if not all((char.isdigit() or not char.strip() or char in ('-', ',')) for char in response):
+            if not all(
+                (char.isdigit() or not char.strip() or char in ("-", ","))
+                for char in response
+            ):
                 parse_failure = True
 
             # Replace ranges
@@ -157,7 +178,7 @@ async def cmd_gpreamble(ctx, flags):
                 parse_failure = True
 
             # Extract numbers
-            nums = [num.strip() for num in response.split(',')]
+            nums = [num.strip() for num in response.split(",")]
             if not all(num.isdigit() for num in nums):
                 parse_failure = True
 
@@ -186,18 +207,22 @@ async def cmd_gpreamble(ctx, flags):
             try:
                 result = await confirm(ctx, prompt, for_removal)
             except ResponseTimedOut:
-                return await ctx.error_reply("Prompt timed out, the guild preamble was not modified.")
+                return await ctx.error_reply(
+                    "Prompt timed out, the guild preamble was not modified."
+                )
             if not result:
-                return await ctx.error_reply("Cancelled preamble modification, the guild preamble was not modified.")
+                return await ctx.error_reply(
+                    "Cancelled preamble modification, the guild preamble was not modified."
+                )
 
-            new_preamble = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
+            new_preamble = "\n".join(
+                [line for i, line in enumerate(lines) if i not in to_remove]
+            )
 
         # Finally save the new preamble
         if new_preamble is not None:
             guild_preamble_data.insert(
-                allow_replace=True,
-                guildid=ctx.guild.id,
-                preamble=new_preamble
+                allow_replace=True, guildid=ctx.guild.id, preamble=new_preamble
             )
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
@@ -205,14 +230,16 @@ async def cmd_gpreamble(ctx, flags):
                 ctx,
                 "Material was removed from the preamble. New preamble below.",
                 author=log_str,
-                source=new_preamble
+                source=new_preamble,
             )
         return
 
     # Handle a request to add material to the preamble
-    if flags['add']:
+    if flags["add"]:
         if not await guild_admin.run(ctx):
-            return await ctx.error_reply("You need the `Administrator` permission to modify the guild preamble!")
+            return await ctx.error_reply(
+                "You need the `Administrator` permission to modify the guild preamble!"
+            )
 
         if not args:
             # Prompt the user for the material they wish to add, handle cancellations and timeout
@@ -223,9 +250,13 @@ async def cmd_gpreamble(ctx, flags):
             try:
                 args = await ctx.input(prompt, timeout=600)
             except ResponseTimedOut:
-                return await ctx.error_reply("Query timed out, the guild preamble was not modified.")
-            if args.lower() == 'c':
-                return await ctx.error_reply("Query cancelled, the guild preamble was not modified.")
+                return await ctx.error_reply(
+                    "Query timed out, the guild preamble was not modified."
+                )
+            if args.lower() == "c":
+                return await ctx.error_reply(
+                    "Query cancelled, the guild preamble was not modified."
+                )
 
         new_submission = "{}\n{}".format(preamble, args)
 
@@ -242,18 +273,22 @@ async def cmd_gpreamble(ctx, flags):
             if len(line) > 5:
                 if line in unique_lines:
                     duplicate_count += 1
-                    if not duplicate_packages and line.strip().startswith('\\usepackage'):
+                    if not duplicate_packages and line.strip().startswith(
+                        "\\usepackage"
+                    ):
                         duplicate_packages = True
                 else:
                     unique_lines.add(line)
-        many_duplicates = (duplicate_count > 10)
-        nonmatching_brackets = not(
-            (new_submission.count('(') == new_submission.count(')')) and
-            (new_submission.count('{') == new_submission.count('}'))
+        many_duplicates = duplicate_count > 10
+        nonmatching_brackets = not (
+            (new_submission.count("(") == new_submission.count(")"))
+            and (new_submission.count("{") == new_submission.count("}"))
         )
         warnings = []
         if nonmatching_brackets:
-            warnings.append("Number of opening and closing brackets and parenthesis do not match!")
+            warnings.append(
+                "Number of opening and closing brackets and parenthesis do not match!"
+            )
         if duplicate_packages:
             warnings.append("Duplicate package imports detected!")
         if many_duplicates:
@@ -261,26 +296,30 @@ async def cmd_gpreamble(ctx, flags):
         warnings = "\n".join(warnings)
 
         # Confirm submission
-        prompt = "Please confirm that you want to set the following updated guild preamble."
+        prompt = (
+            "Please confirm that you want to set the following updated guild preamble."
+        )
         try:
             result = await confirm(
                 ctx,
                 prompt,
                 new_submission,
                 start_page=-1,
-                extra_fields=[("Warnings", warnings)] if warnings else None
+                extra_fields=[("Warnings", warnings)] if warnings else None,
             )
         except ResponseTimedOut:
-            return await ctx.error_reply("Prompt timed out, the guild preamble was not modified.")
+            return await ctx.error_reply(
+                "Prompt timed out, the guild preamble was not modified."
+            )
         if not result:
-            return await ctx.error_reply("Preamble extension cancelled, the guild preamble was not modified.")
+            return await ctx.error_reply(
+                "Preamble extension cancelled, the guild preamble was not modified."
+            )
 
         # Finally save the new preamble
         if new_submission is not None:
             guild_preamble_data.insert(
-                allow_replace=True,
-                guildid=ctx.guild.id,
-                preamble=new_submission
+                allow_replace=True, guildid=ctx.guild.id, preamble=new_submission
             )
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
@@ -288,26 +327,34 @@ async def cmd_gpreamble(ctx, flags):
                 ctx,
                 "Material was added to the guild preamble. New preamble below.",
                 author=log_str,
-                source=new_submission
+                source=new_submission,
             )
         return
 
     # Handle a request to replace the preamble
-    if flags['replace'] or args:
+    if flags["replace"] or args:
         if not await guild_admin.run(ctx):
-            return await ctx.error_reply("You need the `Administrator` permission to modify the guild preamble!")
+            return await ctx.error_reply(
+                "You need the `Administrator` permission to modify the guild preamble!"
+            )
 
         if not args:
             # Prompt the user for the new preamble, handle cancellations and timeout
-            prompt = ("Please enter the new guild preamble, or `c` to cancel.\n"
-                      "If you wish to upload the guild preamble as a file, "
-                      "cancel now and rerun with the file attached.")
+            prompt = (
+                "Please enter the new guild preamble, or `c` to cancel.\n"
+                "If you wish to upload the guild preamble as a file, "
+                "cancel now and rerun with the file attached."
+            )
             try:
                 new_submission = await ctx.input(prompt, timeout=600)
             except ResponseTimedOut:
-                return await ctx.error_reply("Query timed out, the guild preamble was not modified.")
-            if new_submission.lower() == 'c':
-                return await ctx.error_reply("Preamble replacement cancelled, the guild preamble was not modified.")
+                return await ctx.error_reply(
+                    "Query timed out, the guild preamble was not modified."
+                )
+            if new_submission.lower() == "c":
+                return await ctx.error_reply(
+                    "Preamble replacement cancelled, the guild preamble was not modified."
+                )
         else:
             new_submission = args
 
@@ -316,16 +363,18 @@ async def cmd_gpreamble(ctx, flags):
         try:
             result = await confirm(ctx, prompt, new_submission)
         except ResponseTimedOut:
-            return await ctx.error_reply("Prompt timed out, the guild preamble was not modified.")
+            return await ctx.error_reply(
+                "Prompt timed out, the guild preamble was not modified."
+            )
         if not result:
-            return await ctx.error_reply("Preamble replacement cancelled, the guild preamble was not modified.")
+            return await ctx.error_reply(
+                "Preamble replacement cancelled, the guild preamble was not modified."
+            )
 
         # Finally save the new preamble
         if new_submission is not None:
             guild_preamble_data.insert(
-                allow_replace=True,
-                guildid=ctx.guild.id,
-                preamble=new_submission
+                allow_replace=True, guildid=ctx.guild.id, preamble=new_submission
             )
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
@@ -333,12 +382,14 @@ async def cmd_gpreamble(ctx, flags):
                 ctx,
                 "The guild preamble was replaced. New preamble below.",
                 author=log_str,
-                source=new_submission
+                source=new_submission,
             )
         return
 
     # View the preamble
     if not guild_preamble:
-        await ctx.reply("No guild default preamble set. Users without a custom preamble will use the global default.")
+        await ctx.reply(
+            "No guild default preamble set. Users without a custom preamble will use the global default."
+        )
     else:
         await view_preamble(ctx, guild_preamble, "Current Guild Preamble")

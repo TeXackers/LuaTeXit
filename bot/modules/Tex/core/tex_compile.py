@@ -9,7 +9,13 @@ from utils import ctx_addons  # noqa
 
 from ..module import latex_module as module
 
-from ..resources import default_preamble, failed_image_path, compile_script_path, luatex_compile_script_path, xetex_compile_script_path
+from ..resources import (
+    default_preamble,
+    failed_image_path,
+    compile_script_path,
+    luatex_compile_script_path,
+    xetex_compile_script_path,
+)
 
 """
 Provides a single context utility to compile LaTeX code from a user and return any error message
@@ -23,7 +29,9 @@ def gencolour(colour, negate=True):
     Build the colour conversion command for the provided colour, negating black text if required
     """
     return r"convert {{image}} {} -bordercolor transparent -border 50 \
-        -background {} -flatten {{image}}".format("+negate" if negate else "", colour)
+        -background {} -flatten {{image}}".format(
+        "+negate" if negate else "", colour
+    )
 
 
 # Dictionary of valid colours and the associated transformation commands
@@ -38,7 +46,9 @@ colourschemes["dark"] = gencolour("'rgb(20, 20, 20)'")
 colourschemes["gray"] = colourschemes["grey"] = gencolour("'rgb(54, 57, 63)'")
 colourschemes["darkgrey"] = gencolour("'rgb(35, 39, 42)'")
 
-colourschemes["trans_white"] = r"convert {image} +negate -bordercolor transparent -border 40 {image}"
+colourschemes[
+    "trans_white"
+] = r"convert {image} +negate -bordercolor transparent -border 40 {image}"
 colourschemes["trans_black"] = None
 colourschemes["transparent"] = colourschemes["trans_white"]
 
@@ -82,14 +92,22 @@ to_compile = "{header}\
 
 
 @Context.util
-async def makeTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+async def makeTeX(
+    ctx,
+    source,
+    targetid,
+    preamble=default_preamble,
+    colour="default",
+    header=header,
+    pad=True,
+):
     log(
         "Beginning LaTeX compilation for (tid:{targetid}).\n{content}".format(
             targetid=targetid,
-            content='\n'.join(('\t' + line for line in source.splitlines()))
+            content="\n".join(("\t" + line for line in source.splitlines())),
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid)
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
     # Target's staging directory
@@ -103,33 +121,44 @@ async def makeTeX(ctx, source, targetid, preamble=default_preamble, colour="defa
 
     fn = "{}/{}.tex".format(path, targetid)
 
-    with open(fn, 'w') as work:
+    with open(fn, "w") as work:
         work.write(to_compile.format(header=header, preamble=preamble, source=source))
         work.close()
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
-        "cd {path}\n"
-        "{colour}\n"
-        "{pad}").format(compile_script=compile_script_path,
-                        id=targetid, path=path,
-                        colour=colourschemes[colour] or "",
-                        pad=pad_script if pad else "").format(image="{}.png".format(targetid))
+        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
+        .format(
+            compile_script=compile_script_path,
+            id=targetid,
+            path=path,
+            colour=colourschemes[colour] or "",
+            pad=pad_script if pad else "",
+        )
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
 
 
 @Context.util
-async def makeluaTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+async def makeluaTeX(
+    ctx,
+    source,
+    targetid,
+    preamble=default_preamble,
+    colour="default",
+    header=header,
+    pad=True,
+):
     log(
         "Beginning LuaLaTeX compilation for (tid:{targetid}).\n{content}".format(
             targetid=targetid,
-            content='\n'.join(('\t' + line for line in source.splitlines()))
+            content="\n".join(("\t" + line for line in source.splitlines())),
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid)
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
     # Target's staging directory
@@ -143,33 +172,44 @@ async def makeluaTeX(ctx, source, targetid, preamble=default_preamble, colour="d
 
     fn = "{}/{}.tex".format(path, targetid)
 
-    with open(fn, 'w') as work:
+    with open(fn, "w") as work:
         work.write(to_compile.format(header=header, preamble=preamble, source=source))
         work.close()
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
-        "cd {path}\n"
-        "{colour}\n"
-        "{pad}").format(compile_script=luatex_compile_script_path,
-                        id=targetid, path=path,
-                        colour=colourschemes[colour] or "",
-                        pad=pad_script if pad else "").format(image="{}.png".format(targetid))
+        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
+        .format(
+            compile_script=luatex_compile_script_path,
+            id=targetid,
+            path=path,
+            colour=colourschemes[colour] or "",
+            pad=pad_script if pad else "",
+        )
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
 
 
 @Context.util
-async def makexeTeX(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+async def makexeTeX(
+    ctx,
+    source,
+    targetid,
+    preamble=default_preamble,
+    colour="default",
+    header=header,
+    pad=True,
+):
     log(
         "Beginning XeLaTeX compilation for (tid:{targetid}).\n{content}".format(
             targetid=targetid,
-            content='\n'.join(('\t' + line for line in source.splitlines()))
+            content="\n".join(("\t" + line for line in source.splitlines())),
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid)
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
     # Target's staging directory
@@ -183,19 +223,22 @@ async def makexeTeX(ctx, source, targetid, preamble=default_preamble, colour="de
 
     fn = "{}/{}.tex".format(path, targetid)
 
-    with open(fn, 'w') as work:
+    with open(fn, "w") as work:
         work.write(to_compile.format(header=header, preamble=preamble, source=source))
         work.close()
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
-        "cd {path}\n"
-        "{colour}\n"
-        "{pad}").format(compile_script=xetex_compile_script_path,
-                        id=targetid, path=path,
-                        colour=colourschemes[colour] or "",
-                        pad=pad_script if pad else "").format(image="{}.png".format(targetid))
+        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
+        .format(
+            compile_script=xetex_compile_script_path,
+            id=targetid,
+            path=path,
+            colour=colourschemes[colour] or "",
+            pad=pad_script if pad else "",
+        )
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)

@@ -31,8 +31,8 @@ class muterole(ColumnData, Role, GuildSetting):
 # Define data schema
 schema = tableSchema(
     "guild_muteroles",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('roleid', ColumnType.SNOWFLAKE, primary=False, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("roleid", ColumnType.SNOWFLAKE, primary=False, required=True),
 )
 
 
@@ -41,5 +41,5 @@ schema = tableSchema(
 def attach_muterole_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_muteroles"
+        "guild_muteroles",
     )

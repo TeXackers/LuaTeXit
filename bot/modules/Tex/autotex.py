@@ -85,15 +85,20 @@ async def latex_message_parser(client, message):
     # We have a valid piece of LaTeX, and we are listening for it. We may now compile.
 
     # Log the message
-    log(("Automatically rendering LaTeX "
-         "from user '{message.author}' (uid:{message.author.id}) "
-         "in guild '{message.guild}' (gid:{guildid}) "
-         "in channel '{message.channel}' (cid:{message.channel.id}).\n"
-         "{content}").format(
-             message=message,
-             guildid=message.guild.id if message.guild else None,
-             content='\n'.join(('\t' + line for line in message.content.splitlines()))),
-        context="mid:{}".format(message.id))
+    log(
+        (
+            "Automatically rendering LaTeX "
+            "from user '{message.author}' (uid:{message.author.id}) "
+            "in guild '{message.guild}' (gid:{guildid}) "
+            "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+            "{content}"
+        ).format(
+            message=message,
+            guildid=message.guild.id if message.guild else None,
+            content="\n".join(("\t" + line for line in message.content.splitlines())),
+        ),
+        context="mid:{}".format(message.id),
+    )
 
     # First create a context for the message and add it to the context caches
     ctx = client.baseContext(client=client, message=message)
@@ -109,28 +114,40 @@ async def latex_message_parser(client, message):
         output_msg = await lctx.make()
 
         if output_msg:
-            log("Rendered source, now waiting for the LaTeXContext to deactivate.",
+            log(
+                "Rendered source, now waiting for the LaTeXContext to deactivate.",
                 context="mid:{}".format(message.id),
-                level=logging.DEBUG)
+                level=logging.DEBUG,
+            )
 
             # Wait for the context to deactivate
             await lctx.lifetime()
     except discord.Forbidden:
         full_traceback = traceback.format_exc()
-        log("Caught the following exception while rendering LaTeX.\n{}".format(full_traceback),
+        log(
+            "Caught the following exception while rendering LaTeX.\n{}".format(
+                full_traceback
+            ),
             context="mid:{}".format(message.id),
-            level=logging.WARNING)
+            level=logging.WARNING,
+        )
         pass
     except Exception as e:
         full_traceback = traceback.format_exc()
-        log("Caught the following exception while rendering LaTeX.\n{}".format(full_traceback),
+        log(
+            "Caught the following exception while rendering LaTeX.\n{}".format(
+                full_traceback
+            ),
             context="mid:{}".format(message.id),
-            level=logging.ERROR)
+            level=logging.ERROR,
+        )
         raise e
     else:
-        log("Automatic LaTeX compilation completed normally.",
+        log(
+            "Automatic LaTeX compilation completed normally.",
             context="mid:{}".format(message.id),
-            level=logging.DEBUG)
+            level=logging.DEBUG,
+        )
     finally:
         client.ctx_cache[message.id] = ctx.flatten()
         client.active_contexts.pop(message.id, None)

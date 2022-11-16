@@ -30,8 +30,8 @@ class selfroles(ListData, RoleList, GuildSetting):
 # Define data schema
 schema = tableSchema(
     "guild_selfroles",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('roleid', ColumnType.SNOWFLAKE, primary=True, required=True)
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("roleid", ColumnType.SNOWFLAKE, primary=True, required=True),
 )
 
 
@@ -40,5 +40,5 @@ schema = tableSchema(
 def attach_selfrole_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_selfroles"
+        "guild_selfroles",
     )

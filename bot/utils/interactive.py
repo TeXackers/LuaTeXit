@@ -44,14 +44,16 @@ async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=Non
 
         # Create the check function
         def check(message):
-            result = (message.author == ctx.author)
+            result = message.author == ctx.author
             result = result and (message.channel == ctx.ch)
-            result = result and ((message.content.lower() if lower else message.content) in allowed_input)
+            result = result and (
+                (message.content.lower() if lower else message.content) in allowed_input
+            )
             return result
 
     # Wait for a matching message, catch and transform the timeout
     try:
-        message = await ctx.client.wait_for('message', check=check, timeout=timeout)
+        message = await ctx.client.wait_for("message", check=check, timeout=timeout)
     except asyncio.TimeoutError:
         raise ResponseTimedOut("Session timed out waiting for user response.") from None
 
@@ -59,7 +61,9 @@ async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=Non
 
 
 @Context.util
-async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_single=True):
+async def selector(
+    ctx, header, select_from, timeout=120, max_len=20, allow_single=True
+):
     """
     Interactive routine to prompt the `ctx.author` to select an item from a list.
     Returns the list index that was selected.
@@ -108,7 +112,7 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_sing
     out_msg = await ctx.pager(pages)
 
     # Listen for valid input
-    valid_input = [str(i+1) for i in range(0, len(select_from))] + ['c', 'C']
+    valid_input = [str(i + 1) for i in range(0, len(select_from))] + ["c", "C"]
     try:
         result_msg = await ctx.listen_for(valid_input, timeout=timeout)
     except ResponseTimedOut:
@@ -124,7 +128,7 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_sing
         pass
 
     # Handle user cancellation
-    if result_msg.content in ['c', 'C']:
+    if result_msg.content in ["c", "C"]:
         raise UserCancelled("User cancelled selection.")
 
     # The content must now be a valid index. Collect and return it.
@@ -133,7 +137,9 @@ async def selector(ctx, header, select_from, timeout=120, max_len=20, allow_sing
 
 
 @Context.util
-async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allow_single=True):
+async def multi_selector(
+    ctx, header, select_from, timeout=120, max_len=20, allow_single=True
+):
     """
     Interactive routine to prompt the `ctx.author` to select multiple items from a list.
     Returns a list of list indices that were selected.
@@ -174,8 +180,10 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
         return [0]
 
     # Generate the selector pages
-    footer = ("Please type the numbers corresponding to your selection, "
-              "separated by commas, or type `c` now to cancel. (E.g. `2, 3, 5, 7, 11`)")
+    footer = (
+        "Please type the numbers corresponding to your selection, "
+        "separated by commas, or type `c` now to cancel. (E.g. `2, 3, 5, 7, 11`)"
+    )
     list_pages = paginate_list(select_from, block_length=max_len)
     pages = ["\n".join([header, page, footer]) for page in list_pages]
 
@@ -183,7 +191,7 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
     out_msg = await ctx.pager(pages)
 
     # Listen for valid input
-    valid_num_strs = set(str(i+1) for i in range(0, len(select_from)))
+    valid_num_strs = set(str(i + 1) for i in range(0, len(select_from)))
 
     def _check(message):
         if not ((message.channel == ctx.ch) and (message.author == ctx.author)):
@@ -192,13 +200,15 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
             return False
 
         content = message.content.lower()
-        if (content == 'c') or all(chars.strip() in valid_num_strs for chars in content.split(',')):
+        if (content == "c") or all(
+            chars.strip() in valid_num_strs for chars in content.split(",")
+        ):
             return True
         else:
             return False
 
     try:
-        result_msg = await ctx.client.wait_for('message', check=_check, timeout=timeout)
+        result_msg = await ctx.client.wait_for("message", check=_check, timeout=timeout)
     except asyncio.TimeoutError:
         raise ResponseTimedOut("Selector timed out waiting for a response.")
 
@@ -212,16 +222,18 @@ async def multi_selector(ctx, header, select_from, timeout=120, max_len=20, allo
         pass
 
     # Handle user cancellation
-    if result_msg.content in ['c', 'C']:
+    if result_msg.content in ["c", "C"]:
         raise UserCancelled("User cancelled selection.")
 
     # The content must now be a valid set of indicies. Collect and return it.
-    index = [int(chars.strip()) - 1 for chars in result_msg.content.split(',')]
+    index = [int(chars.strip()) - 1 for chars in result_msg.content.split(",")]
     return index
 
 
 @Context.util
-async def pager(ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs):
+async def pager(
+    ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs
+):
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.
@@ -264,7 +276,9 @@ async def pager(ctx, pages, locked=True, blocking=False, destination=None, start
 
     # Run the paging loop if required
     if len(pages) > 1:
-        task = asyncio.ensure_future(_pager(ctx, out_msg, pages, locked, start_page=start_page))
+        task = asyncio.ensure_future(
+            _pager(ctx, out_msg, pages, locked, start_page=start_page)
+        )
         if blocking:
             await task
 
@@ -289,7 +303,9 @@ async def _pager(ctx, out_msg, pages, locked, start_page=0):
     except discord.Forbidden:
         # We don't have permission to add paging emojis
         # Die as gracefully as we can
-        await ctx.error_reply("Cannot page results because I do not have permissions to react!")
+        await ctx.error_reply(
+            "Cannot page results because I do not have permissions to react!"
+        )
         return
 
     # Check function to determine whether a reaction is valid
@@ -304,14 +320,18 @@ async def _pager(ctx, out_msg, pages, locked, start_page=0):
     while True:
         # Wait for a valid reaction, break if we time out
         try:
-            reaction, user = await ctx.client.wait_for('reaction_add', check=check, timeout=300)
+            reaction, user = await ctx.client.wait_for(
+                "reaction_add", check=check, timeout=300
+            )
         except asyncio.TimeoutError:
             break
         except asyncio.CancelledError:
             break
 
         # Attempt to remove the user's reaction, silently ignore errors
-        asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
+        asyncio.ensure_future(
+            _safe_async_future(out_msg.remove_reaction(reaction.emoji, user))
+        )
 
         # Change the page number
         page += 1 if reaction.emoji == next_emoji else -1

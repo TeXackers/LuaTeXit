@@ -2,6 +2,7 @@ class Interface:
     """
     Abstract base class representing a data interface.
     """
+
     _schema = None
 
     @property

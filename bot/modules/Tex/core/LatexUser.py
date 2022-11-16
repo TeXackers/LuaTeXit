@@ -16,7 +16,7 @@ class LatexUser:
         "autotex_level": LatexUserSetting.autotex_level,
     }
 
-    __slots__ = (*settings.keys(), 'id', 'preamble')
+    __slots__ = (*settings.keys(), "id", "preamble")
 
     # Stored client for accessing data interfaces
     _client = None
@@ -48,14 +48,14 @@ class LatexUser:
             value = setting._data_to_value(
                 self._client,
                 self.id,
-                setting.default if not rows or rows[0][name] is None else rows[0][name]
+                setting.default if not rows or rows[0][name] is None else rows[0][name],
             )
             setattr(self, name, value)
 
         # Get preamble
         rows = self._client.data.user_latex_preambles.select_where(userid=self.id)
         if rows:
-            self.preamble = rows[0]['preamble'] or self.preamble
+            self.preamble = rows[0]["preamble"] or self.preamble
 
     def get_setting_data(self, name: str):
         """

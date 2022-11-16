@@ -8,12 +8,10 @@ from .module import guild_admin_module as module
 from wards import in_guild, guild_manager
 
 
-protected_commands = ['list', 'help', 'support', 'disable', 'config']
+protected_commands = ["list", "help", "support", "disable", "config"]
 
 
-@module.cmd("disable",
-            desc="Disable commands in this guild.",
-            aliases=["enable"])
+@module.cmd("disable", desc="Disable commands in this guild.", aliases=["enable"])
 @in_guild()
 @guild_manager()
 async def cmd_disable(ctx):
@@ -54,22 +52,28 @@ async def cmd_disable(ctx):
                 "Use `{prefix}disable cmd1, cmd2, ...` to disable commands.\n"
                 "Use `{prefix}enable cmd1, cmd2, ...` to renable commands.".format(
                     prefix=ctx.best_prefix(),
-                    cmd_str="```css\n{}\n```".format(', '.join(disabled))
+                    cmd_str="```css\n{}\n```".format(", ".join(disabled)),
                 )
             )
     else:
         # Parse arguments
-        cmd_strs = [chars.strip().lower() for chars in ctx.args.split(',')]
+        cmd_strs = [chars.strip().lower() for chars in ctx.args.split(",")]
 
         # Handle nonexistent commands
-        nonexistent = [cmd_str for cmd_str in cmd_strs if cmd_str not in ctx.client.cmd_names]
+        nonexistent = [
+            cmd_str for cmd_str in cmd_strs if cmd_str not in ctx.client.cmd_names
+        ]
         if nonexistent:
             if len(nonexistent) == 1:
-                await ctx.error_reply("Command or alias `{}` doesn't exist!".format(nonexistent[0]))
+                await ctx.error_reply(
+                    "Command or alias `{}` doesn't exist!".format(nonexistent[0])
+                )
             else:
-                await ctx.error_reply("The following are not valid commands or aliases!\n`{}`".format(
-                    "`, `".join(nonexistent)
-                ))
+                await ctx.error_reply(
+                    "The following are not valid commands or aliases!\n`{}`".format(
+                        "`, `".join(nonexistent)
+                    )
+                )
             return
 
         # Get the actual commands, remove duplicates
@@ -78,13 +82,13 @@ async def cmd_disable(ctx):
         # Handle protected commands
         if any(cmdname in protected_commands for cmdname in cmdnames):
             return await ctx.error_reply(
-                "Protected commands:\n`{}`".format('`, `'.join(protected_commands))
+                "Protected commands:\n`{}`".format("`, `".join(protected_commands))
             )
 
-        if ctx.alias == 'disable':
+        if ctx.alias == "disable":
             # Add new disabled commands
             ctx.get_guild_setting.disabled_commands.disable(*cmdnames)
-        elif ctx.alias == 'enable':
+        elif ctx.alias == "enable":
             # Remove disabled commands
             ctx.get_guild_setting.disabled_commands.enable(*cmdnames)
 
@@ -95,8 +99,7 @@ async def cmd_disable(ctx):
         else:
             await ctx.reply(
                 "The following commands and their aliases have been {}d:\n`{}`".format(
-                    ctx.alias,
-                    "`, `".join(cmdnames)
+                    ctx.alias, "`, `".join(cmdnames)
                 )
             )
 
@@ -123,11 +126,13 @@ class disabled_commands(ListData, StringList, GuildSetting):
         """
         Reject modification by this method, unless input is `None`.
         """
-        if userstr.lower() == 'none':
+        if userstr.lower() == "none":
             return None
 
         # TODO: Refactor and add the command parsing system here as well
-        raise SafeCancellation("Please use the `disable` command to modify this setting.")
+        raise SafeCancellation(
+            "Please use the `disable` command to modify this setting."
+        )
 
     def disable(self, *cmdnames):
         self.value = list(set(self.value + list(cmdnames)))
@@ -144,9 +149,9 @@ class disabled_commands(ListData, StringList, GuildSetting):
 
         # Update disabled command cache for the current guild
         if not self.data:
-            self.client.objects['disabled_guild_commands'].pop(self.guildid, None)
+            self.client.objects["disabled_guild_commands"].pop(self.guildid, None)
         else:
-            self.client.objects['disabled_guild_commands'][self.guildid] = self.value
+            self.client.objects["disabled_guild_commands"][self.guildid] = self.value
 
     @classmethod
     def initialise(cls, client):
@@ -158,25 +163,26 @@ class disabled_commands(ListData, StringList, GuildSetting):
 
         rows = client.data.guild_disabled_commands.select_where()
         for row in rows:
-            if row['guildid'] not in disabled_commands:
-                disabled_commands[row['guildid']] = []
-            disabled_commands[row['guildid']].append(row['command_name'])
+            if row["guildid"] not in disabled_commands:
+                disabled_commands[row["guildid"]] = []
+            disabled_commands[row["guildid"]].append(row["command_name"])
             command_counter += 1
 
-        client.objects['disabled_guild_commands'] = disabled_commands
-        client.log("Read {} guilds with a total of {} disabled commands".format(
-            len(disabled_commands),
-            command_counter),
-            context="LOAD_DISABLED_COMMANDS"
+        client.objects["disabled_guild_commands"] = disabled_commands
+        client.log(
+            "Read {} guilds with a total of {} disabled commands".format(
+                len(disabled_commands), command_counter
+            ),
+            context="LOAD_DISABLED_COMMANDS",
         )
 
 
 # Define data schema
 schema = tableSchema(
     "guild_disabled_commands",
-    Column('app', ColumnType.SHORTSTRING, primary=True, required=True),
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('command_name', ColumnType.SHORTSTRING, primary=True, required=True)
+    Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("command_name", ColumnType.SHORTSTRING, primary=True, required=True),
 )
 
 
@@ -185,5 +191,5 @@ schema = tableSchema(
 def attach_disabled_command_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=False),
-        "guild_disabled_commands"
+        "guild_disabled_commands",
     )

@@ -39,14 +39,15 @@ class _MuteTypeAction(ModAction):
 
         # Check the client has sufficient permissions to manage it
         manager_role = max(
-            (role for role in self.ctx.guild.me.roles
-             if role.permissions.manage_roles or role.permissions.administrator),
-            default=None
+            (
+                role
+                for role in self.ctx.guild.me.roles
+                if role.permissions.manage_roles or role.permissions.administrator
+            ),
+            default=None,
         )
         if not manager_role or manager_role <= muterole:
-            raise SafeCancellation(
-                "Insufficient permissions to manage the mute role!"
-            )
+            raise SafeCancellation("Insufficient permissions to manage the mute role!")
 
         return muterole
 
@@ -63,7 +64,7 @@ class MuteAction(_MuteTypeAction):
         ActionState.SUCCESS: "Muted",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the member to mute them!",
         ActionState.IAM_FORBIDDEN: "I don't have permissions to apply the mute role!",
-        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to mute this member!"
+        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to mute this member!",
     }
 
     single_success_report = "Muted {target.mention}."
@@ -82,10 +83,17 @@ class MuteAction(_MuteTypeAction):
         # Mute targets and gather results
         audit_reason = "Muted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
-            *(mute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
+            *(
+                mute_member(target, self.mute_role, audit_reason=audit_reason)
+                for target in self.targets
+            )
         )
         member_results = dict(zip(self.targets, results))
-        successful = [member.id for member, result in member_results.items() if result is ActionState.SUCCESS]
+        successful = [
+            member.id
+            for member, result in member_results.items()
+            if result is ActionState.SUCCESS
+        ]
 
         if successful:
             # Remove members from any timed mute group
@@ -97,8 +105,11 @@ class MuteAction(_MuteTypeAction):
 
             # Create and post mute ticket
             ticket = TicketType.MUTE.Ticket.create(
-                ctx.guild.id, ctx.author.id, ctx.client.user.id,
-                successful, reason=self.reason
+                ctx.guild.id,
+                ctx.author.id,
+                ctx.client.user.id,
+                successful,
+                reason=self.reason,
             )
             await ticket.post()
             self.ticket = ticket
@@ -118,7 +129,7 @@ class TimedMuteAction(_MuteTypeAction):
         ActionState.SUCCESS: "Muted",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the member!",
         ActionState.IAM_FORBIDDEN: "I don't have permissions to apply the mute role!",
-        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to mute this member!"
+        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to mute this member!",
     }
 
     single_success_report = "Muted {target.mention} for {self.duration_str}."
@@ -137,10 +148,17 @@ class TimedMuteAction(_MuteTypeAction):
         # Mute targets and gather results
         audit_reason = "Muted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
-            *(mute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
+            *(
+                mute_member(target, self.mute_role, audit_reason=audit_reason)
+                for target in self.targets
+            )
         )
         member_results = dict(zip(self.targets, results))
-        successful = [member.id for member, result in member_results.items() if result is ActionState.SUCCESS]
+        successful = [
+            member.id
+            for member, result in member_results.items()
+            if result is ActionState.SUCCESS
+        ]
 
         if successful:
             # Temporary mute
@@ -150,9 +168,14 @@ class TimedMuteAction(_MuteTypeAction):
 
             # Create and post ticket
             ticket = TicketType.TEMPMUTE.Ticket.create(
-                ctx.guild.id, ctx.author.id, ctx.client.user.id,
-                successful, reason=self.reason, duration=self.duration, roleid=self.mute_role.id,
-                unmute_timestamp=unmute_at
+                ctx.guild.id,
+                ctx.author.id,
+                ctx.client.user.id,
+                successful,
+                reason=self.reason,
+                duration=self.duration,
+                roleid=self.mute_role.id,
+                unmute_timestamp=unmute_at,
             )
             await ticket.post()
 
@@ -175,7 +198,7 @@ class UnMuteAction(_MuteTypeAction):
         ActionState.SUCCESS: "Unmuted",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the member to unmute them!",
         ActionState.IAM_FORBIDDEN: "I don't have permissions to remove the mute role!",
-        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to unmute this member!"
+        ActionState.YOUARE_FORBIDDEN: "You don't have permissions to unmute this member!",
     }
 
     single_success_report = "Unmuted {target.mention}."
@@ -193,10 +216,17 @@ class UnMuteAction(_MuteTypeAction):
         # Mute targets and gather results
         audit_reason = "Unmuted by {}: {}".format(self.ctx.author.id, self.short_reason)
         results = await asyncio.gather(
-            *(unmute_member(target, self.mute_role, audit_reason=audit_reason) for target in self.targets)
+            *(
+                unmute_member(target, self.mute_role, audit_reason=audit_reason)
+                for target in self.targets
+            )
         )
         member_results = dict(zip(self.targets, results))
-        successful = [member.id for member, result in member_results.items() if result is ActionState.SUCCESS]
+        successful = [
+            member.id
+            for member, result in member_results.items()
+            if result is ActionState.SUCCESS
+        ]
 
         if successful:
             # Remove members from any timed mute group
@@ -208,8 +238,11 @@ class UnMuteAction(_MuteTypeAction):
 
             # Create and post unmute ticket
             ticket = TicketType.UNMUTE.Ticket.create(
-                ctx.guild.id, ctx.author.id, ctx.client.user.id,
-                successful, reason=self.reason
+                ctx.guild.id,
+                ctx.author.id,
+                ctx.client.user.id,
+                successful,
+                reason=self.reason,
             )
             await ticket.post()
             self.ticket = ticket
@@ -218,10 +251,12 @@ class UnMuteAction(_MuteTypeAction):
 
 
 # TODO: Muterole creation
-@module.cmd("mute",
-            desc="Silence a misbehaving user for a specified amount of time.",
-            flags=['r==', 'f', 't=='],
-            handle_edits=False)
+@module.cmd(
+    "mute",
+    desc="Silence a misbehaving user for a specified amount of time.",
+    flags=["r==", "f", "t=="],
+    handle_edits=False,
+)
 @guild_moderator()
 async def cmd_mute(ctx, flags):
     """
@@ -240,13 +275,16 @@ async def cmd_mute(ctx, flags):
     Examples``:
         {prefix}mute {ctx.author} -t 1d
     """
-    await (TimedMuteAction(ctx, flags).run() if isinstance(flags['t'], str) else MuteAction(ctx, flags).run())
+    await (
+        TimedMuteAction(ctx, flags).run()
+        if isinstance(flags["t"], str)
+        else MuteAction(ctx, flags).run()
+    )
 
 
-@module.cmd("unmute",
-            desc="Unmute muted users.",
-            flags=['r==', 'f'],
-            handle_edits=False)
+@module.cmd(
+    "unmute", desc="Unmute muted users.", flags=["r==", "f"], handle_edits=False
+)
 @guild_moderator()
 async def cmd_unmute(ctx, flags):
     """

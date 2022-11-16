@@ -18,8 +18,7 @@ Commands provided:
 # TODO: cooldown on feedback
 
 
-@module.cmd("feedback",
-            desc="Send feedback to my creators")
+@module.cmd("feedback", desc="Send feedback to my creators")
 async def cmd_feedback(ctx: Context):
     """
     Usage``:
@@ -32,25 +31,41 @@ async def cmd_feedback(ctx: Context):
     # Get the feedback channel
     feedback_chid = int(ctx.client.conf.get("feedback_ch"))
     if not feedback_chid:
-        return await ctx.error_reply("Sorry, I am not configured to accept feedback at this time.")
+        return await ctx.error_reply(
+            "Sorry, I am not configured to accept feedback at this time."
+        )
 
     # Get the desired feedback
     response = ctx.args
     if not response:
-        response = await ctx.input("What message would you like to send? (`c` to cancel)", timeout=240)
+        response = await ctx.input(
+            "What message would you like to send? (`c` to cancel)", timeout=240
+        )
         if response.lower() == "c":
             return await ctx.error_reply("Cancelled question.")
 
     # Build the feedback embed
-    embed = discord.Embed(title="Feedback", color=ParaCC["blue"], timestamp=datetime.now(), description=response)
-    embed.set_author(name="{} ({})".format(ctx.author, ctx.author.id),
-                     icon_url=ctx.author.avatar_url)
-    embed.set_footer(text=datetime.utcnow().strftime("Sent from {}".format(ctx.guild.name if ctx.guild else "DM")))
+    embed = discord.Embed(
+        title="Feedback",
+        color=ParaCC["blue"],
+        timestamp=datetime.now(),
+        description=response,
+    )
+    embed.set_author(
+        name="{} ({})".format(ctx.author, ctx.author.id), icon_url=ctx.author.avatar_url
+    )
+    embed.set_footer(
+        text=datetime.utcnow().strftime(
+            "Sent from {}".format(ctx.guild.name if ctx.guild else "DM")
+        )
+    )
 
     # Send a preview and confirm with the user
     preview = await ctx.reply(embed=embed)
-    response = await ctx.ask("Are you sure you wish to submit the following feedback to my developers? (`y`/`n`)",
-                             use_msg=preview)
+    response = await ctx.ask(
+        "Are you sure you wish to submit the following feedback to my developers? (`y`/`n`)",
+        use_msg=preview,
+    )
     await preview.edit(content="")
     if not response:
         return await ctx.error_reply("Cancelled feedback submission.")

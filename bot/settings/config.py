@@ -2,6 +2,7 @@ class _guild_config:
     """
     Namespace class to hold the guild settings.
     """
+
     settings = {}
     __slots__ = tuple()
 

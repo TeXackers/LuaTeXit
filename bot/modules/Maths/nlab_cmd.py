@@ -20,7 +20,7 @@ async def soup_site(target):
     async with aiohttp.ClientSession() as session:
         async with session.get(target, allow_redirects=False) as resp:
             text = await resp.read()
-    return BeautifulSoup(text, 'html.parser')
+    return BeautifulSoup(text, "html.parser")
 
 
 async def search_page_parse(soup):
@@ -75,9 +75,9 @@ def field_pager(strings):
     return pages
 
 
-@module.cmd("nlab",
-            desc="Searches the [nlab](https://ncatlab.org)",
-            aliases=["nlablink", "nl"])
+@module.cmd(
+    "nlab", desc="Searches the [nlab](https://ncatlab.org)", aliases=["nlablink", "nl"]
+)
 async def cmd_nlab(ctx):
     """
     Usage``:
@@ -92,7 +92,9 @@ async def cmd_nlab(ctx):
         {prefix}nlablink category
         {prefix}nlab categorical group
     """
-    direct_page = nlab_url.format("/nlab/show/{}".format(urllib.parse.quote_plus(ctx.args)))
+    direct_page = nlab_url.format(
+        "/nlab/show/{}".format(urllib.parse.quote_plus(ctx.args))
+    )
     if len(direct_page) > 1500:
         return await ctx.error_reply("Search string given is too long!")
 
@@ -103,29 +105,44 @@ async def cmd_nlab(ctx):
     if not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
 
-    loading_emoji = ctx.client.conf.emojis.getemoji('loading')
+    loading_emoji = ctx.client.conf.emojis.getemoji("loading")
 
-    out_msg = await ctx.reply("Searching the ncatlab, please wait. {}".format(loading_emoji))
+    out_msg = await ctx.reply(
+        "Searching the ncatlab, please wait. {}".format(loading_emoji)
+    )
 
     url = search_target.format(urllib.parse.quote_plus(ctx.args))
 
     soup = await soup_site(url)
     direct_soup = await soup_site(direct_page)
-    direct_found = False if (
-        not direct_soup.find("title") or "Page not found" in direct_soup.find("title").contents[0]
-    ) else True
-    direct_str = "\nDirect page found at: [{}]({})".format(ctx.args, direct_page) if direct_found else ""
+    direct_found = (
+        False
+        if (
+            not direct_soup.find("title")
+            or "Page not found" in direct_soup.find("title").contents[0]
+        )
+        else True
+    )
+    direct_str = (
+        "\nDirect page found at: [{}]({})".format(ctx.args, direct_page)
+        if direct_found
+        else ""
+    )
 
     title = soup.find("title")
     if title is None or "Search results" not in title.contents[0]:
         await out_msg.edit(
-            content="Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"])
+            content="Nlab redirected the search to the following page:\n{}".format(
+                soup.find("a").attrs["href"]
+            )
         )
         return
     parsed = await search_page_parse(soup)
     if not parsed:
         await out_msg.edit(
-            content="I don't understand the search results. Read them yourself at:\n{}".format(url)
+            content="I don't understand the search results. Read them yourself at:\n{}".format(
+                url
+            )
         )
         return
     in_title, in_body = parsed
@@ -133,7 +150,9 @@ async def cmd_nlab(ctx):
     in_title_fields = []
     if in_title:
         in_title = list(in_title)
-        in_title_links = ["[{}]({})".format(link[0], nlab_url.format(link[1])) for link in in_title]
+        in_title_links = [
+            "[{}]({})".format(link[0], nlab_url.format(link[1])) for link in in_title
+        ]
         in_title_fields_raw = field_pager(in_title_links)
 
         base_title = "{} result{} where query appeared in title.".format(
@@ -151,10 +170,14 @@ async def cmd_nlab(ctx):
     in_body_fields = []
     if in_body:
         in_body = list(in_body)
-        in_body_links = ["[{}]({})".format(link[0], nlab_url.format(link[1])) for link in in_body]
+        in_body_links = [
+            "[{}]({})".format(link[0], nlab_url.format(link[1])) for link in in_body
+        ]
         in_body_fields_raw = field_pager(in_body_links)
 
-        base_title = "{} result{} where query appeared in body.".format(len(in_body), "" if len(in_body) == 1 else "s")
+        base_title = "{} result{} where query appeared in body.".format(
+            len(in_body), "" if len(in_body) == 1 else "s"
+        )
         if len(in_body_fields_raw) == 1:
             in_body_fields = [(base_title, in_body_fields_raw[0], 0)]
         else:
@@ -181,10 +204,11 @@ async def cmd_nlab(ctx):
 
     emb_pages.extend([[field] for field in in_body_fields[1:]])
 
-    params = {"title": "Search results for {}".format(ctx.args),
-              "description": "From {}{}".format(url, direct_str),
-              "color": discord.Colour.light_grey()
-              }
+    params = {
+        "title": "Search results for {}".format(ctx.args),
+        "description": "From {}{}".format(url, direct_str),
+        "color": discord.Colour.light_grey(),
+    }
 
     embeds = []
     for page in emb_pages:

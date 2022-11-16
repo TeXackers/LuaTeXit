@@ -31,8 +31,8 @@ class modlog(ColumnData, Channel, GuildSetting):
 # Define data schema
 schema = tableSchema(
     "guild_modlogs",
-    Column('guildid', ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column('channelid', ColumnType.SNOWFLAKE, primary=False, required=True),
+    Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
+    Column("channelid", ColumnType.SNOWFLAKE, primary=False, required=True),
 )
 
 
@@ -41,5 +41,5 @@ schema = tableSchema(
 def attach_modlog_data(client):
     client.data.attach_interface(
         tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_modlogs"
+        "guild_modlogs",
     )

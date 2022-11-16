@@ -17,7 +17,7 @@ from ..module import guild_moderation_module as module
 from .TicketTypes import TicketType
 
 
-T = TypeVar('T', bound='Ticket')
+T = TypeVar("T", bound="Ticket")
 
 
 class Ticket:
@@ -62,24 +62,29 @@ class Ticket:
     reason: Optional[str]
         The reason associated with the action, if any.
     """
+
     __slots__ = (
-        'guildid',
-        'modid',
-        'agentid',
-        'memberids',
-        'ticketid',
-        'ticketgid',
-        'created_at',
-        'app',
-        'msgid',
-        'auditid',
-        'reason',
+        "guildid",
+        "modid",
+        "agentid",
+        "memberids",
+        "ticketid",
+        "ticketgid",
+        "created_at",
+        "app",
+        "msgid",
+        "auditid",
+        "reason",
     )
     _client: cmdClient = None  # Client, attached at initialisation
 
     # Data interfaces
-    _ticket_data: tableInterface = None  # Ticket properties, interface for the raw ticket table
-    _member_data: tableInterface = None  # Ticket members, interface for the ticket member table
+    _ticket_data: tableInterface = (
+        None  # Ticket properties, interface for the raw ticket table
+    )
+    _member_data: tableInterface = (
+        None  # Ticket members, interface for the ticket member table
+    )
 
     # Ticket properties with extra properties joined or derived from all ticket types
     _combined_ticket_data: tableInterface = None
@@ -88,16 +93,16 @@ class Ticket:
     _ticket_type = None
 
     def __init__(self, row: Mapping[str, Any], memberids: List[int], *args):
-        self.guildid: int = row['guildid']
-        self.modid: int = row['modid']
-        self.agentid: int = row['agentid']
-        self.ticketid: int = row['ticketid']
-        self.ticketgid: int = row['ticketgid']
-        self.app: str = row['app']
-        self.msgid: int = row['msgid']
-        self.auditid: int = row['auditid']
-        self.reason: str = row['reason']
-        self.created_at: int = row['created_at']
+        self.guildid: int = row["guildid"]
+        self.modid: int = row["modid"]
+        self.agentid: int = row["agentid"]
+        self.ticketid: int = row["ticketid"]
+        self.ticketgid: int = row["ticketgid"]
+        self.app: str = row["app"]
+        self.msgid: int = row["msgid"]
+        self.auditid: int = row["auditid"]
+        self.reason: str = row["reason"]
+        self.created_at: int = row["created_at"]
 
         self.memberids: List[int] = memberids
 
@@ -110,18 +115,23 @@ class Ticket:
         # Base embed
         embed = discord.Embed(
             title="Ticket #{}".format(self.ticketgid),
-            timestamp=dt.fromtimestamp(self.created_at)
+            timestamp=dt.fromtimestamp(self.created_at),
         )
 
         # Moderator information
         mod_user = self._client.get_user(self.modid)
         if mod_user is not None:
-            embed.set_footer(text="Responsible moderator: {}".format(mod_user), icon_url=mod_user.avatar_url)
+            embed.set_footer(
+                text="Responsible moderator: {}".format(mod_user),
+                icon_url=mod_user.avatar_url,
+            )
         else:
             embed.set_footer(text="Responsible moderator: {}".format(self.modid))
 
         # Target information
-        targets = '\n'.join("<@{0}> ({0})".format(targetid) for targetid in self.memberids)
+        targets = "\n".join(
+            "<@{0}> ({0})".format(targetid) for targetid in self.memberids
+        )
         if len(self.memberids) == 1:
             embed.description = "`Target`: {}".format(targets)
         else:
@@ -129,7 +139,7 @@ class Ticket:
 
         # Reason
         if self.reason:
-            embed.add_field(name='Reason', value=self.reason, inline=False)
+            embed.add_field(name="Reason", value=self.reason, inline=False)
 
         return embed
 
@@ -149,7 +159,7 @@ class Ticket:
             self.ticketgid,
             self._ticket_type.name,
             dt.fromtimestamp(self.created_at),
-            self._client.get_user(self.modid) or self.modid
+            self._client.get_user(self.modid) or self.modid,
         )
         value = self.reason or "No reason given"
         return (name, value)
@@ -168,13 +178,25 @@ class Ticket:
     @classmethod
     def setup(cls, client):
         cls._client = client
-        cls._ticket_data: tableInterface = client.data.guild_mod_tickets  # type: tableInterface
+        cls._ticket_data: tableInterface = (
+            client.data.guild_mod_tickets
+        )  # type: tableInterface
         cls._member_data = client.data.guild_mod_ticket_members  # type: tableInterface
-        cls._combined_ticket_data = client.data.guild_mod_tickets_combined  # type: tableInterface
+        cls._combined_ticket_data = (
+            client.data.guild_mod_tickets_combined
+        )  # type: tableInterface
 
     @classmethod
-    def create(cls: Type[T], guildid: int, modid: int, agentid: int, memberids: List[int],
-               auditid: Optional[int] = None, reason: Optional[str] = None, **kwargs) -> T:
+    def create(
+        cls: Type[T],
+        guildid: int,
+        modid: int,
+        agentid: int,
+        memberids: List[int],
+        auditid: Optional[int] = None,
+        reason: Optional[str] = None,
+        **kwargs
+    ) -> T:
         """
         Create a new ticket with the given parameters.
         Individual ticket types should extend this if they carry extra properties.
@@ -192,7 +214,7 @@ class Ticket:
             agentid=agentid,
             auditid=auditid,
             reason=reason,
-            created_at=int(dt.utcnow().timestamp())
+            created_at=int(dt.utcnow().timestamp()),
         )
 
         # Retrieve the ticket id
@@ -201,7 +223,7 @@ class Ticket:
         # Save the member data
         cls._member_data.insert_many(
             *((ticketid, memberid) for memberid in memberids),
-            insert_keys=('ticketid', 'memberid')
+            insert_keys=("ticketid", "memberid")
         )
 
         return cls._create_ticket(ticketid, memberids, **kwargs)
@@ -234,33 +256,35 @@ class Ticket:
             if not rows:
                 return []
 
-            ticketids = [row['ticketid'] for row in rows]
+            ticketids = [row["ticketid"] for row in rows]
 
-            given_ticketids = kwargs.pop('ticketid', None)
+            given_ticketids = kwargs.pop("ticketid", None)
             if given_ticketids is None:
-                kwargs['ticketid'] = ticketids
+                kwargs["ticketid"] = ticketids
             elif isinstance(given_ticketids, (list, tuple)):
-                kwargs['ticketid'] = list(set(given_ticketids).intersection(ticketids))
+                kwargs["ticketid"] = list(set(given_ticketids).intersection(ticketids))
             elif given_ticketids in ticketids:
-                kwargs['ticketid'] = given_ticketids
+                kwargs["ticketid"] = given_ticketids
             else:
                 return []
 
-        if cls._ticket_type is not None and 'ticket_type' not in kwargs:
-            kwargs['ticket_type'] = cls._ticket_type.value
+        if cls._ticket_type is not None and "ticket_type" not in kwargs:
+            kwargs["ticket_type"] = cls._ticket_type.value
 
         ticket_rows = cls._combined_ticket_data.select_where(**kwargs)
         if ticket_rows:
-            ticketids = [row['ticketid'] for row in ticket_rows]
+            ticketids = [row["ticketid"] for row in ticket_rows]
             member_rows = cls._member_data.select_where(ticketid=ticketids)
 
             ticket_members = {ticketid: [] for ticketid in ticketids}
             for row in member_rows:
-                ticket_members[row['ticketid']].append(row['memberid'])
+                ticket_members[row["ticketid"]].append(row["memberid"])
 
             for row in ticket_rows:
                 tickets.append(
-                    TicketType(row['ticket_type']).Ticket(row, ticket_members[row['ticketid']])
+                    TicketType(row["ticket_type"]).Ticket(
+                        row, ticket_members[row["ticketid"]]
+                    )
                 )
         else:
             return []
@@ -275,18 +299,15 @@ class Ticket:
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
-        new_memberids = kwargs.pop('memberids', None)
+        new_memberids = kwargs.pop("memberids", None)
 
         if kwargs:
-            self._ticket_data.update_where(
-                kwargs,
-                ticketid=self.ticketid
-            )
+            self._ticket_data.update_where(kwargs, ticketid=self.ticketid)
 
         if new_memberids is not None:
             self._member_data.delete_where(ticketid=self.ticketid)
             self._member_data.insertmany(
-                ('ticketid', 'memberid'),
+                ("ticketid", "memberid"),
                 *((self.ticketid, memberid) for memberid in new_memberids)
             )
 

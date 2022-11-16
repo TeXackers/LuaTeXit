@@ -6,6 +6,7 @@ class tableElement:
     Abstract base class describing an element of a table schema.
     Examples include columns, constraints, indexes, and data.
     """
+
     def __init__(self, *args, **kwargs):
         self.table = None
 
@@ -23,13 +24,14 @@ class ColumnType(Enum):
     Describes several common database column data types,
     and describes the types for python, mysql and sqlite.
     """
-    INT = (int, 'INT', 'INTEGER')
-    SNOWFLAKE = (int, 'BIGINT', 'INTEGER')
-    SHORTSTRING = (str, 'VARCHAR(64)', 'TEXT')
-    MSGSTRING = (str, 'VARCHAR(2048)', 'TEXT')
-    TEXT = (str, 'TEXT', 'TEXT')
-    BOOL = (bool, 'BOOLEAN', 'BOOL')
-    TIMESTAMP = (int, 'TIMESTAMP', 'TIMESTAMP')
+
+    INT = (int, "INT", "INTEGER")
+    SNOWFLAKE = (int, "BIGINT", "INTEGER")
+    SHORTSTRING = (str, "VARCHAR(64)", "TEXT")
+    MSGSTRING = (str, "VARCHAR(2048)", "TEXT")
+    TEXT = (str, "TEXT", "TEXT")
+    BOOL = (bool, "BOOLEAN", "BOOL")
+    TIMESTAMP = (int, "TIMESTAMP", "TIMESTAMP")
 
     @property
     def pytype(self):
@@ -64,9 +66,17 @@ class Column(tableElement):
         Whether to add `ON UPDATE CURRENT_TIMESTAMP` to the column.
         Only applies to mysql.
     """
-    def __init__(self, column_name, column_type,
-                 primary=False, required=False, autoincrement=False, default=None,
-                 mysql_update_timestamp=False):
+
+    def __init__(
+        self,
+        column_name,
+        column_type,
+        primary=False,
+        required=False,
+        autoincrement=False,
+        default=None,
+        mysql_update_timestamp=False,
+    ):
         super().__init__()
         self.name = column_name
         self.col_type = column_type
@@ -84,7 +94,7 @@ class Column(tableElement):
             " NOT NULL" if self.required else "",
             " AUTO_INCREMENT " if self.autoincrement else "",
             " DEFAULT {}".format(self.default) if self.default is not None else "",
-            " ON UPDATE CURRENT_TIMESTAMP" if self.update_timestamp else ""
+            " ON UPDATE CURRENT_TIMESTAMP" if self.update_timestamp else "",
         )
 
     @property
@@ -94,7 +104,7 @@ class Column(tableElement):
             self.col_type.in_sqlite,
             " NOT NULL" if self.required else "",
             " PRIMARY KEY AUTOINCREMENT " if self.autoincrement else "",
-            " DEFAULT {}".format(self.default) if self.default is not None else ""
+            " DEFAULT {}".format(self.default) if self.default is not None else "",
         )
 
 
@@ -118,7 +128,9 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value) if self.on_delete is not None else ""
+            " ON DELETE {}".format(self.on_delete.value)
+            if self.on_delete is not None
+            else "",
         )
 
     @property
@@ -127,7 +139,9 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value) if self.on_delete is not None else ""
+            " ON DELETE {}".format(self.on_delete.value)
+            if self.on_delete is not None
+            else "",
         )
 
 
@@ -140,17 +154,13 @@ class Index(tableElement):
     @property
     def for_mysql(self):
         return "CREATE INDEX {} ON {}({});".format(
-            self.name,
-            self.table,
-            ','.join(self.keys)
+            self.name, self.table, ",".join(self.keys)
         )
 
     @property
     def for_sqlite(self):
         return "CREATE INDEX {} ON {}({});".format(
-            self.name,
-            self.table,
-            ','.join(self.keys)
+            self.name, self.table, ",".join(self.keys)
         )
 
 

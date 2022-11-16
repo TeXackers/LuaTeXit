@@ -16,13 +16,16 @@ class GuildSetting:
     Additionally, the setting has attributes attached describing
     the setting in a user-friendly manner for display purposes.
     """
+
     attr_name: str = None  # Internal name for the setting
     _default: Any = None  # Default data value for the setting.. this may be None if the setting overrides 'default'.
 
     # Read and write checks.
     # These are not guaranteed to be checked internally, and should be handled by the caller
     read_check: Check = None  # Check that needs to be passed to read the setting
-    write_check: Check = None  # Check that needs to be passed before changing the setting
+    write_check: Check = (
+        None  # Check that needs to be passed before changing the setting
+    )
 
     # Configuration interface descriptions
     hidden: bool = False  # Whether this setting should appear in the configuration
@@ -48,9 +51,11 @@ class GuildSetting:
             title="Configuration options for `{}`".format(self.name),
         )
         fields = ("Current value", "Default value", "Accepted input")
-        values = (self.formatted or "Not Set",
-                  self._format_data(self.client, self.guildid, self.default) or "None",
-                  self.accepts)
+        values = (
+            self.formatted or "Not Set",
+            self._format_data(self.client, self.guildid, self.default) or "None",
+            self.accepts,
+        )
         table = prop_tabulate(fields, values)
         embed.description = "{}\n{}".format(self.long_desc, table)
         return embed
@@ -64,9 +69,11 @@ class GuildSetting:
             title="Configuration options for `{}`".format(self.name),
         )
         fields = ("Current value", "Default value", "Accepted input")
-        values = ("Hidden",
-                  self._format_data(self.client, self.guildid, self.default) or "None",
-                  self.accepts)
+        values = (
+            "Hidden",
+            self._format_data(self.client, self.guildid, self.default) or "None",
+            self.accepts,
+        )
         table = prop_tabulate(fields, values)
         embed.description = "{}\n{}".format(self.long_desc, table)
         return embed

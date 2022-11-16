@@ -11,7 +11,9 @@ from paraArgs import args
 
 # Setup the logger
 logger = logging.getLogger()
-log_fmt = logging.Formatter(fmt='[{asctime}][{levelname:^8}] {message}', datefmt='%d/%m | %H:%M:%S', style='{')
+log_fmt = logging.Formatter(
+    fmt="[{asctime}][{levelname:^8}] {message}", datefmt="%m-%d %H-%M-%S", style="{"
+)
 term_handler = logging.StreamHandler(sys.stdout)
 term_handler.setFormatter(log_fmt)
 logger.addHandler(term_handler)
@@ -24,10 +26,11 @@ _client = None
 @cmd_log_handler
 def log(message, context="GLOBAL", level=logging.INFO, post=True):
     # Use a single line logging format so the files are more parseable
-    logger.log(level, '\b[SHARD {}][{}] {}'.format(
-        args.shard or 0,
-        str(context).center(22, '='),
-        json.dumps(message))
+    logger.log(
+        level,
+        "\b[SHARD {}][{}] {}".format(
+            args.shard or 0, str(context).center(20, " "), json.dumps(message)
+        ),
     )
 
     # Fire and forget to the channel logger, if it is set up
@@ -41,7 +44,9 @@ async def live_log(message, context, level):
         log_chid = _client.conf.get("log_channel")
 
         # Generate the log messages
-        header = "[{}][Shard {}][{}]".format(logging.getLevelName(level), _client.shard_id, str(context))
+        header = "[{}][Shard {}][{}]".format(
+            logging.getLevelName(level), _client.shard_id, str(context)
+        )
         if len(message) > 1900:
             blocks = split_text(message, blocksize=1900, code=False)
         else:
@@ -49,23 +54,35 @@ async def live_log(message, context, level):
 
         if len(blocks) > 1:
             blocks = [
-                "```md\n{}[{}/{}]\n{}\n```".format(header, i+1, len(blocks), block) for i, block in enumerate(blocks)
+                "```md\n{}[{}/{}]\n{}\n```".format(header, i + 1, len(blocks), block)
+                for i, block in enumerate(blocks)
             ]
         else:
             blocks = ["```md\n{}\n{}\n```".format(header, blocks[0])]
 
         # Post the log messages
         if log_chid:
-            [await mail(_client, log_chid, content=block, allowed_mentions=AllowedMentions.none()) for block in blocks]
+            [
+                await mail(
+                    _client,
+                    log_chid,
+                    content=block,
+                    allowed_mentions=AllowedMentions.none(),
+                )
+                for block in blocks
+            ]
 
         if level >= logging.ERROR:
             error_chid = _client.conf.get("error_channel")
             if error_chid:
                 [
-                    await mail(_client,
-                               error_chid,
-                               content=block,
-                               allowed_mentions=AllowedMentions.none()) for block in blocks
+                    await mail(
+                        _client,
+                        error_chid,
+                        content=block,
+                        allowed_mentions=AllowedMentions.none(),
+                    )
+                    for block in blocks
                 ]
 
 

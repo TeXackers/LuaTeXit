@@ -1,7 +1,7 @@
 import os
 
 app = os.getcwd().split(os.sep)[-1]
-pipefile = "/home/paradox/pipe/"+app
+pipefile = "/home/paradox/pipe/" + app
 
 existence = os.path.exists(pipefile)
 
@@ -17,7 +17,7 @@ async def handle_raw_socket(bot, msg):
         cest_une_pipe = open(pipefile, "w")
     if isinstance(msg, str):
         cest_une_pipe.write(msg)
-        cest_une_pipe.write('\n')
+        cest_une_pipe.write("\n")
 
 
 def load_into(bot):

@@ -9,6 +9,7 @@ class _tableData:
     """
     Abstract base for guild setting data mixins working on a single tableInterface.
     """
+
     # Name of table interface to use for storage access
     _table_interface_name = None
 
@@ -46,16 +47,14 @@ class ListData(_tableData):
     Mixin for list types implemented on a tableInterface.
     Implements a reader and writer.
     """
+
     @classmethod
     def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read in all entries associated to the guild.
         """
         table = cls._get_table_interface(client)  # type: tableInterface
-        params = {
-            "select_columns": [cls._data_column],
-            cls._guildid_column: guildid
-        }
+        params = {"select_columns": [cls._data_column], cls._guildid_column: guildid}
         rows = table.select_where(**params)
         data_rows = [row[cls._data_column] for row in rows]
         return data_rows if data_rows else None
@@ -73,9 +72,7 @@ class ListData(_tableData):
 
         # Handle special case of data being None first
         if data is None:
-            params = {
-                cls._guildid_column: guildid
-            }
+            params = {cls._guildid_column: guildid}
             table.delete_where(**params)
             return
 
@@ -89,10 +86,7 @@ class ListData(_tableData):
 
         # Handle required deletions
         if to_remove:
-            params = {
-                cls._guildid_column: guildid,
-                cls._data_column: to_remove
-            }
+            params = {cls._guildid_column: guildid, cls._data_column: to_remove}
             table.delete_where(**params)
 
         # Handle required insertions
@@ -107,6 +101,7 @@ class ColumnData(_tableData):
     Mixin for data types represented in a single row and column of a tableInterface.
     Intended to be used with tables where `guildid` is the only primary key.
     """
+
     # Whether to delete if the writer is passed 'None'
     _delete_on_none = True
 
@@ -119,10 +114,7 @@ class ColumnData(_tableData):
         Read in the requested entry associated to the guild.
         """
         table = cls._get_table_interface(client)  # type: tableInterface
-        params = {
-            "select_columns": [cls._data_column],
-            cls._guildid_column: guildid
-        }
+        params = {"select_columns": [cls._data_column], cls._guildid_column: guildid}
         rows = table.select_where(**params)
         return rows[0][cls._data_column] if rows else None
 
@@ -132,9 +124,7 @@ class ColumnData(_tableData):
         Write the provided entry to the table, allowing replacements.
         """
         table = cls._get_table_interface(client)  # type: tableInterface
-        params = {
-            cls._guildid_column: guildid
-        }
+        params = {cls._guildid_column: guildid}
 
         if data is None and cls._delete_on_none:
             # Handle deletion
@@ -143,8 +133,7 @@ class ColumnData(_tableData):
             # Handle insert or update
             params[cls._data_column] = data
             table.upsert(
-                constraint=cls._upsert_constraint or cls._guildid_column,
-                **params
+                constraint=cls._upsert_constraint or cls._guildid_column, **params
             )
 
 
@@ -153,15 +142,14 @@ class BoolData(_tableData):
     Mixin for Boolean types implemented on a single column tableInterface.
     Implements a reader and writer.
     """
+
     @classmethod
     def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read the table and return whether the specified guildid exists.
         """
         table = cls._get_table_interface(client)  # type: tableInterface
-        params = {
-            cls._guildid_column: guildid
-        }
+        params = {cls._guildid_column: guildid}
         rows = table.select_where(**params)
         return len(rows) > 0
 

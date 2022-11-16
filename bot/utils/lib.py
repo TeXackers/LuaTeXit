@@ -27,12 +27,18 @@ def prop_tabulate(prop_list, value_list, indent=True):
     Returns: str
     """
     max_len = max(len(prop) for prop in prop_list)
-    return "".join(["`{}{}{}`\t{}{}".format("​ " * (max_len - len(prop)) if indent else "",
-                                            prop,
-                                            ":" if len(prop) else "​ " * 2,
-                                            value_list[i],
-                                            '' if str(value_list[i]).endswith("```") else '\n')
-                    for i, prop in enumerate(prop_list)])
+    return "".join(
+        [
+            "`{}{}{}`\t{}{}".format(
+                "​ " * (max_len - len(prop)) if indent else "",
+                prop,
+                ":" if len(prop) else "​ " * 2,
+                value_list[i],
+                "" if str(value_list[i]).endswith("```") else "\n",
+            )
+            for i, prop in enumerate(prop_list)
+        ]
+    )
 
 
 def paginate_list(item_list, block_length=20, style="markdown", title=None):
@@ -56,8 +62,13 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
         List of pages, each formatted into a codeblock,
         and containing at most `block_length` of the provided strings.
     """
-    lines = ["{0:<5}{1:<5}".format("{}.".format(i + 1), str(line)) for i, line in enumerate(item_list)]
-    page_blocks = [lines[i:i + block_length] for i in range(0, len(lines), block_length)]
+    lines = [
+        "{0:<5}{1:<5}".format("{}.".format(i + 1), str(line))
+        for i, line in enumerate(item_list)
+    ]
+    page_blocks = [
+        lines[i : i + block_length] for i in range(0, len(lines), block_length)
+    ]
     pages = []
     for i, block in enumerate(page_blocks):
         pagenum = "Page {}/{}".format(i + 1, len(page_blocks))
@@ -66,7 +77,11 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
         else:
             header = pagenum
         header_line = "=" * len(header)
-        full_header = "{}\n{}\n".format(header, header_line) if len(page_blocks) > 1 or title else ""
+        full_header = (
+            "{}\n{}\n".format(header, header_line)
+            if len(page_blocks) > 1 or title
+            else ""
+        )
         pages.append("```{}\n{}{}```".format(style, full_header, "\n".join(block)))
     return pages
 
@@ -111,10 +126,10 @@ def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
         if len(text) <= blocksize:
             blocks.append(text)
             break
-        text = text.strip('\n')
+        text = text.strip("\n")
 
         # Find the last newline in the prototype block
-        split_on = text[0:blocksize].rfind('\n')
+        split_on = text[0:blocksize].rfind("\n")
         split_on = blocksize if split_on < blocksize // 5 else split_on
 
         # Add the block and truncate the text
@@ -148,15 +163,17 @@ def strfdelta(delta, sec=False, minutes=True, short=False):
         Time units will be abbreviated if short was set to True.
     """
 
-    output = [[delta.days, 'd' if short else ' day'],
-              [delta.seconds // 3600, 'h' if short else ' hour']]
+    output = [
+        [delta.days, "d" if short else " day"],
+        [delta.seconds // 3600, "h" if short else " hour"],
+    ]
     if minutes:
-        output.append([delta.seconds // 60 % 60, 'm' if short else ' minute'])
+        output.append([delta.seconds // 60 % 60, "m" if short else " minute"])
     if sec:
-        output.append([delta.seconds % 60, 's' if short else ' second'])
+        output.append([delta.seconds % 60, "s" if short else " second"])
     for i in range(len(output)):
         if output[i][0] != 1 and not short:
-            output[i][1] += 's'
+            output[i][1] += "s"
     reply_msg = []
     if output[0][0] != 0:
         reply_msg.append("{}{} ".format(output[0][0], output[0][1]))
@@ -182,12 +199,14 @@ def parse_dur(time_str):
     Returns: int
         The number of seconds the duration represents.
     """
-    funcs = {'d': lambda x: x * 24 * 60 * 60,
-             'h': lambda x: x * 60 * 60,
-             'm': lambda x: x * 60,
-             's': lambda x: x}
+    funcs = {
+        "d": lambda x: x * 24 * 60 * 60,
+        "h": lambda x: x * 60 * 60,
+        "m": lambda x: x * 60,
+        "s": lambda x: x,
+    }
     time_str = time_str.strip(" ,")
-    found = re.findall(r'(\d+)\s?(\w+?)', time_str)
+    found = re.findall(r"(\d+)\s?(\w+?)", time_str)
     seconds = 0
     for bit in found:
         if bit[1] in funcs:
@@ -195,7 +214,7 @@ def parse_dur(time_str):
     return seconds
 
 
-def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=','):
+def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=","):
     """
     Substitutes a user provided list of numbers and ranges,
     and replaces the ranges by the corresponding list of numbers.
@@ -211,6 +230,7 @@ def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=','):
         The maximum length of range to replace.
         Attempting to replace a range longer than this will raise a `ValueError`.
     """
+
     def _repl(match):
         n1 = int(match.group(1))
         n2 = int(match.group(2))
@@ -218,7 +238,7 @@ def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=','):
             raise ValueError("Provided range exceeds the allowed maximum.")
         return separator.join(str(i) for i in range(n1, n2 + 1))
 
-    return re.sub(r'(\d+)\s*-\s*(\d+)', _repl, ranges_str, max_match)
+    return re.sub(r"(\d+)\s*-\s*(\d+)", _repl, ranges_str, max_match)
 
 
 def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
@@ -245,20 +265,26 @@ def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
     """
     timestr = "%I:%M %p, %d/%m/%Y"
     if tz:
-        time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
+        time = (
+            iso8601.parse_date(msg.timestamp.isoformat())
+            .astimezone(tz)
+            .strftime(timestr)
+        )
     else:
         time = msg.timestamp.strftime(timestr)
     user = str(msg.author)
     attach_list = [attach["url"] for attach in msg.attachments if "url" in attach]
     if mask_link:
         attach_list = ["[Link]({})".format(url) for url in attach_list]
-    attachments = "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
+    attachments = (
+        "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
+    )
     return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(
         time=time,
         user=user,
         line_break="\n" if line_break else "",
         message=msg.clean_content if clean else msg.content,
-        attachments=attachments
+        attachments=attachments,
     )
 
 
@@ -274,21 +300,23 @@ def convdatestring(datestring):
     Returns: datetime.timedelta
         A datetime.timedelta object formed from the string provided.
     """
-    datestring = datestring.strip(' ,')
+    datestring = datestring.strip(" ,")
     datearray = []
-    funcs = {'d': lambda x: x * 24 * 60 * 60,
-             'h': lambda x: x * 60 * 60,
-             'm': lambda x: x * 60,
-             's': lambda x: x}
-    currentnumber = ''
+    funcs = {
+        "d": lambda x: x * 24 * 60 * 60,
+        "h": lambda x: x * 60 * 60,
+        "m": lambda x: x * 60,
+        "s": lambda x: x,
+    }
+    currentnumber = ""
     for char in datestring:
         if char.isdigit():
             currentnumber += char
         else:
-            if currentnumber == '':
+            if currentnumber == "":
                 continue
             datearray.append((int(currentnumber), char))
-            currentnumber = ''
+            currentnumber = ""
     seconds = 0
     if currentnumber:
         seconds += int(currentnumber)
@@ -303,6 +331,7 @@ class _rawChannel(discord.abc.Messageable):
     Raw messageable class representing an arbitrary channel,
     not necessarially seen by the gateway.
     """
+
     def __init__(self, state, id):
         self._state = state
         self.id = id
@@ -362,8 +391,12 @@ def join_list(string, nfs=False):
         If not provided, fullstops will be appended to the output.
     """
     if len(string) > 1:
-        return "{}{} and {}{}".format((", ").join(string[:-1]),
-                                      "," if len(string) > 2 else "", string[-1], "" if nfs else ".")
+        return "{}{} and {}{}".format(
+            (", ").join(string[:-1]),
+            "," if len(string) > 2 else "",
+            string[-1],
+            "" if nfs else ".",
+        )
     else:
         return "{}{}".format("".join(string), "" if nfs else ".")
 
@@ -438,8 +471,6 @@ def jumpto(guildid: int, channeldid: int, messageid: int):
     """
     Build a jump link for a message given its location.
     """
-    return 'https://discord.com/channels/{}/{}/{}'.format(
-        guildid,
-        channeldid,
-        messageid
+    return "https://discord.com/channels/{}/{}/{}".format(
+        guildid, channeldid, messageid
     )

@@ -13,7 +13,7 @@ from .module import guild_admin_module as module
 conf_pages = {
     "General options": ["Guild admin", "Starboard", "LaTeX", "Misc"],
     "Manual Moderation settings": ["Moderation", "Logging"],
-    "Greeting and Farewell messages": ["Greeting message", "Farewell message"]
+    "Greeting and Farewell messages": ["Greeting message", "Farewell message"],
 }
 
 # TODO: Cat descriptions
@@ -27,7 +27,9 @@ async def _build_config_pages(ctx, show_help=True):
     pages = []
 
     # Generated sorted lists of options in each cat
-    for option in sorted(ctx.client.guild_config.settings.values(), key=lambda s: len(s.name)):
+    for option in sorted(
+        ctx.client.guild_config.settings.values(), key=lambda s: len(s.name)
+    ):
         cat = option.category
         if cat not in cats:
             cats[cat] = []
@@ -48,8 +50,12 @@ async def _build_config_pages(ctx, show_help=True):
                     names.append(option.name)
                     if show_help:
                         values.append(option.desc)
-                    elif (option.read_check is None) or await option.read_check.run(ctx):
-                        value = option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
+                    elif (option.read_check is None) or await option.read_check.run(
+                        ctx
+                    ):
+                        value = (
+                            option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
+                        )
                         value = value if len(value) < 100 else "(Too long to display)"
                         values.append(value)
                     else:
@@ -72,8 +78,7 @@ async def _build_config_pages(ctx, show_help=True):
     return pages
 
 
-@module.cmd("config",
-            desc="View and set the guild configuration.")
+@module.cmd("config", desc="View and set the guild configuration.")
 @in_guild()
 async def cmd_config(ctx):
     """
@@ -95,7 +100,9 @@ async def cmd_config(ctx):
         {prefix}config prefix {prefix}
     """
     # Prebuild dictionary of setting names
-    settings = {setting.name: setting for setting in ctx.client.guild_config.settings.values()}
+    settings = {
+        setting.name: setting for setting in ctx.client.guild_config.settings.values()
+    }
 
     params = ctx.args.split(maxsplit=1)
     if not ctx.args:
@@ -108,14 +115,15 @@ async def cmd_config(ctx):
         await ctx.pager(pages)
     elif params[0] not in settings:
         # Handle unrecognised option
-        await ctx.error_reply("Unrecognised guild option `{}`. Use `{}config help` to see all the options.".format(
-            params[0],
-            ctx.best_prefix()
-        ))
+        await ctx.error_reply(
+            "Unrecognised guild option `{}`. Use `{}config help` to see all the options.".format(
+                params[0], ctx.best_prefix()
+            )
+        )
     elif len(params) == 1:
         # Assume argument is an option, display option information
         option = settings[params[0]].get(ctx.client, ctx.guild.id)
-        if ((option.read_check is None) or await option.read_check.run(ctx)):
+        if (option.read_check is None) or await option.read_check.run(ctx):
             embed = option.embed
         else:
             embed = option.hidden_embed
@@ -138,14 +146,10 @@ async def cmd_config(ctx):
                     "Did not understand the provided value, "
                     "please check the accepted values and try again."
                 )
-                embed = discord.Embed(
-                    description=desc,
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(description=desc, color=discord.Color.red())
                 embed.set_footer(
                     text="Use `{}config {}` to see more detailed information about this setting.".format(
-                        ctx.best_prefix(),
-                        setting.name
+                        ctx.best_prefix(), setting.name
                     )
                 )
                 await ctx.reply(embed=embed)

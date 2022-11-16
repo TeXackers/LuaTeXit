@@ -30,10 +30,10 @@ LEFT JOIN guild_timed_mute_tickets timedmutes ON t.ticketid = timedmutes.ticketi
 """
 combined_columns = (
     *ticket_schema.interface_columns,
-    ('ticketgid', int),
-    ('tmute_duration', int),
-    ('tmute_roleid', int),
-    ('tmute_unmute_timestamp', int)
+    ("ticketgid", int),
+    ("tmute_duration", int),
+    ("tmute_roleid", int),
+    ("tmute_unmute_timestamp", int),
 )
 
 
@@ -47,7 +47,7 @@ def attach_mod_ticket_data(client):
             client.app,
             combined_columns,
             mysql_schema=combined_raw_schema,
-            sqlite_schema=combined_raw_schema
+            sqlite_schema=combined_raw_schema,
         ),
-        "guild_mod_tickets_combined"
+        "guild_mod_tickets_combined",
     )

@@ -7,17 +7,19 @@ class BOOL(paraSetting):
     """
     A sort of boolean type, more like a wrapper for a boolean.
     """
+
     accept = "Yes/No, On/Off, True/False, Enabled/Disabled"
-    inputexps = {"^yes$": True,
-                 "^true$": True,
-                 "^on$": True,
-                 "^enabled?$": True,
-                 "^no$": False,
-                 "^false$": False,
-                 "^off$": False,
-                 "^disabled?$": False}
-    outputs = {True: "",
-               False: ""}
+    inputexps = {
+        "^yes$": True,
+        "^true$": True,
+        "^on$": True,
+        "^enabled?$": True,
+        "^no$": False,
+        "^false$": False,
+        "^off$": False,
+        "^disabled?$": False,
+    }
+    outputs = {True: "", False: ""}
 
     @classmethod
     async def humanise(cls, ctx, raw):
@@ -28,7 +30,12 @@ class BOOL(paraSetting):
         for pattern in cls.inputexps:
             if re.match(pattern, userstr, re.I):
                 return cls.inputexps[pattern]
-        ctx.cmd_err = (1, "I don't understand this value. Acceptable values are: {}".format(cls.accept))
+        ctx.cmd_err = (
+            1,
+            "I don't understand this value. Acceptable values are: {}".format(
+                cls.accept
+            ),
+        )
         return None
 
 
@@ -36,24 +43,27 @@ class STR(paraSetting):
     """
     Just a plain string, nothing special
     """
+
     accept = "Any text"
 
     @classmethod
     async def humanise(cls, ctx, raw):
-        return "\"{}\"".format(str(raw))
+        return '"{}"'.format(str(raw))
 
     @classmethod
     async def understand(cls, ctx, userstr):
-        if userstr.startswith("\"") and userstr.endswith("\""):
+        if userstr.startswith('"') and userstr.endswith('"'):
             return userstr[1:-1]
         if userstr.startswith("'") and userstr.endswith("'"):
             return userstr[1:-1]
         return userstr
 
+
 class LIMITED_STR(STR):
     """
     One of a specific set of acceptable strings.
     """
+
     acceptable = ["None"]
 
     @classmethod
@@ -64,7 +74,12 @@ class LIMITED_STR(STR):
     async def understand(cls, ctx, userstr):
         userstr = await STR.understand(ctx, userstr)
         if userstr not in cls.acceptable:
-            ctx.cmd_err = (1, "I don't understand \"{}\". Acceptable values are: {}".format(userstr, ",".join(cls.acceptable)))
+            ctx.cmd_err = (
+                1,
+                'I don\'t understand "{}". Acceptable values are: {}'.format(
+                    userstr, ",".join(cls.acceptable)
+                ),
+            )
             return None
         return userstr
 
@@ -74,12 +89,12 @@ class USEREVENT(LIMITED_STR):
     accept = "One of {}".format(", ".join(acceptable))
 
 
-
 class FMTSTR(STR):
     """
     Formatable string
     TODO: accepted keys in variable from somewhere
     """
+
     accept = "Formatted string, accepted keys are:\n"
     accept += "\t $username$, $mention$, $id$, $tag$, $displayname$, $server$"
 
@@ -88,6 +103,7 @@ class ROLE(paraSetting):
     """
     ROLE type.
     """
+
     accept = "Role mention/id/name, or 'none' to unset"
 
     @classmethod
@@ -117,6 +133,7 @@ class EMOJI(paraSetting):
     """
     EMOJI type.
     """
+
     accept = "Emoji, either built in or custom. Use None to reset"
 
     @classmethod
@@ -142,17 +159,19 @@ class EMOJI(paraSetting):
             return None
         if userstr.endswith(">") and userstr.startswith("<"):
             # Probably a custom emoji
-            id_str = userstr[userstr.rfind(":") + 1:-1]
+            id_str = userstr[userstr.rfind(":") + 1 : -1]
             if id_str.isdigit():
                 return id_str
         else:
             # It's probably a built in emoji or nonsense. Either way, store it.
             return userstr
 
+
 class MEMBER(paraSetting):
     """
     Member type
     """
+
     accept = "Member mention id/name. Use 0 to clear the setting."
 
     @classmethod
@@ -184,6 +203,7 @@ class CHANNEL(paraSetting):
     """
     Channel type.
     """
+
     accept = "Channel mention/id/name. Use 0 to clear the setting."
 
     @classmethod
@@ -211,18 +231,28 @@ class CHANNEL(paraSetting):
             return None
         if userstr == ".":
             return ctx.ch.id
-        chid = userstr.strip('<#@!>')
+        chid = userstr.strip("<#@!>")
         if chid.isdigit():
+
             def is_ch(ch):
                 return ch.id == chid
+
         else:
+
             def is_ch(ch):
                 return userstr.lower() in ch.name.lower()
-        ch = discord.utils.find(is_ch, [c for c in ctx.server.channels if c.type == discord.ChannelType.text])
+
+        ch = discord.utils.find(
+            is_ch,
+            [c for c in ctx.server.channels if c.type == discord.ChannelType.text],
+        )
         if ch:
             return ch.id
         else:
-            ctx.cmd_err = (1, "I can't find the channel `{}` in this server!".format(userstr))
+            ctx.cmd_err = (
+                1,
+                "I can't find the channel `{}` in this server!".format(userstr),
+            )
             return None
 
 
@@ -230,6 +260,7 @@ class SETTING_LIST(paraSetting):
     """
     List of a particular type of setting
     """
+
     setting_type = paraSetting
 
     @classmethod
@@ -259,15 +290,19 @@ class SETTING_LIST(paraSetting):
             items.append(item)
         return items
 
+
 class INT(paraSetting):
     """
     Check for a valid number.
     """
+
     accept = "Any number between 1-100"
+
     @classmethod
     async def humanise(self, ctx, raw):
         if raw:
             return "{}".format(raw)
+
     @classmethod
     async def understand(self, ctx, userstr):
         """
@@ -287,14 +322,19 @@ class CHANNELLIST(SETTING_LIST):
     """
     List of channels
     """
+
     accept = "Comma separated list of channel mentions/ids/names. Use 0 or None to clear the setting"
     setting_type = CHANNEL
+
 
 class USEREVENTLIST(SETTING_LIST):
     """
     List of user events
     """
-    accept = "Comma separated list of user events (possible events are {})".format(", ".join(USEREVENT.acceptable))
+
+    accept = "Comma separated list of user events (possible events are {})".format(
+        ", ".join(USEREVENT.acceptable)
+    )
     setting_type = USEREVENT
 
 
@@ -302,15 +342,21 @@ class ROLELIST(SETTING_LIST):
     """
     List of roles
     """
+
     accept = "Comma separated list of role mentions/ids/names. Use 0 or None to clear the setting"
     setting_type = ROLE
+
 
 class MEMBERLIST(SETTING_LIST):
     """
     List of members
     """
-    accept = "Comma separated list of user mentions/ids/names. Use None to clear the setting"
+
+    accept = (
+        "Comma separated list of user mentions/ids/names. Use None to clear the setting"
+    )
     setting_type = MEMBER
+
 
 """
 class YES_BOOL(BOOL):

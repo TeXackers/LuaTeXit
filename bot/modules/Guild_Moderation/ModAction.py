@@ -15,6 +15,7 @@ class ActionState(Enum):
     """
     Final state of a moderation action.
     """
+
     INTERNAL_UNKNOWN = -1  # Unknown internal error occurred
     SUCCESS = 0  # Successfully completed the action
     MEMBER_NOTFOUND = 1  # Couldn't find the member
@@ -37,7 +38,7 @@ class ModAction:
         ActionState.SUCCESS: "Acted",
         ActionState.MEMBER_NOTFOUND: "Could not find member",
         ActionState.IAM_FORBIDDEN: "I do not have the permissions to do this",
-        ActionState.YOUARE_FORBIDDEN: "You do not have the permissions to do this"
+        ActionState.YOUARE_FORBIDDEN: "You do not have the permissions to do this",
     }
 
     single_success_report = "Acted on {target}."
@@ -66,7 +67,7 @@ class ModAction:
         Shortened version of the reason, limited to 470 characters.
         Useful for adding a reason to the audit log.
         """
-        return self.reason if len(self.reason) < 470 else self.reason[:467] + '...'
+        return self.reason if len(self.reason) < 470 else self.reason[:467] + "..."
 
     async def get_collection(self):
         """
@@ -99,8 +100,8 @@ class ModAction:
         self.reason = await self.request_reason()
 
         # Obtain duration, if required
-        if 't' in self.flags and isinstance(self.flags['t'], str):
-            self.duration = parse_dur(self.flags['t'])
+        if "t" in self.flags and isinstance(self.flags["t"], str):
+            self.duration = parse_dur(self.flags["t"])
             if self.duration > 365 * 24 * 60 * 60:
                 raise SafeCancellation("Maximum duration is 1 year!")
 
@@ -123,57 +124,72 @@ class ModAction:
             result = results[target]
 
             if result == ActionState.SUCCESS:
-                description = "[Ticket #{ticket.ticketgid}]({ticket.jumpto}): {template}".format(
-                    ticket=self.ticket,
-                    template=self.single_success_report.format(self=self, target=target, **kwargs)
+                description = (
+                    "[Ticket #{ticket.ticketgid}]({ticket.jumpto}): {template}".format(
+                        ticket=self.ticket,
+                        template=self.single_success_report.format(
+                            self=self, target=target, **kwargs
+                        ),
+                    )
                 )
             else:
                 description = self.single_failure_report.format(
-                    self=self, target=target, state=self.state_response_map[result], **kwargs
+                    self=self,
+                    target=target,
+                    state=self.state_response_map[result],
+                    **kwargs
                 )
             await self.ctx.reply(embed=discord.Embed(description=description))
         else:
-            targets_failed = [target for target, result in results.items() if result is not ActionState.SUCCESS]
+            targets_failed = [
+                target
+                for target, result in results.items()
+                if result is not ActionState.SUCCESS
+            ]
 
             summary_components = []
             if len(targets_failed) != len(results):
                 summary_components.append(
-                    "[Ticket #{ticket.ticketgid}]({ticket.jumpto}):".format(ticket=self.ticket)
+                    "[Ticket #{ticket.ticketgid}]({ticket.jumpto}):".format(
+                        ticket=self.ticket
+                    )
                 )
                 summary_components.append(
-                    self.summary_success_report.format(self=self,
-                                                       count=len(results) - len(targets_failed),
-                                                       **kwargs)
+                    self.summary_success_report.format(
+                        self=self, count=len(results) - len(targets_failed), **kwargs
+                    )
                 )
             if targets_failed:
                 summary_components.append(
-                    self.summary_failure_report.format(self=self,
-                                                       count=len(targets_failed),
-                                                       **kwargs)
+                    self.summary_failure_report.format(
+                        self=self, count=len(targets_failed), **kwargs
+                    )
                 )
-            summary = ' '.join(summary_components)
+            summary = " ".join(summary_components)
 
             target_lines = [
                 "{emoji} {target}: {state}".format(
                     emoji=("✅" if result is ActionState.SUCCESS else "❌"),
                     target=target,
-                    state=self.state_response_map[result]
-                ) for target, result in results.items()
+                    state=self.state_response_map[result],
+                )
+                for target, result in results.items()
             ]
-            target_line_blocks = ['\n'.join(target_lines[i:i+10]) for i in range(0, len(target_lines), 10)]
+            target_line_blocks = [
+                "\n".join(target_lines[i : i + 10])
+                for i in range(0, len(target_lines), 10)
+            ]
             embeds = [
                 discord.Embed(
                     description="{}```{}```".format(summary, block)
-                ).set_footer(
-                    text="Page {}/{}".format(n+1, len(target_line_blocks))
-                )
+                ).set_footer(text="Page {}/{}".format(n + 1, len(target_line_blocks)))
                 for n, block in enumerate(target_line_blocks)
             ]
             await self.ctx.pager(embeds)
 
     async def identify_targets(self):
         targets = []
-        user_strs = re.split(',|\n', self.ctx.args)
+        user_strs = re.split(",|\n", self.ctx.args)
         if len(user_strs) > 20:
             raise SafeCancellation("Please provide less than 20 users at once!")
         for user_str in user_strs:
@@ -182,7 +198,7 @@ class ModAction:
                     user_str.strip(),
                     interactive=True,
                     collection=await self.get_collection(),
-                    silent_notfound=True
+                    silent_notfound=True,
                 )
             except ResponseTimedOut:
                 raise ResponseTimedOut(self.resp_seeker_timed_out) from None
@@ -199,22 +215,26 @@ class ModAction:
     async def request_reason(self):
         # Interactively request the reason
         try:
-            if isinstance(self.flags['r'], str):
-                reason = self.flags['r']
+            if isinstance(self.flags["r"], str):
+                reason = self.flags["r"]
                 interactive = False
             else:
                 reason = await self.ctx.input(self.reason_prompt)
                 interactive = True
         except ResponseTimedOut:
             raise ResponseTimedOut(self.resp_reason_timed_out) from None
-        if reason.lower() == 'c':
+        if reason.lower() == "c":
             raise UserCancelled(self.resp_reason_cancelled)
         if len(reason) > 1000:
             msg = "For display reasons, the reason must be under 1000 characters!"
             if interactive:
                 msg = await self.ctx.reply(
                     msg,
-                    embed=discord.Embed(title="Provided reason", description=reason, colour=discord.Color.orange())
+                    embed=discord.Embed(
+                        title="Provided reason",
+                        description=reason,
+                        colour=discord.Color.orange(),
+                    ),
                 )
                 asyncio.create_task(self.ctx.offer_delete(msg))
             else:

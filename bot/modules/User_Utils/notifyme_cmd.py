@@ -1,10 +1,12 @@
 from .module import utils_module as module
 
 
-@module.cmd("notifyme",
-            desc="DMs you messages matching given triggers.",
-            aliases=["tellme", "pounce", "listenfor", "notify"],
-            disabled=True)
+@module.cmd(
+    "notifyme",
+    desc="DMs you messages matching given triggers.",
+    aliases=["tellme", "pounce", "listenfor", "notify"],
+    disabled=True,
+)
 async def cmd_notifyme(ctx):
     """
     Sorry!:

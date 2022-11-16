@@ -3,12 +3,12 @@ from .module import guild_admin_module as module
 from wards import in_guild, guild_manager
 
 
-protected_commands = ['list', 'help', 'support', 'disable', 'config']
+protected_commands = ["list", "help", "support", "disable", "config"]
 
 
-@module.cmd("disable",
-            desc="Disable features and commands in this guild.",
-            aliases=["enable"])
+@module.cmd(
+    "disable", desc="Disable features and commands in this guild.", aliases=["enable"]
+)
 @in_guild()
 @guild_manager()
 async def cmd_disable(ctx):

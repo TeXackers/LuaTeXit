@@ -7,7 +7,13 @@ from wards import is_manager, is_reviewer
 
 from .module import latex_module as module
 
-from .core.preamble_utils import view_preamble, judgement_reactions, preamblelog, approve_submission, deny_submission
+from .core.preamble_utils import (
+    view_preamble,
+    judgement_reactions,
+    preamblelog,
+    approve_submission,
+    deny_submission,
+)
 from .core.preamble_utils import confirm, resolve_pending_preamble
 from .core.LatexGuild import LatexGuild
 
@@ -20,28 +26,38 @@ async def approval_queue(ctx):
     while True:
         # Generate the list of users waiting for judgement
         waiting = ctx.client.data.user_pending_preambles.select_where(
-            select_columns=('userid', 'username', 'app', 'submission_time', 'submission_source_name')
+            select_columns=(
+                "userid",
+                "username",
+                "app",
+                "submission_time",
+                "submission_source_name",
+            )
         )
 
         # Quit if there is nothing to approve
         if waiting:
-            waiting = sorted(list(waiting), key=lambda waiter: waiter['submission_time'])
+            waiting = sorted(
+                list(waiting), key=lambda waiter: waiter["submission_time"]
+            )
 
             # Make a pretty approval list
             waiting_list = [
                 "{} ({}) from '{}' on '{}'".format(
-                    waiter['username'],
-                    waiter['userid'],
-                    waiter['submission_source_name'],
-                    waiter['app']
+                    waiter["username"],
+                    waiter["userid"],
+                    waiter["submission_source_name"],
+                    waiter["app"],
                 )
                 for waiter in waiting
             ]
 
             # Ask the bot manager to select a waiting preamble
             try:
-                result = await ctx.selector("Please select a pending preamble to approve/test/deny.",
-                                            waiting_list)
+                result = await ctx.selector(
+                    "Please select a pending preamble to approve/test/deny.",
+                    waiting_list,
+                )
             except UserCancelled:
                 await ctx.reply("Pending preamble selector cancelled.")
                 break
@@ -50,16 +66,23 @@ async def approval_queue(ctx):
                 break
 
             # Display the preamble for judgement
-            judging = ctx.client.data.user_pending_preambles.select_where(userid=waiting[result]['userid'])[0]
+            judging = ctx.client.data.user_pending_preambles.select_where(
+                userid=waiting[result]["userid"]
+            )[0]
             sub_msg = await view_preamble(
-                ctx, judging['pending_preamble'],
-                'Preamble submission!', start_page=-1,
+                ctx,
+                judging["pending_preamble"],
+                "Preamble submission!",
+                start_page=-1,
                 author=waiting_list[result],
-                time=datetime.fromtimestamp(judging['submission_time']),
-                header=judging['submission_summary'],
+                time=datetime.fromtimestamp(judging["submission_time"]),
+                header=judging["submission_summary"],
             )
             # Give a warning, if required, about not being able to see the user
-            if judging['app'] != ctx.client.app and ctx.client.get_guild(judging['submission_source_id']) is None:
+            if (
+                judging["app"] != ctx.client.app
+                and ctx.client.get_guild(judging["submission_source_id"]) is None
+            ):
                 await ctx.reply(
                     "Warning: This user submitted their request from a different app, "
                     "and this shard cannot see the submission guild.\n"
@@ -67,7 +90,7 @@ async def approval_queue(ctx):
                     "I will not be able to message them."
                 )
             # Add the approval/denial/testing emojis to the submission
-            await judgement_reactions(ctx, judging['userid'], sub_msg)
+            await judgement_reactions(ctx, judging["userid"], sub_msg)
         else:
             await ctx.reply("All preambles assessed, good work!")
             break
@@ -100,7 +123,11 @@ async def user_admin(ctx, userid):
     pending_preamble = pending_preamble_row[0] if pending_preamble_row else None
 
     # Setup the menu options and menu
-    menu_items = ["Show current preamble", "Set preamble (manager)", "Reset preamble (manager)"]
+    menu_items = [
+        "Show current preamble",
+        "Set preamble (manager)",
+        "Reset preamble (manager)",
+    ]
     menu_message = "Preamble management menu for user {}".format(userid)
 
     # Add the judgement option if there is a pending preamble
@@ -115,14 +142,14 @@ async def user_admin(ctx, userid):
     except discord.HTTPException:
         user = None
 
-    author = "{} ({})" .format(str(user), userid) if user else str(userid)
+    author = "{} ({})".format(str(user), userid) if user else str(userid)
 
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
 
     if result == 0:
         # Show the preamble
-        preamble = current_preamble['preamble']
+        preamble = current_preamble["preamble"]
         if not preamble:
             await ctx.reply("This user doesn't have a custom preamble set!")
         else:
@@ -142,9 +169,9 @@ async def user_admin(ctx, userid):
         offer_msg = await ctx.reply(prompt)
         try:
             result_msg = await ctx.client.wait_for(
-                'message',
+                "message",
                 check=lambda msg: (msg.author == ctx.author and msg.channel == ctx.ch),
-                timeout=600
+                timeout=600,
             )
         except asyncio.TimeoutError:
             raise ResponseTimedOut("Timed out waiting for a menu selection.")
@@ -160,10 +187,14 @@ async def user_admin(ctx, userid):
 
                 # If the file is over 1MB, it probably isn't a valid preamble.
                 if attachment.size >= 1000000:
-                    return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
+                    return await ctx.error_reply(
+                        "Attached file is too large to process (over `1MB`)."
+                    )
 
                 try:
-                    preamble = str(await attachment.read(), encoding='utf-8', errors="strict")
+                    preamble = str(
+                        await attachment.read(), encoding="utf-8", errors="strict"
+                    )
                 except UnicodeError:
                     return await ctx.error_reply(
                         "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
@@ -186,14 +217,21 @@ async def user_admin(ctx, userid):
             allow_replace=True,
             userid=userid,
             preamble=preamble,
-            previous_preamble=current_preamble['preamble'] if current_preamble else None
+            previous_preamble=current_preamble["preamble"]
+            if current_preamble
+            else None,
         )
 
         await ctx.reply("The user's preamble was updated.")
-        await preamblelog(ctx, "Manual preamble update",
-                          header="{} ({}) manually updated the preamble".format(ctx.author, ctx.author.id),
-                          user=user,
-                          source=preamble)
+        await preamblelog(
+            ctx,
+            "Manual preamble update",
+            header="{} ({}) manually updated the preamble".format(
+                ctx.author, ctx.author.id
+            ),
+            user=user,
+            source=preamble,
+        )
     elif result == 2:
         # Reset the current preamble to the default
 
@@ -204,15 +242,24 @@ async def user_admin(ctx, userid):
             allow_replace=True,
             userid=userid,
             preamble=None,
-            previous_preamble=current_preamble['preamble'] if current_preamble else None
+            previous_preamble=current_preamble["preamble"]
+            if current_preamble
+            else None,
         )
 
-        await resolve_pending_preamble(ctx, userid, "Preamble was reset", colour=discord.Colour.red())
+        await resolve_pending_preamble(
+            ctx, userid, "Preamble was reset", colour=discord.Colour.red()
+        )
         await ctx.reply("The user's preamble was reset to the default!")
 
-        await preamblelog(ctx, "Manual preamble reset",
-                          header="{} ({}) manually reset the preamble".format(ctx.author, ctx.author.id),
-                          user=user)
+        await preamblelog(
+            ctx,
+            "Manual preamble reset",
+            header="{} ({}) manually reset the preamble".format(
+                ctx.author, ctx.author.id
+            ),
+            user=user,
+        )
     elif result == 3:
         # Judge the pending preamble
         if not pending_preamble:
@@ -221,15 +268,20 @@ async def user_admin(ctx, userid):
         # Display the preamble for judgement
         judging = pending_preamble
         sub_msg = await view_preamble(
-            ctx, judging['pending_preamble'],
-            'Preamble submission!', start_page=-1,
-            author="{} ({})".format(judging['username'], userid),
-            time=datetime.fromtimestamp(judging['submission_time']),
-            header=judging['submission_summary'],
+            ctx,
+            judging["pending_preamble"],
+            "Preamble submission!",
+            start_page=-1,
+            author="{} ({})".format(judging["username"], userid),
+            time=datetime.fromtimestamp(judging["submission_time"]),
+            header=judging["submission_summary"],
         )
 
         # Give a warning, if required, about not being able to see the user
-        if judging['app'] != ctx.client.app and ctx.client.get_guild(judging['submission_source_id']) is None:
+        if (
+            judging["app"] != ctx.client.app
+            and ctx.client.get_guild(judging["submission_source_id"]) is None
+        ):
             await ctx.reply(
                 "Warning: This user submitted their request from a different app, "
                 "and this shard cannot see the submission guild.\n"
@@ -238,7 +290,7 @@ async def user_admin(ctx, userid):
             )
 
         # Add the approval/denial/testing emojis to the submission
-        await judgement_reactions(ctx, judging['userid'], sub_msg)
+        await judgement_reactions(ctx, judging["userid"], sub_msg)
 
         # Remove the submission message, if possible
         try:
@@ -278,14 +330,14 @@ async def guild_admin(ctx, guildid):
     except discord.HTTPException:
         guild = None
 
-    author = "{} ({})" .format(str(guild), guildid) if guild else str(guildid)
+    author = "{} ({})".format(str(guild), guildid) if guild else str(guildid)
 
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
 
     if result == 0:
         # Show the preamble
-        preamble = current_preamble['preamble']
+        preamble = current_preamble["preamble"]
         if not preamble:
             await ctx.reply("This guild doesn't have a custom preamble set!")
         else:
@@ -296,15 +348,17 @@ async def guild_admin(ctx, guildid):
         # Also asks for confirmation before setting.
 
         # Prompt for new preamble
-        prompt = "Please enter or upload the new guild preamble, or type `c` now to cancel."
+        prompt = (
+            "Please enter or upload the new guild preamble, or type `c` now to cancel."
+        )
 
         preamble = None
         offer_msg = await ctx.reply(prompt)
         try:
             result_msg = await ctx.client.wait_for(
-                'message',
+                "message",
                 check=lambda msg: (msg.author == ctx.author and msg.channel == ctx.ch),
-                timeout=600
+                timeout=600,
             )
         except asyncio.TimeoutError:
             raise ResponseTimedOut("Timed out waiting for a menu selection.")
@@ -320,10 +374,14 @@ async def guild_admin(ctx, guildid):
 
                 # If the file is over 1MB, it probably isn't a valid preamble.
                 if attachment.size >= 1000000:
-                    return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
+                    return await ctx.error_reply(
+                        "Attached file is too large to process (over `1MB`)."
+                    )
 
                 try:
-                    preamble = str(await attachment.read(), encoding='utf-8', errors="strict")
+                    preamble = str(
+                        await attachment.read(), encoding="utf-8", errors="strict"
+                    )
                 except UnicodeError:
                     return await ctx.error_reply(
                         "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
@@ -342,29 +400,37 @@ async def guild_admin(ctx, guildid):
             raise UserCancelled("Modification cancelled.")
 
         # Finally, set the preamble
-        preamble_data.insert(
-            allow_replace=True,
-            guildid=guildid,
-            preamble=preamble
-        )
+        preamble_data.insert(allow_replace=True, guildid=guildid, preamble=preamble)
         LatexGuild.get(guildid).load()
 
         await ctx.reply("The guild's preamble was updated.")
-        await preamblelog(ctx, "Manual preamble update",
-                          header="{} ({}) manually updated the preamble".format(ctx.author, ctx.author.id),
-                          user=guild,
-                          source=preamble)
+        await preamblelog(
+            ctx,
+            "Manual preamble update",
+            header="{} ({}) manually updated the preamble".format(
+                ctx.author, ctx.author.id
+            ),
+            user=guild,
+            source=preamble,
+        )
     elif result == 2:
         # Reset the current preamble to the default
         preamble_data.delete_where(guildid=guildid)
         LatexGuild.get(guildid).load()
 
-        await resolve_pending_preamble(ctx, guildid, "Guild preamble was reset", colour=discord.Colour.red())
+        await resolve_pending_preamble(
+            ctx, guildid, "Guild preamble was reset", colour=discord.Colour.red()
+        )
         await ctx.reply("The guild's preamble was reset to the default!")
 
-        await preamblelog(ctx, "Manual guild preamble reset",
-                          header="{} ({}) manually reset the preamble".format(ctx.author, ctx.author.id),
-                          user=guild)
+        await preamblelog(
+            ctx,
+            "Manual guild preamble reset",
+            header="{} ({}) manually reset the preamble".format(
+                ctx.author, ctx.author.id
+            ),
+            user=guild,
+        )
 
 
 async def general_menu(ctx):
@@ -372,11 +438,13 @@ async def general_menu(ctx):
     pass
 
 
-@module.cmd("preambleadmin",
-            hidden=True,
-            desc="Administrate the LaTeX preamble system",
-            aliases=["pa"],
-            flags=["user==", "guild==", "menu", "approve=", "deny=", "a=", "d=", "r=="])
+@module.cmd(
+    "preambleadmin",
+    hidden=True,
+    desc="Administrate the LaTeX preamble system",
+    aliases=["pa"],
+    flags=["user==", "guild==", "menu", "approve=", "deny=", "a=", "d=", "r=="],
+)
 @is_reviewer()
 async def cmd_preambleadmin(ctx, flags):
     """
@@ -399,7 +467,7 @@ async def cmd_preambleadmin(ctx, flags):
 
     # Handle guild flag
     if flags["guild"]:
-        await guild_admin(ctx, int(flags['guild']))
+        await guild_admin(ctx, int(flags["guild"]))
         return
 
     # Handle menu flag
@@ -410,13 +478,13 @@ async def cmd_preambleadmin(ctx, flags):
     # Handle raw approvals
     if flags["approve"] or flags["a"]:
         userid = int(flags["approve"] or flags["a"])
-        await approve_submission(ctx, userid, ctx.author, reason=flags['r'] or None)
+        await approve_submission(ctx, userid, ctx.author, reason=flags["r"] or None)
         return
 
     # Handle raw denials
     if flags["deny"] or flags["d"]:
         userid = int(flags["deny"] or flags["d"])
-        await deny_submission(ctx, userid, ctx.author, reason=flags['r'] or None)
+        await deny_submission(ctx, userid, ctx.author, reason=flags["r"] or None)
         return
 
     # Handle default action, i.e. showing approval queue

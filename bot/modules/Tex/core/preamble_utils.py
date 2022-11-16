@@ -46,9 +46,17 @@ This is Xe\TeX, Version \the\XeTeXversion\XeTeXrevision\ (\TeX\ Live $\the\year$
 # presets_lower = [p.lower() for p in presets]
 
 
-def tex_pagination(text, basetitle="", header=None, timestamp=True,
-                   author=None, time=None, colour=discord.Colour.dark_blue(),
-                   extra_fields=None, footer=""):
+def tex_pagination(
+    text,
+    basetitle="",
+    header=None,
+    timestamp=True,
+    author=None,
+    time=None,
+    colour=discord.Colour.dark_blue(),
+    extra_fields=None,
+    footer="",
+):
     """
     Break up source LaTeX code into a number of embedded pages,
     with the code in codeblocks of mximum 1k chars
@@ -68,12 +76,15 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
 
     if blocknum == 1:
         block = blocks[0] if blocks[0] else None
-        desc = "{}\n{}".format(header, block or "") if header else (block if block else None)
+        desc = (
+            "{}\n{}".format(header, block or "")
+            if header
+            else (block if block else None)
+        )
 
-        embed = discord.Embed(title=basetitle,
-                              color=colour,
-                              description=desc,
-                              timestamp=time)
+        embed = discord.Embed(
+            title=basetitle, color=colour, description=desc, timestamp=time
+        )
         if author is not None:
             embed.set_author(name=author)
         if extra_fields is not None:
@@ -87,12 +98,14 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
     embeds = []
     for i, block in enumerate(blocks):
         desc = "{}\n{}".format(header, block) if header else block
-        embed = discord.Embed(title=basetitle,
-                              colour=colour,
-                              author=author,
-                              description=desc,
-                              timestamp=time)
-        embed.set_footer(text="{} Page {}/{}".format(footer, i+1, blocknum))
+        embed = discord.Embed(
+            title=basetitle,
+            colour=colour,
+            author=author,
+            description=desc,
+            timestamp=time,
+        )
+        embed.set_footer(text="{} Page {}/{}".format(footer, i + 1, blocknum))
         if author is not None:
             embed.set_author(name=author)
         if extra_fields is not None:
@@ -104,7 +117,9 @@ def tex_pagination(text, basetitle="", header=None, timestamp=True,
     return embeds
 
 
-async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamble.tex"):
+async def sendfile_reaction_handler(
+    ctx, msg, contents, title, file_name="preamble.tex"
+):
     """
     Attach a reaction to the given message which sends reacting users
     a file containing `contents`.
@@ -122,11 +137,13 @@ async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamb
     temp_file.write(contents.encode())
 
     def _check(reaction, user):
-        return (reaction.message.id == msg.id and reaction.emoji == emoji)
+        return reaction.message.id == msg.id and reaction.emoji == emoji
 
     while True:
         try:
-            reaction, user = await ctx.client.wait_for('reaction_add', check=_check, timeout=300)
+            reaction, user = await ctx.client.wait_for(
+                "reaction_add", check=_check, timeout=300
+            )
         except asyncio.TimeoutError:
             break
 
@@ -136,7 +153,7 @@ async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamb
                 dFile = discord.File(temp_file, filename=file_name)
                 await asyncio.gather(
                     user.send(file=dFile, content=title),
-                    msg.remove_reaction(emoji, user)
+                    msg.remove_reaction(emoji, user),
                 )
             except discord.Forbidden:
                 pass
@@ -152,15 +169,24 @@ async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamb
     temp_file.close()
 
 
-async def view_preamble(ctx, preamble, title, start_page=0,
-                        file_react=False, file_message=None, **pagination_args):
+async def view_preamble(
+    ctx,
+    preamble,
+    title,
+    start_page=0,
+    file_react=False,
+    file_message=None,
+    **pagination_args,
+):
 
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
     if file_react and out_msg is not None:
         # Add the sendfile reaction if required
-        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
+        asyncio.ensure_future(
+            sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title)
+        )
 
     return out_msg
 
@@ -182,7 +208,9 @@ async def confirm(ctx, question, preamble, **kwargs):
         return True
 
 
-async def preamblelog(ctx, title, user=None, userid=None, author=None, header=None, source=None):
+async def preamblelog(
+    ctx, title, user=None, userid=None, author=None, header=None, source=None
+):
     """
     Log a message to the preamble log channel
     """
@@ -197,12 +225,7 @@ async def preamblelog(ctx, title, user=None, userid=None, author=None, header=No
             temp_file.write(source.encode())
             temp_file.seek(0)
             dfile = discord.File(temp_file, filename="{}.tex".format(userid or user.id))
-            await mail(
-                ctx.client,
-                logchid,
-                content=content,
-                file=dfile
-            )
+            await mail(ctx.client, logchid, content=content, file=dfile)
     else:
         await mail(
             ctx.client,
@@ -278,7 +301,7 @@ async def submit_preamble(ctx, user, submission, info):
         submission_time=int(datetime.utcnow().timestamp()),
         submission_summary=info,
         submission_source_id=ctx.author.id if not ctx.guild else ctx.guild.id,
-        submission_source_name="DM" if not ctx.guild else ctx.guild.name
+        submission_source_name="DM" if not ctx.guild else ctx.guild.name,
     )
 
     # Mail in the submission
@@ -292,8 +315,10 @@ async def submit_preamble(ctx, user, submission, info):
             ctx.client,
             subchid,
             content="New submission from {} `uid:{}`".format(user, user.id),
-            file=dfile
+            file=dfile,
         )
+
+
 #     # Mark any previous preamble request as outdated
 #     await handled_preamble(ctx, user.id, "New preamble request submitted", colour=discord.Colour.red())
 
@@ -334,13 +359,17 @@ async def judgement_reactions(ctx, userid, msg):
         raise ValueError("Attempt to add judgement reactions for non-reviewer.")
 
     # Load reaction emojis
-    approve = ctx.client.conf.emojis.getemoji('approve')
-    deny = ctx.client.conf.emojis.getemoji('deny')
-    test = ctx.client.conf.emojis.getemoji('test')
+    approve = ctx.client.conf.emojis.getemoji("approve")
+    deny = ctx.client.conf.emojis.getemoji("deny")
+    test = ctx.client.conf.emojis.getemoji("test")
 
     # Checks whether the emoji is valid and whether the user is the caller
     def _check(reaction, user):
-        return ((reaction.emoji in [approve, deny, test]) and user == ctx.author and reaction.message == msg)
+        return (
+            (reaction.emoji in [approve, deny, test])
+            and user == ctx.author
+            and reaction.message == msg
+        )
 
     # Add the reactions, if possible
     try:
@@ -354,9 +383,7 @@ async def judgement_reactions(ctx, userid, msg):
     while True:
         try:
             reaction, user = await ctx.client.wait_for(
-                'reaction_add',
-                check=_check,
-                timeout=600
+                "reaction_add", check=_check, timeout=600
             )
         except asyncio.TimeoutError:
             # If the user still has a pending preamble, continue the loop
@@ -410,14 +437,15 @@ async def approve_submission(ctx, userid, manager, reason=None):
         preview = await ctx.reply(content="Approving preamble...", embed=embed)
     else:
         preview = await ctx.reply(
-            content=("Do you wish to add an additional message (automatically sends in 20s)? "
-                     "(`y(es)`/`n(o)`/`c(ancel)`)"),
-            embed=embed
+            content=(
+                "Do you wish to add an additional message (automatically sends in 20s)? "
+                "(`y(es)`/`n(o)`/`c(ancel)`)"
+            ),
+            embed=embed,
         )
         try:
             result_msg = await ctx.listen_for(
-                ('y', 'yes', 'n', 'no', 'c', 'cancel'),
-                timeout=20
+                ("y", "yes", "n", "no", "c", "cancel"), timeout=20
             )
             resp = result_msg.content.lower()
             try:
@@ -427,21 +455,32 @@ async def approve_submission(ctx, userid, manager, reason=None):
         except ResponseTimedOut:
             resp = None
 
-        if resp is None or resp.startswith('n'):
+        if resp is None or resp.startswith("n"):
             # Send message as-is
             pass
-        elif resp.startswith('c'):
-            await preview.edit(content="Preamble approval cancelled on manager request.")
+        elif resp.startswith("c"):
+            await preview.edit(
+                content="Preamble approval cancelled on manager request."
+            )
             raise UserCancelled("Cancelling preamble approval.")
-        elif resp.startswith('y'):
+        elif resp.startswith("y"):
             # Ask for the new field
             try:
-                result = await ctx.input("Please enter the additional approval message, or `c` to cancel!", timeout=600)
+                result = await ctx.input(
+                    "Please enter the additional approval message, or `c` to cancel!",
+                    timeout=600,
+                )
             except ResponseTimedOut:
-                await preview.edit(content="Preamble approval cancelled due to query timeout.")
-                raise ResponseTimedOut("Query timed out, aborting preamble approval.") from None
-            if result.lower() in ['c', 'cancel']:
-                await preview.edit(content="Preamble approval cancelled on manager request.")
+                await preview.edit(
+                    content="Preamble approval cancelled due to query timeout."
+                )
+                raise ResponseTimedOut(
+                    "Query timed out, aborting preamble approval."
+                ) from None
+            if result.lower() in ["c", "cancel"]:
+                await preview.edit(
+                    content="Preamble approval cancelled on manager request."
+                )
                 raise UserCancelled("Cancelling preamble approval.")
 
             # Update the embed with the new field
@@ -450,36 +489,42 @@ async def approve_submission(ctx, userid, manager, reason=None):
     # Approve the preamble
     pending_info = ctx.client.data.user_pending_preambles.select_where(userid=userid)
     if not pending_info:
-        await preview.edit(content="User no longer has a pending preamble to approve! Cancelling.")
+        await preview.edit(
+            content="User no longer has a pending preamble to approve! Cancelling."
+        )
         raise SafeCancellation
 
     current_info = ctx.client.data.user_latex_preambles.select_where(userid=userid)
-    previous_preamble = current_info[0]['preamble'] if current_info else default_preamble
+    previous_preamble = (
+        current_info[0]["preamble"] if current_info else default_preamble
+    )
     ctx.client.data.user_latex_preambles.insert(
         allow_replace=True,
         userid=userid,
-        preamble=pending_info[0]['pending_preamble'],
-        previous_preamble=previous_preamble
+        preamble=pending_info[0]["pending_preamble"],
+        previous_preamble=previous_preamble,
     )
     ctx.client.data.user_pending_preambles.delete_where(userid=userid)
     await resolve_pending_preamble(
         ctx,
         userid,
         "Preamble approved by {}".format(manager.mention),
-        colour=discord.Colour.green()
+        colour=discord.Colour.green(),
     )
     await preamblelog(
         ctx,
         "Preamble request approved by {} ({})".format(manager, manager.id),
-        author="{} ({})".format(pending_info[0]['username'], userid),
+        author="{} ({})".format(pending_info[0]["username"], userid),
         userid=userid,
-        source=pending_info[0]['pending_preamble']
+        source=pending_info[0]["pending_preamble"],
     )
 
     # Update the preview
     await preview.edit(
-        content="Approved preamble, sending approval message {}".format(ctx.client.conf.emojis.getemoji("loading")),
-        embed=embed
+        content="Approved preamble, sending approval message {}".format(
+            ctx.client.conf.emojis.getemoji("loading")
+        ),
+        embed=embed,
     )
 
     # Try and DM the user with their happy news
@@ -489,18 +534,24 @@ async def approve_submission(ctx, userid, manager, reason=None):
         try:
             user = await ctx.client.fetch_user(userid)
         except discord.NotFound:
-            await preview.edit(content="Approved, but user not known to Discord, couldn't send the approval message.")
+            await preview.edit(
+                content="Approved, but user not known to Discord, couldn't send the approval message."
+            )
 
     try:
         await user.send(embed=embed, content=user.mention)
     except discord.Forbidden:
         await preview.edit(
-            content=("Approved, but Discord didn't let me DM the user. "
-                     "I might not be able to see them (no shared guilds), or they might have blocked me.")
+            content=(
+                "Approved, but Discord didn't let me DM the user. "
+                "I might not be able to see them (no shared guilds), or they might have blocked me."
+            )
         )
     except Exception as e:
         await preview.edit(
-            content=("Approved, but something unexpected occurred while sending the approval message.")
+            content=(
+                "Approved, but something unexpected occurred while sending the approval message."
+            )
         )
         raise e
     else:
@@ -522,7 +573,7 @@ async def deny_submission(ctx, userid, manager, reason=None):
     default_msg = (
         "Your recent request for a LaTeX preamble submission was denied!\n"
         "If you want assistance setting your preamble, please join our [support guild]({})."
-    ).format(ctx.client.app_info['support_guild'])
+    ).format(ctx.client.app_info["support_guild"])
     embed = discord.Embed(title="Preamble request rejection", description=default_msg)
     embed.timestamp = datetime.utcnow()
 
@@ -530,30 +581,33 @@ async def deny_submission(ctx, userid, manager, reason=None):
     if reason is None:
         preview = await ctx.reply(
             content="Please enter the rejection reason, or send `c` to cancel!",
-            embed=embed
+            embed=embed,
         )
         try:
             result = await ctx.input(preview, delete_after=False, timeout=600)
         except ResponseTimedOut:
-            await preview.edit(content="Preamble rejection cancelled due to query timeout.")
+            await preview.edit(
+                content="Preamble rejection cancelled due to query timeout."
+            )
             return None
-        if result.lower() in ['c', 'cancel']:
-            await preview.edit(content="Preamble rejection cancelled on manager request.")
+        if result.lower() in ["c", "cancel"]:
+            await preview.edit(
+                content="Preamble rejection cancelled on manager request."
+            )
             raise UserCancelled("Cancelling preamble rejection.")
 
         # Update the embed with the new field
         embed.add_field(name="Reason", value=result)
     else:
         embed.add_field(name="Reason", value=reason)
-        preview = await ctx.reply(
-            content="Denying preamble.",
-            embed=embed
-        )
+        preview = await ctx.reply(content="Denying preamble.", embed=embed)
 
     # Deny the preamble
     pending_info = ctx.client.data.user_pending_preambles.select_where(userid=userid)
     if not pending_info:
-        await preview.edit(content="User no longer has a pending preamble to deny! Cancelling.")
+        await preview.edit(
+            content="User no longer has a pending preamble to deny! Cancelling."
+        )
         raise SafeCancellation
 
     ctx.client.data.user_pending_preambles.delete_where(userid=userid)
@@ -561,20 +615,22 @@ async def deny_submission(ctx, userid, manager, reason=None):
         ctx,
         userid,
         "Preamble denied by {}".format(manager.mention),
-        colour=discord.Colour.red()
+        colour=discord.Colour.red(),
     )
     await preamblelog(
         ctx,
         "Preamble request denied by {} ({})".format(manager, manager.id),
-        author="{} ({})".format(pending_info[0]['username'], userid),
+        author="{} ({})".format(pending_info[0]["username"], userid),
         userid=userid,
-        source=pending_info[0]['pending_preamble']
+        source=pending_info[0]["pending_preamble"],
     )
 
     # Update the preview
     await preview.edit(
-        content="Denied preamble, sending rejection message {}".format(ctx.client.conf.emojis.getemoji("loading")),
-        embed=embed
+        content="Denied preamble, sending rejection message {}".format(
+            ctx.client.conf.emojis.getemoji("loading")
+        ),
+        embed=embed,
     )
 
     # First find the user
@@ -583,18 +639,24 @@ async def deny_submission(ctx, userid, manager, reason=None):
         try:
             user = await ctx.client.fetch_user(userid)
         except discord.NotFound:
-            await preview.edit(content="Denied, but user not known to Discord, couldn't send the rejection message.")
+            await preview.edit(
+                content="Denied, but user not known to Discord, couldn't send the rejection message."
+            )
 
     try:
         await user.send(embed=embed, content=user.mention)
     except discord.Forbidden:
         await preview.edit(
-            content=("Denied, but Discord didn't let me DM the user. "
-                     "I might not be able to see them (no shared guilds), or they might have blocked me.")
+            content=(
+                "Denied, but Discord didn't let me DM the user. "
+                "I might not be able to see them (no shared guilds), or they might have blocked me."
+            )
         )
     except Exception as e:
         await preview.edit(
-            content=("Denied, but something unexpected occurred while sending the rejection message.")
+            content=(
+                "Denied, but something unexpected occurred while sending the rejection message."
+            )
         )
         raise e
     else:
@@ -615,13 +677,15 @@ async def test_submission(ctx, userid, manager):
     # Retrieve the pending preamble if it exists, otherwise return
     pending_info = ctx.client.data.user_pending_preambles.select_where(userid=userid)
     if not pending_info:
-        await ctx.error_reply("User no longer has a pending preamble to test! Cancelling.")
+        await ctx.error_reply(
+            "User no longer has a pending preamble to test! Cancelling."
+        )
         raise SafeCancellation
-    preamble = pending_info[0]['pending_preamble']
+    preamble = pending_info[0]["pending_preamble"]
 
     # Compile the latex with this preamble
     # Construct a for loop for testing, embedding and logging three LaTeX engines
-    engines = ['pdfLaTeX', 'XeLaTeX', 'LuaLaTeX']
+    engines = ["pdfLaTeX", "XeLaTeX", "LuaLaTeX"]
 
     for engine in engines:
         if engine.lower() == "pdflatex":
@@ -637,13 +701,17 @@ async def test_submission(ctx, userid, manager):
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
                 out_msg = await ctx.reply(content=message, file=dfile)
             else:
-                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                message = (
+                    f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
                 out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))
 
         if engine.lower() == "lualatex":
-            log = await ctx.makeluaTeX(preamble_test_code_luatex, testid, preamble=preamble)
+            log = await ctx.makeluaTeX(
+                preamble_test_code_luatex, testid, preamble=preamble
+            )
 
             file_path = "tex/staging/{id}/{id}.png".format(id=testid)
             if os.path.isfile(file_path):
@@ -655,13 +723,17 @@ async def test_submission(ctx, userid, manager):
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
                 out_msg = await ctx.reply(content=message, file=dfile)
             else:
-                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                message = (
+                    f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
                 out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))
 
         if engine.lower() == "xelatex":
-            log = await ctx.makexeTeX(preamble_test_code_xetex, testid, preamble=preamble)
+            log = await ctx.makexeTeX(
+                preamble_test_code_xetex, testid, preamble=preamble
+            )
 
             file_path = "tex/staging/{id}/{id}.png".format(id=testid)
             if os.path.isfile(file_path):
@@ -673,7 +745,9 @@ async def test_submission(ctx, userid, manager):
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
                 out_msg = await ctx.reply(content=message, file=dfile)
             else:
-                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                message = (
+                    f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
                 out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))

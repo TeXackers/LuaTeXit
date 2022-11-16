@@ -27,10 +27,12 @@ User properties:
 """
 
 
-@module.cmd("prefix",
-            desc="View bot prefixes and set a personal prefix.",
-            aliases=["myprefix"],
-            flags=["set", "reset"])
+@module.cmd(
+    "prefix",
+    desc="View bot prefixes and set a personal prefix.",
+    aliases=["myprefix"],
+    flags=["set", "reset"],
+)
 async def cmd_prefix(ctx, flags):
     """
     Usage``:
@@ -54,7 +56,7 @@ async def cmd_prefix(ctx, flags):
     """
     # Get the user's prefix and update the cache
     rows = ctx.client.data.user_prefixes.select_where(userid=ctx.author.id)
-    prefix = rows[0]['prefix'] if rows else None
+    prefix = rows[0]["prefix"] if rows else None
     if prefix:
         ctx.client.objects["user_prefix_cache"][ctx.author.id] = prefix
     else:
@@ -67,31 +69,37 @@ async def cmd_prefix(ctx, flags):
         ctx.client.data.user_prefixes.delete_where(userid=ctx.author.id)
 
         # Inform the user
-        await ctx.reply("Your personal command prefix has successfully been removed!\n"
-                        "Mentions and the current guild or global prefix will still function.")
+        await ctx.reply(
+            "Your personal command prefix has successfully been removed!\n"
+            "Mentions and the current guild or global prefix will still function."
+        )
 
     elif flags["set"] or ctx.args:
         prefix = ctx.args
 
         # First check if the provided prefix is of an adequate length
         if len(prefix) > 5:
-            return await ctx.error_reply("Sorry, the maximum length of a personal prefix is `5` characters.")
+            return await ctx.error_reply(
+                "Sorry, the maximum length of a personal prefix is `5` characters."
+            )
         if len(prefix) == 0:
             return await ctx.error_reply("No prefix was provided! Please try again.")
 
         # Set the prefix user property
         ctx.client.data.user_prefixes.insert(
-            allow_replace=True,
-            userid=ctx.author.id,
-            prefix=prefix
+            allow_replace=True, userid=ctx.author.id, prefix=prefix
         )
 
         # Update the user prefix cache
         ctx.client.objects["user_prefix_cache"][ctx.author.id] = prefix
 
         # Inform the user
-        await ctx.reply("Your personal command prefix has been set to `{}`.\n"
-                        "Mentions and the current guild or global prefix will still function.".format(prefix))
+        await ctx.reply(
+            "Your personal command prefix has been set to `{}`.\n"
+            "Mentions and the current guild or global prefix will still function.".format(
+                prefix
+            )
+        )
 
     else:
         # Retrieve the current bot prefixes and build the response lines
@@ -106,14 +114,19 @@ async def cmd_prefix(ctx, flags):
         guild_str = ""
         guild_prefix = None
         if ctx.guild:
-            guild_prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, None)
-            guild_str = ("The guild prefix is `{}`.".format(guild_prefix)
-                         if guild_prefix else "No custom guild prefix set.")
+            guild_prefix = ctx.client.objects["guild_prefix_cache"].get(
+                ctx.guild.id, None
+            )
+            guild_str = (
+                "The guild prefix is `{}`.".format(guild_prefix)
+                if guild_prefix
+                else "No custom guild prefix set."
+            )
 
         # Global prefix
         global_str = "The default prefix is `{}`{}.".format(
             ctx.client.prefix,
-            " (not active in favour of the guild prefix)" if guild_prefix else ""
+            " (not active in favour of the guild prefix)" if guild_prefix else "",
         )
 
         # Create the response and reply

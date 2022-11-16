@@ -11,7 +11,7 @@ TODO: Permission to view a setting
 """
 
 
-class _configSetting():
+class _configSetting:
     def __init__(self, name, desc, perm_view, perm_write, ctype, default):
         self.name = name
         self.desc = desc
@@ -42,18 +42,37 @@ class _configSetting():
         value = self.ctype(raw=setting, client=client, message=message)
         return value.hr
 
-    async def write(self, data, obj, userstr, conf=None, message=None, client=None, server=None, botdata=None):
+    async def write(
+        self,
+        data,
+        obj,
+        userstr,
+        conf=None,
+        message=None,
+        client=None,
+        server=None,
+        botdata=None,
+    ):
         """
         Takes a human written string and attempts to decipher it and write it.
         """
         if self.perm_write:
             if (client is None) or (message is None):
                 return "Something went wrong while checking whether you have perms to set this setting!"
-            (errcode, errmsg) = await permFuncs[self.perm_write][0](client, data, message=message, conf=conf)
+            (errcode, errmsg) = await permFuncs[self.perm_write][0](
+                client, data, message=message, conf=conf
+            )
             if errcode != 0:
                 return errmsg
         default_errmsg = "I didn't understand your input or something went wrong!"
-        value = self.ctype(raw=self.get(data, obj), userstr=userstr, message=message, server=server, botdata=botdata, client=client)
+        value = self.ctype(
+            raw=self.get(data, obj),
+            userstr=userstr,
+            message=message,
+            server=server,
+            botdata=botdata,
+            client=client,
+        )
         errmsg = value.errmsg
         if value.error:
             errmsg = value.errmsg if value.errmsg else default_errmsg
@@ -80,10 +99,29 @@ class serverConfigSetting(_configSetting):
         setting = botdata.servers.get(server.id, self.name)
         return setting if (setting is not None) else self.default
 
-    async def write(self, data, obj, userstr, message=None, client=None, server=None, botdata=None, conf=None):
+    async def write(
+        self,
+        data,
+        obj,
+        userstr,
+        message=None,
+        client=None,
+        server=None,
+        botdata=None,
+        conf=None,
+    ):
         server = obj
         botdata = data
-        return (await super().write(data, obj, userstr, message=message, client=client, server=server, botdata=botdata, conf=conf))
+        return await super().write(
+            data,
+            obj,
+            userstr,
+            message=message,
+            client=client,
+            server=server,
+            botdata=botdata,
+            conf=conf,
+        )
 
 
 class botConfigSetting(_configSetting):
@@ -100,6 +138,25 @@ class botConfigSetting(_configSetting):
         setting = botconf.get(self.name)
         return setting if (setting is not None) else self.default
 
-    async def write(self, data, obj, userstr, message=None, client=None, server=None, botdata=None, conf=None):
+    async def write(
+        self,
+        data,
+        obj,
+        userstr,
+        message=None,
+        client=None,
+        server=None,
+        botdata=None,
+        conf=None,
+    ):
         conf = data
-        return (await super().write(data, obj, userstr, message=message, client=client, server=server, botdata=botdata, conf=conf))
+        return await super().write(
+            data,
+            obj,
+            userstr,
+            message=message,
+            client=client,
+            server=server,
+            botdata=botdata,
+            conf=conf,
+        )

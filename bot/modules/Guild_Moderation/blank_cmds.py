@@ -16,20 +16,19 @@ def temp_disabled(func):
                 func.__name__[4:]
             )
         )
+
     return _func
 
 
-@module.cmd("giverole",
-            desc="Give roles to a member.",
-            disabled=True)
+@module.cmd("giverole", desc="Give roles to a member.", disabled=True)
 @temp_disabled
 async def cmd_giverole(ctx):
     pass
 
 
-@module.cmd("rolemod",
-            desc="Give/take groups of roles to groups of members.",
-            disabled=True)
+@module.cmd(
+    "rolemod", desc="Give/take groups of roles to groups of members.", disabled=True
+)
 @temp_disabled
 async def cmd_rolemod(ctx):
     pass

@@ -59,14 +59,10 @@ logger = logging.getLogger()
 
 # Set the log levels
 logger.setLevel(LOGLEVEL)
-logging.getLogger('discord').setLevel(DISCORD_LOGLEVEL)
+logging.getLogger("discord").setLevel(DISCORD_LOGLEVEL)
 
 file_handler = ConcurrentRotatingFileHandler(
-    filename=LOGFILE,
-    maxBytes=50000000,
-    backupCount=10,
-    encoding='utf-8',
-    mode='a'
+    filename=LOGFILE, maxBytes=50000000, backupCount=10, encoding="utf-8", mode="a"
 )
 file_handler.setFormatter(log_fmt)
 logger.addHandler(file_handler)
@@ -80,12 +76,12 @@ client = cmdClient(
     prefix=PREFIX,
     shard_id=shard_num,
     shard_count=SHARD_COUNT,
-    intents=discord.Intents.all()
+    intents=discord.Intents.all(),
 )
 client.log = log
 client.conf = conf
 client.app = CURRENT_APP
-client.sharded = (SHARD_COUNT > 1)
+client.sharded = SHARD_COUNT > 1
 client.guild_config = guild_config
 
 # Attach the relevant app information, app modules, and hooks
@@ -103,10 +99,10 @@ if not DB_TYPE or DB_TYPE.lower() == "sqlite":
     client.data = sqliteConnector(db_file=conf.get("sqlite_db", "data/paradox.db"))
 elif DB_TYPE.lower() == "mysql":
     dbopts = {
-        'username': conf.get('db_username'),
-        'password': conf.get('db_password'),
-        'host': conf.get('db_host'),
-        'database': conf.get('db_database')
+        "username": conf.get("db_username"),
+        "password": conf.get("db_password"),
+        "host": conf.get("db_host"),
+        "database": conf.get("db_database"),
     }
     client.data = mysqlConnector(**dbopts)
 else:
@@ -172,20 +168,26 @@ async def get_prefixes(client, message):
 # Attach client event hooks
 # ------------------------------
 
+
 @client.event
 async def on_ready():
     # Set activity
     activity_name = "Type {}help for usage!".format(client.prefix)
     client.objects["activity_name"] = activity_name
     await client.change_presence(
-        status=discord.Status.online,
-        activity=discord.Game(name=activity_name)
+        status=discord.Status.online, activity=discord.Game(name=activity_name)
     )
 
     # Attach global channels
-    client.objects["feedback_channel"] = discord.utils.get(client.get_all_channels(), id=FEEDBACK_CH)
-    client.objects["preamble_channel"] = discord.utils.get(client.get_all_channels(), id=PREAMBLE_CH)
-    client.objects["guild_log_channel"] = discord.utils.get(client.get_all_channels(), id=GUILD_LOG_CH)
+    client.objects["feedback_channel"] = discord.utils.get(
+        client.get_all_channels(), id=FEEDBACK_CH
+    )
+    client.objects["preamble_channel"] = discord.utils.get(
+        client.get_all_channels(), id=PREAMBLE_CH
+    )
+    client.objects["guild_log_channel"] = discord.utils.get(
+        client.get_all_channels(), id=GUILD_LOG_CH
+    )
 
     # Launch modules
     await client.launch_modules()
@@ -193,34 +195,38 @@ async def on_ready():
     # Attach the log client and log the alive message
     attach_log_client(client)
 
-    log_msg = ("Logged in as\n{client.user.name} (uid:{client.user.id}).\n"
-               "Using configuration \"{app}\".\n"
-               "Logged into {n} guilds on shard {shard} with {shard_count} shard(s).\n"
-               "Loaded {m} modules with {mn} commands.\n"
-               "Listening for {mnn} command keywords.\n"
-               "Ready to take commands.".format(
-                   client=client,
-                   app=client.app_info['app'],
-                   shard=shard_num,
-                   shard_count=SHARD_COUNT,
-                   n=len(client.guilds),
-                   m=len(client.modules),
-                   mn=len(client.cmds),
-                   mnn=len(client.cmd_names)
-               ))
+    log_msg = (
+        "Logged in as\n{client.user.name} (uid:{client.user.id}).\n"
+        'Using configuration "{app}".\n'
+        "Logged into {n} guilds on shard {shard} with {shard_count} shard(s).\n"
+        "Loaded {m} modules with {mn} commands.\n"
+        "Listening for {mnn} command keywords.\n"
+        "Ready to take commands.".format(
+            client=client,
+            app=client.app_info["app"],
+            shard=shard_num,
+            shard_count=SHARD_COUNT,
+            n=len(client.guilds),
+            m=len(client.modules),
+            mn=len(client.cmds),
+            mnn=len(client.cmd_names),
+        )
+    )
     log(log_msg)
 
 
 @client.event
 async def on_message(message: discord.Message):
     # Handle messages from bot accounts
-    if message.author.bot and message.author.id not in conf.getintlist("whitelisted_bots", []):
+    if message.author.bot and message.author.id not in conf.getintlist(
+        "whitelisted_bots", []
+    ):
         return
 
     # Handle messages from blacklisted users
     if message.author.id in conf.getintlist("blacklisted_users", []):
         return
-    if message.author.id in client.objects['user_blacklist']:
+    if message.author.id in client.objects["user_blacklist"]:
         return
 
     if message.guild:

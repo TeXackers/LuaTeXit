@@ -1,4 +1,11 @@
-from settings import GuildSetting, Boolean, IntegerEnum, ChannelList, ColumnData, ListData
+from settings import (
+    GuildSetting,
+    Boolean,
+    IntegerEnum,
+    ChannelList,
+    ColumnData,
+    ListData,
+)
 
 from wards import guild_manager
 
@@ -18,13 +25,14 @@ class autotex(ColumnData, Boolean, GuildSetting):
     name = "latex"
     desc = "Automatically compile LaTeX messages."
 
-    long_desc = ("When enabled, automatically detect and compile LaTeX in messages.\n"
-                 "Affected by the other LaTeX guild settings, and personal configuration.")
+    long_desc = (
+        "When enabled, automatically detect and compile LaTeX in messages.\n"
+        "Affected by the other LaTeX guild settings, and personal configuration."
+    )
 
-    _outputs = {True: "Enabled",
-                False: "Disabled"}
+    _outputs = {True: "Enabled", False: "Disabled"}
 
-    _default = LatexGuild.defaults['autotex']
+    _default = LatexGuild.defaults["autotex"]
 
     _table_interface_name = "guild_latex_config"
     _data_column = "autotex"
@@ -48,12 +56,13 @@ class only_render_codeblocks(ColumnData, Boolean, GuildSetting):
     name = "only_render_codeblocks"
     desc = "Only render LaTeX found in codeblocks."
 
-    long_desc = ("Whether automatic LaTeX recognition will only read and render codeblocks.")
+    long_desc = (
+        "Whether automatic LaTeX recognition will only read and render codeblocks."
+    )
 
-    _outputs = {True: "True",
-                False: "False"}
+    _outputs = {True: "True", False: "False"}
 
-    _default = LatexGuild.defaults['require_codeblocks']
+    _default = LatexGuild.defaults["require_codeblocks"]
 
     _table_interface_name = "guild_latex_config"
     _data_column = "require_codeblocks"
@@ -80,7 +89,7 @@ class latex_level(ColumnData, IntegerEnum, GuildSetting):
 
     long_desc = "Sets how strict the parser is when detecting LaTeX."
 
-    _default = LatexGuild.defaults['autotex_level']
+    _default = LatexGuild.defaults["autotex_level"]
     _enum = AutoTexLevel
 
     _table_interface_name = "guild_latex_config"
@@ -96,7 +105,7 @@ class latex_level(ColumnData, IntegerEnum, GuildSetting):
                 "`CODEBLOCK`: The strictest level, require a `tex` or `latex` syntax codeblock.\n"
                 "`STRICT`: Also recognise environments, double dollars, `\(...\)` and `\[...\]`.\n"
                 "`WEAK`: Also recognise paired single dollars."
-            )
+            ),
         )
         return embed
 

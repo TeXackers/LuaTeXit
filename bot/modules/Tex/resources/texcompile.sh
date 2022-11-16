@@ -4,7 +4,7 @@ chmod --quiet -R o+rwx .
 
 # find . ! -name "$1.tex" -type f -exec rm -f {} +
 
-sudo -u latex timeout 1m pdflatex -no-shell-escape $1.tex > texout.log 2>&1
+sudo -u $(whoami) timeout 1m pdflatex -no-shell-escape $1.tex > texout.log 2>&1
 
 RET=$?
 if [ $RET -eq 0 ];
@@ -23,7 +23,13 @@ then
   exit 1
 fi
 
-timeout 20 convert -density 700 -quality 75 -depth 8 -trim +repage $1.pdf -colorspace sRGB $1.png;
+# -density <geometry>: horizontal and vertical density of the image
+# -depth <value>: image depth
+# -quality <value>: JPEG/MIFF/PNG compression level
+# -repage <geometry>: size and location of an image canvas
+# -trim: trim image edges
+timeout 10 convert -density 600 -quality 90 -depth 8 -trim +repage $1.pdf -colorspace sRGB PNG64:$1.png;
+
 if [ $? -eq 124 ];
 then
  echo "Image processing timed out!";

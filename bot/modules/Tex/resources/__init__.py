@@ -18,4 +18,5 @@ failed_image_path = os.path.join(__location__, "failed.png")
 compile_script_path = os.path.join(__location__, "texcompile.sh")
 
 # pdftex_compile_sript_path = os.path.join(__location__, "pdftexcompile.sh")
-luatex_compile_sript_path = os.path.join(__location__, "luatexcompile.sh")
+luatex_compile_script_path = os.path.join(__location__, "luatexcompile.sh")
+xetex_compile_script_path = os.path.join(__location__, "xetexcompile.sh")

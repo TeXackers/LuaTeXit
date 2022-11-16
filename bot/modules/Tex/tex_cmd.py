@@ -8,7 +8,7 @@ from .core.tex_utils import ParseMode
 
 @module.cmd("tex",
             desc="Render LaTeX code.",
-            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz', 'luatex'],
+            aliases=[',', 'mtex', 'align', 'latex', 'texsp', 'texw', 'tikz', 'luatex', 'xetex'],
             flags=['config', 'keepsourcefor', 'color', 'colour', 'alwaysmath', 'allowother', 'name'])
 async def cmd_tex(ctx, flags):
     """
@@ -20,6 +20,8 @@ async def cmd_tex(ctx, flags):
         {prefix}texw <code>
         {prefix}tikz <code>
         {prefix}luatex <code>
+        {prefix}xetex <code>
+
     Description:
         Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
             For a quick introduction to using LaTeX, see one of the resources linked below.
@@ -41,6 +43,7 @@ async def cmd_tex(ctx, flags):
         texw: Don't pad the output (with transparent pixels) after compilation.
         tikz: Code is rendered in a `tikzpicture` environment.
         luatex: Code is compiled using LuaLaTeX engine.
+        xetex: Code is compiled using XeLaTeX engine.
     Related:
         autotex, texconfig, preamble
     LaTeX Resources:
@@ -55,7 +58,8 @@ async def cmd_tex(ctx, flags):
         {prefix}, \\int^\\infty_0 f(x)~dx
         {prefix}align a + 1 &= 2\\\\ a &= 1
         {prefix}tikz \\draw(0,0) circle (1);
-        {prefix}luatex \luatexbanner
+        {prefix}luatex \\luatexbanner
+        {prefix}xetex \\XeTeXversion \\XeTeXrevision
     """
     # Handle flags
     if any(flags.values()):
@@ -73,14 +77,14 @@ async def cmd_tex(ctx, flags):
         if ctx.alias == ',':
             # `,,` on its own might easily not be referring to us.
             return
-        else:
-            return await ctx.error_reply(
-                "Please give me something to compile, for example "
-                "```latex\n"
-                "{0}tex The solutions to \\(x^2 = 1\\) are \\(x = \\pm 1\\)."
-                "```"
-                "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
-            )
+        # else:
+        #     return await ctx.error_reply(
+        #         "Please give me something to compile, for example "
+        #         "```latex\n"
+        #         "{0}tex The solutions to \\(x^2 = 1\\) are \\(x = \\pm 1\\)."
+        #         "```"
+        #         "See `{0}help` and `{0}help tex` for detailed usage and further examples!".format(ctx.best_prefix())
+        #     )
 
     # Handle `tex help`
     if ctx.args.lower() in ['help', '--help']:
@@ -140,6 +144,16 @@ async def cmd_tex(ctx, flags):
 
         # Keep the command alive until the latex context dies
         await lctx.lifetime()
+    elif ctx.alias == "xetex":
+        # Create the LatexContext
+        lctx = LatexContext(ctx, source, lguild, luser, **flags)
+        
+        # Make the LaTeX using xetexcompile.sh
+        await lctx.xetexmake()
+
+        # Keep the command alive until the latex context dies
+        await lctx.lifetime()
+
     else:
         # Create the LatexContext
         lctx = LatexContext(ctx, source, lguild, luser, **flags)

@@ -1,6 +1,8 @@
 import sys
 import platform
 import psutil
+import subprocess
+import re
 # from datetime import datetime
 
 import discord
@@ -27,6 +29,54 @@ Commands provided:
         Reply with an invite link to the support guild for the current app.
 """
 
+@module.cmd("stat", desc="Hardware Stats and Load.")
+async def cmd_curr_load(ctx: Context) -> None:
+    table_fields: list = []
+
+    # Dev for LuaTeXit
+    table_fields.append(("Developer", r"Leothelion#3743"))
+
+    # OS Name
+    table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
+
+    # Architecture for MacOS
+    table_fields.append(("Arch", platform.mac_ver()[2].upper()))
+
+    # CPU Name
+    table_fields.append(("CPU", subprocess.check_output(['/usr/sbin/sysctl', "-n", "machdep.cpu.brand_string"]).strip().decode()))
+    # CPU
+    table_fields.append(("CPU Load", f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)"))
+
+    # Memory
+    mem_total: int = psutil.virtual_memory().total >> 20
+    mem_used: int = psutil.virtual_memory().used >> 20
+    table_fields.append(("Memory", f"{mem_used}/{mem_total} MiB ({mem_used / mem_total * 100:.1f}%)"))
+
+    # Versions
+    py_version, py_build = sys.version.split("\n")
+    compiler: str = re.findall(r"\((.*)\)", py_build)[0]
+    table_fields.append(("Py Version", py_version.split("(")[0]))
+
+    table_fields.append(("Lua Version", subprocess.check_output(['lua', '-v']).decode().split("  ")[0].replace("Lua ", "")))
+    table_fields.append(("LuaTeX Version",
+                         subprocess.check_output(["luatex", "--version"]).decode().split("\n")[0]\
+                         .split(", ")[1].replace("Version ", "")))
+    table_fields.append(("XeTeX Version",
+                         subprocess.check_output(["xetex", "--version"]).decode().split("\n")[0]\
+                         .split(", ")[1].replace("Version ", "")))
+    table_fields.append(("Compiler", compiler))
+
+
+    # Tabulate
+    fields, values = zip(*table_fields)
+    table: str = prop_tabulate(fields, values)
+
+    # Build embed
+    desc = f"{table}"
+    embed = discord.Embed(title="Top", color=discord.Colour.red(), description=desc)
+
+    # Finally, send embed
+    await ctx.reply(embed=embed)
 
 @module.cmd("about",
             desc="Shard status and bot statistics.")

@@ -17,12 +17,27 @@ from ..resources import default_preamble, failed_image_path
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 preamble_test_code = r"""
-ABCDEFGHIJKLMNOPQRSTUVWXYZ\\
+$98\%$ of $\mathbb{PEOPLE}$ can't solve \textbf{this} {\Huge 😂😂}
 
-Here is a fraction: \(\frac{1}{2}\).
+$\Huge 🍇+🍇+🍇=3$
+"""
 
-Here is a display equation: \[(a+b)^2 = a^2 + b^2\]
-(in fields of order $2$)
+preamble_test_code_luatex = r"""
+\suppressmathparerror = 1
+\luatexbanner
+
+\texttt{U(no|)(sub|super)script}$\longrightarrow
+    \psi\Usuperscript{1}\Usubscript{2} =
+    \psi\Unosuperscript{1}\Unosubscript{2} =
+    \psi\Unosuperscript{1}\Usubscript{2} =
+    \psi\Usuperscript{1}\Unosubscript{2}
+$
+"""
+
+preamble_test_code_xetex = r"""
+This is Xe\TeX, Version \the\XeTeXversion\XeTeXrevision\ (\TeX\ Live $\the\year$)
+
+\texttt{\textbackslash mdfivesum\{ABC\}}: $\mdfivesum{ABC}$
 """
 
 # Load list of preamble presets from directory
@@ -126,8 +141,6 @@ async def sendfile_reaction_handler(ctx, msg, contents, title, file_name="preamb
             except discord.Forbidden:
                 pass
             except discord.HTTPException:
-                pass
-            except discord.NotFound:
                 pass
     try:
         await msg.clear_reaction(emoji)
@@ -597,7 +610,7 @@ async def test_submission(ctx, userid, manager):
     Replies with the compiled LaTeX output, and any error that occurs.
     """
     # Separate staging folder for testing purposes
-    testid = manager.id * 10000
+    testid = manager.id * 1000
 
     # Retrieve the pending preamble if it exists, otherwise return
     pending_info = ctx.client.data.user_pending_preambles.select_where(userid=userid)
@@ -607,22 +620,60 @@ async def test_submission(ctx, userid, manager):
     preamble = pending_info[0]['pending_preamble']
 
     # Compile the latex with this preamble
-    log = await ctx.makeTeX(preamble_test_code, testid, preamble=preamble)
+    # Construct a for loop for testing, embedding and logging three LaTeX engines
+    engines = ['pdfLaTeX', 'XeLaTeX', 'LuaLaTeX']
 
-    file_path = "tex/staging/{id}/{id}.png".format(id=testid)
-    if os.path.isfile(file_path):
-        dfile = discord.File(file_path)
-    else:
-        dfile = discord.File(failed_image_path)
+    for engine in engines:
+        if engine.lower() == "pdflatex":
+            log = await ctx.makeTeX(preamble_test_code, testid, preamble=preamble)
 
-    if not log:
-        message = "Test compile for pending preamble of {}.\
-            \nNo errors during compile. Please check compiled image below.".format(userid)
-        out_msg = await ctx.reply(content=message, file=dfile)
-    else:
-        message = "Test compile for pending preamble of {}.\
-            \nSee the error log and output image below.".format(userid)
-        embed = discord.Embed(description="```\n{}\n```".format(log))
-        out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
+            if os.path.isfile(file_path):
+                dfile = discord.File(file_path)
+            else:
+                dfile = discord.File(failed_image_path)
 
-    asyncio.ensure_future(ctx.offer_delete(out_msg))
+            if not log:
+                message = f"""No errors for {engine} and pending preamble of {userid}"""
+                out_msg = await ctx.reply(content=message, file=dfile)
+            else:
+                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                embed = discord.Embed(description="```\n{}\n```".format(log))
+                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                # asyncio.ensure_future(ctx.offer_delete(out_msg))
+
+        if engine.lower() == "lualatex":
+            log = await ctx.makeluaTeX(preamble_test_code_luatex, testid, preamble=preamble)
+
+            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
+            if os.path.isfile(file_path):
+                dfile = discord.File(file_path)
+            else:
+                dfile = discord.File(failed_image_path)
+
+            if not log:
+                message = f"""No errors for {engine} and pending preamble of {userid}"""
+                out_msg = await ctx.reply(content=message, file=dfile)
+            else:
+                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                embed = discord.Embed(description="```\n{}\n```".format(log))
+                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                # asyncio.ensure_future(ctx.offer_delete(out_msg))
+
+        if engine.lower() == "xelatex":
+            log = await ctx.makexeTeX(preamble_test_code_xetex, testid, preamble=preamble)
+
+            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
+            if os.path.isfile(file_path):
+                dfile = discord.File(file_path)
+            else:
+                dfile = discord.File(failed_image_path)
+
+            if not log:
+                message = f"""No errors for {engine} and pending preamble of {userid}"""
+                out_msg = await ctx.reply(content=message, file=dfile)
+            else:
+                message = f"""Error(s) found: {engine} and pending preamble of {userid}"""
+                embed = discord.Embed(description="```\n{}\n```".format(log))
+                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                # asyncio.ensure_future(ctx.offer_delete(out_msg))

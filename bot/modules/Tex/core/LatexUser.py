@@ -27,7 +27,7 @@ class LatexUser:
         # Explicitly typed user configuration settings
         self.autotex = None  # type:bool
         self.keepsourcefor = None  # type: int
-        self.colour = None  # type: str
+        self.colour = "light"  # type: str
         self.alwaysmath = None  # type: bool
         self.alwayswide = None  # type: bool
         self.namestyle = None  # type: TexNameStyle

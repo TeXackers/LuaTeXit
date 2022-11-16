@@ -24,6 +24,8 @@ info = {
 
 disabled_modules = [
     "Fun",
+    "Maths",
+    "Starboard",
     "Social",
 ]
 disabled_commands = {

@@ -171,7 +171,7 @@ async def cmd_help(ctx: Context):
                     pass
                 except discord.Forbidden:
                     pass
-            embed.description = discord.Embed.Empty
+            embed.description = None
             embed.remove_field(0)
 
         for fieldname, fieldvalue in help_fields:

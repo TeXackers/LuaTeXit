@@ -4,20 +4,17 @@
 	\usepackage[theoremfont, trueslanted, largesc, p, osf]{newpxtext}
 	\usepackage[vvarbb]{newpxmath}
 	\usepackage{polyglossia}
-	\fi
-\else%
-	\ifxetex
-		\PassOptionsToPackage{no-math}{fontspec}
-		\usepackage[theoremfont, trueslanted, largesc, p, osf]{newpxtext}
-		\usepackage[vvarbb]{newpxmath}
-		\usepackage{polyglossia}
-	\fi
-\else%
-	\ifpdftex
-		\usepackage[T2A, T1]{fontenc}
-		\usepackage[utf8]{inputenc}
-		\usepackage{newpxtext, newpxmath}
-		\usepackage[var0, varl, narrow]{zi4}
-		\usepackage{mathtools}
-	\fi
+\fi
+\ifxetex
+	\PassOptionsToPackage{no-math}{fontspec}
+	\usepackage[theoremfont, trueslanted, largesc, p, osf]{newpxtext}
+	\usepackage[vvarbb]{newpxmath}
+	\usepackage{polyglossia}
+\fi
+\ifpdftex
+	\usepackage[T2A, T1]{fontenc}
+	\usepackage[utf8]{inputenc}
+	\usepackage{newpxtext, newpxmath}
+	\usepackage[var0, varl, narrow]{zi4}
+	\usepackage{mathtools}
 \fi

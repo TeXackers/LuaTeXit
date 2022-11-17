@@ -137,7 +137,7 @@ async def cmd_roleinfo(ctx: Context):
     num_users = len(role.members)
     created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.utcnow() - role.created_at, minutes=True)
+        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - role.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
     )
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
@@ -378,7 +378,7 @@ async def cmd_guildinfo(ctx: Context, flags):
         if not ctx.guild.icon:
             return await ctx.reply("The current guild has no custom icon set.")
         embed = discord.Embed(color=discord.Colour.light_grey())
-        embed.set_image(url=guild.icon_url)
+        embed.set_image(url=guild.icon)
         return await ctx.reply(embed=embed)
 
     verif_descs = {
@@ -426,7 +426,7 @@ async def cmd_guildinfo(ctx: Context, flags):
 
     owner = "{0} ({0.id})".format(guild.owner)
     if guild.icon:
-        icon = "[Icon Link]({})".format(guild.icon_url)
+        icon = "[Icon Link]({})".format(guild.icon)
     else:
         icon = "No guild icon set"
     mfa = "Enabled" if guild.mfa_level else "Disabled"
@@ -440,7 +440,7 @@ async def cmd_guildinfo(ctx: Context, flags):
     )
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - guild.created_at, minutes=True)
+        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - guild.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
     )
 
     prop_list = [
@@ -474,7 +474,7 @@ async def cmd_guildinfo(ctx: Context, flags):
         description=desc,
     )
     embed.set_author(name="{0} ({0.id})".format(ctx.guild))
-    embed.set_thumbnail(url=guild.icon_url)
+    embed.set_thumbnail(url=guild.icon)
 
     emb_fields = [
         ("Member Status", status, 0),
@@ -549,7 +549,7 @@ async def cmd_channelinfo(ctx: Context, flags):
         else f"{ch.name}"
     )
     created = ch.created_at.strftime("%d/%m/%Y")
-    created_ago = f"({strfdelta(datetime.utcnow() - ch.created_at, minutes=True)} ago)"
+    created_ago = f"({strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - ch.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)} ago)"
 
     category = "{0} ({0.id})".format(ch.category) if ch.category else "None"
 

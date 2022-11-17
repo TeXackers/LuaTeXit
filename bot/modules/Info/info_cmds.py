@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 import discord
 from discord import Status
 from discord.http import Route
@@ -137,7 +137,7 @@ async def cmd_roleinfo(ctx: Context):
     num_users = len(role.members)
     created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - role.created_at, minutes=True)
+        strfdelta(datetime.datetime.utcnow() - role.created_at, minutes=True)
     )
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
@@ -282,11 +282,11 @@ async def cmd_userinfo(ctx: Context):
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
     joined_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - user.joined_at, minutes=True)
+        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - user.joined_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
     )
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - user.created_at, minutes=True)
+        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - user.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
     )
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     prop_list = [
@@ -319,11 +319,11 @@ async def cmd_userinfo(ctx: Context):
     roles = ("`" + "`, `".join(roles) + "`") if roles else "None"
 
     embed = discord.Embed(color=colour, description=desc)
-    embed.set_author(name=f"{user} ({user.id})", icon_url=user.avatar_url)
+    embed.set_author(name=f"{user} ({user.id})", icon_url=user.avatar)
     if serverav:
         embed.set_thumbnail(url=serverav)
     else:
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.avatar)
 
     embed.add_field(name="Roles", value=roles, inline=False)
 
@@ -696,7 +696,7 @@ async def cmd_avatar(ctx: Context, flags):
             return await ctx.error_reply(f"{user} has no server avatar set.")
 
     else:
-        avatar_url = user.avatar_url
+        avatar_url = user.avatar
 
     desc = f"Click [here]({avatar_url}) to view the {'GIF' if user.is_avatar_animated() else 'image'}."
     embed = discord.Embed(colour=colour, description=desc)

@@ -4,11 +4,11 @@ import os
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 # Load default preamble from file
-with open(os.path.join(__location__, "default_preamble.tex"), 'r') as preamble:
+with open(os.path.join(__location__, "default_preamble.tex"), "r") as preamble:
     default_preamble = preamble.read()
 
 # Load list of whitelisted packages from file
-with open(os.path.join(__location__, "package_whitelist.txt"), 'r') as pw:
+with open(os.path.join(__location__, "whitelist.txt"), "r") as pw:
     whitelisted_packages = [line.strip() for line in pw]
 
 # Store the path to the failed image

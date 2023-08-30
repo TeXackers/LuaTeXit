@@ -94,7 +94,12 @@ async def cmd_preamble(ctx, flags):
     # presets = []
 
     # Get the whitelisted packages
+    # in resources/whitelisted_packages.txt
     whitelisted_packages = []
+    whitelist_file_loc = os.path.join(__location__, "resources/whitelist.txt")
+    with open(whitelist_file_loc) as f:
+        for line in f:
+            whitelisted_packages.append(line.strip())
 
     # Handle resetting the preamble
     if flags["reset"]:

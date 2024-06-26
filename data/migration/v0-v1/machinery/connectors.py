@@ -2,6 +2,7 @@ import sqlite3 as sq
 
 try:
     import mysql.connector
+
     MYSQL = True
 except ImportError:
     MYSQL = False
@@ -10,15 +11,17 @@ from .Connector import Connector
 
 
 class mysqlConnector(Connector):
-    db_type = 'mysql'
-    replace_char = '%s'
+    db_type = "mysql"
+    replace_char = "%s"
     cursor_args = {"dictionary": True}
 
     def __init__(self, **dbopts):
         super().__init__(**dbopts)
 
         if not MYSQL:
-            raise ImportError("No MySQL connector available in your system, please install MySQL.")
+            raise ImportError(
+                "No MySQL connector available in your system, please install MySQL."
+            )
 
         self.conn = mysql.connector.connect(**dbopts)
 
@@ -36,17 +39,17 @@ class mysqlConnector(Connector):
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
         cursor.execute(
-            'INSERT INTO {} {} VALUES {} ON DUPLICATE KEY UPDATE {}'.format(
+            "INSERT INTO {} {} VALUES {} ON DUPLICATE KEY UPDATE {}".format(
                 table, key_str, value_str, update_key_str
             ),
-            tuple((*values, *update_key_values))
+            tuple((*values, *update_key_values)),
         )
         self.conn.commit()
 
 
 class sqliteConnector(Connector):
-    db_type = 'sqlite'
-    replace_char = '?'
+    db_type = "sqlite"
+    replace_char = "?"
     timeout = 20
 
     def __init__(self, **dbopts):
@@ -72,10 +75,10 @@ class sqliteConnector(Connector):
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
         cursor.execute(
-            'INSERT INTO {} {} VALUES {} ON CONFLICT({}) DO UPDATE SET {}'.format(
+            "INSERT INTO {} {} VALUES {} ON CONFLICT({}) DO UPDATE SET {}".format(
                 table, key_str, value_str, constraint, update_key_str
             ),
-            tuple((*values, *update_key_values))
+            tuple((*values, *update_key_values)),
         )
         self.conn.commit()
 

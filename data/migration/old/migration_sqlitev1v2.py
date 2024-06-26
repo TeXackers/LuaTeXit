@@ -1,5 +1,6 @@
 import sqlite3 as sq
 
+
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
@@ -35,28 +36,40 @@ new_conn = sq.connect(new_file)
 cursor = new_conn.cursor()
 
 # Schema
-cursor.execute('CREATE TABLE servers ( serverid INTEGER NOT NULL,\
+cursor.execute(
+    "CREATE TABLE servers ( serverid INTEGER NOT NULL,\
                property TEXT NOT NULL,\
                value TEXT,\
-               PRIMARY KEY (serverid, property))')
-cursor.execute('CREATE TABLE users ( userid INTEGER NOT NULL,\
+               PRIMARY KEY (serverid, property))"
+)
+cursor.execute(
+    "CREATE TABLE users ( userid INTEGER NOT NULL,\
                property TEXT NOT NULL,\
                value TEXT,\
-               PRIMARY KEY (userid, property))')
-cursor.execute('CREATE TABLE members ( serverid INTEGER NOT NULL,\
+               PRIMARY KEY (userid, property))"
+)
+cursor.execute(
+    "CREATE TABLE members ( serverid INTEGER NOT NULL,\
                userid INTEGER NOT NULL,\
                property TEXT NOT NULL,\
                value TEXT,\
-               PRIMARY KEY (serverid, userid, property))')
-cursor.execute('CREATE TABLE users_props ( property TEXT NOT NULL,\
+               PRIMARY KEY (serverid, userid, property))"
+)
+cursor.execute(
+    "CREATE TABLE users_props ( property TEXT NOT NULL,\
                shared BOOLEAN NOT NULL,\
-               PRIMARY KEY (property))')
-cursor.execute('CREATE TABLE servers_props ( property TEXT NOT NULL,\
+               PRIMARY KEY (property))"
+)
+cursor.execute(
+    "CREATE TABLE servers_props ( property TEXT NOT NULL,\
                shared BOOLEAN NOT NULL,\
-               PRIMARY KEY (property))')
-cursor.execute('CREATE TABLE members_props ( property TEXT NOT NULL,\
+               PRIMARY KEY (property))"
+)
+cursor.execute(
+    "CREATE TABLE members_props ( property TEXT NOT NULL,\
                shared BOOLEAN NOT NULL,\
-               PRIMARY KEY (property))')
+               PRIMARY KEY (property))"
+)
 
 # Transfer server data
 for server in server_data:
@@ -64,7 +77,7 @@ for server in server_data:
         value = server_data[server][prop]
         if value is None:
             continue
-        cursor.execute('INSERT INTO servers VALUES (?, ?, ?)', (server, prop, value))
+        cursor.execute("INSERT INTO servers VALUES (?, ?, ?)", (server, prop, value))
 new_conn.commit()
 
 # Transfer user data
@@ -73,5 +86,5 @@ for user in user_data:
         value = user_data[user][prop]
         if value is None:
             continue
-        cursor.execute('INSERT INTO users VALUES (?, ?, ?)', (user , prop, value))
+        cursor.execute("INSERT INTO users VALUES (?, ?, ?)", (user, prop, value))
 new_conn.commit()

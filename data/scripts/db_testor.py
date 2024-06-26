@@ -24,10 +24,10 @@ data_testapp = BotData(dbfile, app="testapp")
 # Initialisation data for the mysql version
 
 dbopts = {
-    'username': conf.get('username'),
-    'password': conf.get('password'),
-    'host': conf.get('host'),
-    'database': conf.get('database')
+    "username": conf.get("username"),
+    "password": conf.get("password"),
+    "host": conf.get("host"),
+    "database": conf.get("database"),
 }
 
 data_noapp = BotData(app="", **dbopts)
@@ -74,11 +74,19 @@ async def main():
     print("Testing shared flag behaviour")
     response = await data_testapp.users.get(fakeuser, "property1")
     if response is not None:
-        print("ISSUE: Non-shared property property1 is non-empty for app testapp. Value: {}".format(response))
+        print(
+            "ISSUE: Non-shared property property1 is non-empty for app testapp. Value: {}".format(
+                response
+            )
+        )
 
     response = await data_testapp.users.get(fakeuser, "property3")
     if response != fakedata1:
-        print("ISSUE: Shared property property3 not consistent for app testapp. Got\n{}\nExpected\n{}".format(response, fakedata1))
+        print(
+            "ISSUE: Shared property property3 not consistent for app testapp. Got\n{}\nExpected\n{}".format(
+                response, fakedata1
+            )
+        )
 
     # Test setting member data
     print("Setting member data")
@@ -94,23 +102,40 @@ async def main():
     print("Testing find for user data")
     response = await data_noapp.users.find("property1", fakedata1, read=True)
     if set(response) != {fakeuser, otherfakeuser}:
-        print("ISSUE: Got the following response from find:\n{}\nExpecting:\n{}".format(response, [fakeuser, otherfakeuser]))
+        print(
+            "ISSUE: Got the following response from find:\n{}\nExpecting:\n{}".format(
+                response, [fakeuser, otherfakeuser]
+            )
+        )
 
     response = await data_noapp.users.find("property1", fakedata2, read=True)
     if response != []:
-        print("ISSUE: Got unexpected non-empty response from find, response\n{}".formtat(response))
+        print(
+            "ISSUE: Got unexpected non-empty response from find, response\n{}".formtat(
+                response
+            )
+        )
 
     # Test find not empty
     print("Testing finding non-empty values in user data")
     response = await data_noapp.users.find_not_empty("property1")
     if set(response) != {fakeuser, otherfakeuser}:
-        print("ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(response, [fakeuser, otherfakeuser]))
+        print(
+            "ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(
+                response, [fakeuser, otherfakeuser]
+            )
+        )
 
     response = await data_noapp.users.find_not_empty("property2")
     if response != [fakeuser]:
-        print("ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(response, [fakeuser]))
+        print(
+            "ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(
+                response, [fakeuser]
+            )
+        )
 
     print("All tests complete")
+
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

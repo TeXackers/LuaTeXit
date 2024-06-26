@@ -10,9 +10,9 @@ class InsertType(Enum):
 
 
 class ColumnKeys(Enum):
-    VALUE = 'value'
-    USERID = 'userid'
-    SERVERID = 'serverid'
+    VALUE = "value"
+    USERID = "userid"
+    SERVERID = "serverid"
 
 
 class PropAction:
@@ -47,7 +47,7 @@ class PropAction:
         Apply the action to the given row.
         The row is expected to support the `Dict` interface, with column names as keynames.
         """
-        prop_value = self.parser(row['value'])
+        prop_value = self.parser(row["value"])
         if prop_value is None:
             # Ignore empty values
             return
@@ -57,14 +57,18 @@ class PropAction:
 
         # Handler the various insert modes
         if self.insert_type == InsertType.INSERT:
-            row['value'] = prop_value
+            row["value"] = prop_value
             for insertmap in self.insertmaps:
-                params = {col: self.substitue(key, row) for col, key in insertmap.items()}
+                params = {
+                    col: self.substitue(key, row) for col, key in insertmap.items()
+                }
                 self._connector.insert(self.target, allow_replace=True, **params)
         elif self.insert_type == InsertType.UPSERT:
-            row['value'] = prop_value
+            row["value"] = prop_value
             for insertmap in self.insertmaps:
-                params = {col: self.substitue(key, row) for col, key in insertmap.items()}
+                params = {
+                    col: self.substitue(key, row) for col, key in insertmap.items()
+                }
                 self._connector.upsert(self.target, self.constraint, **params)
         elif self.insert_type == InsertType.MANY:
             if not prop_value:
@@ -74,8 +78,10 @@ class PropAction:
             for insertmap in self.insertmaps:
                 values = []
                 for value in prop_value:
-                    row['value'] = value
-                    values.append(tuple(self.substitue(key, row) for key in insertmap.values()))
+                    row["value"] = value
+                    values.append(
+                        tuple(self.substitue(key, row) for key in insertmap.values())
+                    )
                 self._connector.insert_many(
                     self.target,
                     *values,

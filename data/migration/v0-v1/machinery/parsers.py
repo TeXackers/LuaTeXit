@@ -107,9 +107,9 @@ def RECEPTIONSTRING(value):
     """
     parsed = STRING(value)  # type: str
     if parsed:
-        parsed = parsed.replace('$username$', '{name}')
-        parsed = parsed.replace('$mention$', '{mention}')
-        parsed = parsed.replace('$server$', '{guildname}')
+        parsed = parsed.replace("$username$", "{name}")
+        parsed = parsed.replace("$mention$", "{mention}")
+        parsed = parsed.replace("$server$", "{guildname}")
         return parsed
 
 

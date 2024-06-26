@@ -32,10 +32,10 @@ old_conn.row_factory = dict_factory
 
 # Create mysql object
 dbopts = {
-    'username': conf.get('username'),
-    'password': conf.get('password'),
-    'host': conf.get('host'),
-    'database': conf.get('database')
+    "username": conf.get("username"),
+    "password": conf.get("password"),
+    "host": conf.get("host"),
+    "database": conf.get("database"),
 }
 new_data = new_botdata(app="", **dbopts)
 new_conn = new_data.conn
@@ -47,7 +47,13 @@ print("Creating lists of keys to move to the long tables")
 long_user_props = ["name_history", "preamble", "notifyme", "piggybank_history"]
 
 # Server props to match: server_embeds, tags, self_roles, server_latex_preamble, join_msgs_msg, leave_msgs_msg
-long_server_props = ["server_embeds", "tags", "self_roles", "server_latex_preamble", "_msg"]
+long_server_props = [
+    "server_embeds",
+    "tags",
+    "self_roles",
+    "server_latex_preamble",
+    "_msg",
+]
 
 # Member props to match: nickname_history, persistent_roles
 long_member_props = ["nickname_history", "persistent_roles"]
@@ -74,13 +80,17 @@ def migrate(name, numkeys, long_props):
         new_cursor.execute("INSERT INTO {} VALUES (%s, %s)".format(table), tuple(row))
         props_moved += 1
 
-    print("> Moved {} rows into the {} property tables, with {} long props".format(props_moved, name, len(long_props)))
+    print(
+        "> Moved {} rows into the {} property tables, with {} long props".format(
+            props_moved, name, len(long_props)
+        )
+    )
 
     # Move main table
     print("> Moving {} value table".format(name))
     entries_moved = 0
     longs_moved = 0
-    data_format = "({}%s)".format("%s, "*(numkeys+1))
+    data_format = "({}%s)".format("%s, " * (numkeys + 1))
 
     sql = "SELECT * FROM {}".format(name)
     cursor = old_conn.execute(sql)
@@ -92,11 +102,17 @@ def migrate(name, numkeys, long_props):
         table = ("{}_long" if is_long else "{}").format(name)
 
         # Add the row to this table
-        new_cursor.execute("INSERT INTO {} VALUES {}".format(table, data_format), tuple(row))
+        new_cursor.execute(
+            "INSERT INTO {} VALUES {}".format(table, data_format), tuple(row)
+        )
         entries_moved += 1
         longs_moved += 1 if is_long else 0
 
-    print("> Moved {} rows into the {} value tables, with {} rows moved into the long table".format(entries_moved, name, longs_moved))
+    print(
+        "> Moved {} rows into the {} value tables, with {} rows moved into the long table".format(
+            entries_moved, name, longs_moved
+        )
+    )
     print("Migration for {} properties complete!\n".format(name))
 
 

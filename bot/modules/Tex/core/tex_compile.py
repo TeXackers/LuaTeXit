@@ -30,12 +30,12 @@ def gencolour(colour, negate=True):
     """
     return r"convert {{image}} {} -bordercolor transparent -border 50 \
         -background {} -flatten {{image}}".format(
-        "+negate" if negate else "", colour
+        "-channel RGB +negate" if negate else "", colour
     )
 
 
 # Dictionary of valid colours and the associated transformation commands
-colourschemes = {}
+colourschemes = dict()
 
 colourschemes["white"] = gencolour("white", False)
 colourschemes["black"] = gencolour("black")
@@ -52,10 +52,10 @@ colourschemes[
 colourschemes["trans_black"] = None
 colourschemes["transparent"] = colourschemes["trans_white"]
 
-colourschemes["default"] = colourschemes["light"]
-
+colourschemes["default"] = colourschemes["white"]
 
 # Script which pads images to a minimum width of 1000
+# pad_script = ""
 pad_script = r"""
 width=`convert {image} -format "%[fx:w]" info:`
 minwidth=1000
@@ -69,30 +69,21 @@ fi
 """
 
 # Header for every LaTeX source file
-header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
-    \\usepackage{iftex}\
-    \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
-    \n\\ifpdftex\\usepackage{hwemoji}\\fi\
-    \n\\nonstopmode"
-
-"""
-# Alternative header to support discord emoji, but not other unicode
-header = "\\documentclass[preview, border=20pt, 12pt]{standalone}\
-    \n\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}\
-    \n\\usepackage{hwemoji}
-    \n\\nonstopmode"
+header = """\\documentclass[varwidth, margin=2em,]{standalone}
+\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
+\\ifpdftex\\usepackage{hwemoji}\\fi
 """
 
 # The format of the source to compile
-to_compile = "{header}\
-    \n{preamble}\
-    \n\\begin{{document}}\
-    \n{source}\
-    \n\\end{{document}}"
+to_compile = """{header}
+{preamble}
+\\begin{{document}}
+{source}
+\\end{{document}}"""
 
 
 @Context.util
-async def makeTeX(
+async def maketex(
     ctx,
     source,
     targetid,
@@ -106,7 +97,7 @@ async def makeTeX(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.DEBUG,
+        level=logging.WARNING,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -127,15 +118,16 @@ async def makeTeX(
 
     # Build compile script
     script = (
-        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
-        .format(
+        "{compile_script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}".format(
             compile_script=compile_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
             pad=pad_script if pad else "",
-        )
-        .format(image="{}.png".format(targetid))
+        ).format(image="{}.png".format(targetid))
     )
 
     # Run the script in an async executor
@@ -143,7 +135,7 @@ async def makeTeX(
 
 
 @Context.util
-async def makeluaTeX(
+async def makeluatex(
     ctx,
     source,
     targetid,
@@ -157,7 +149,7 @@ async def makeluaTeX(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.DEBUG,
+        level=logging.WARNING,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -170,7 +162,7 @@ async def makeluaTeX(
     # Recreate staging directory
     os.makedirs(path, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"tex/staging/{targetid}/{targetid}.tex"
 
     with open(fn, "w") as work:
         work.write(to_compile.format(header=header, preamble=preamble, source=source))
@@ -178,15 +170,16 @@ async def makeluaTeX(
 
     # Build compile script
     script = (
-        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
-        .format(
+        "{compile_script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}".format(
             compile_script=luatex_compile_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
             pad=pad_script if pad else "",
-        )
-        .format(image="{}.png".format(targetid))
+        ).format(image="{}.png".format(targetid))
     )
 
     # Run the script in an async executor
@@ -194,7 +187,7 @@ async def makeluaTeX(
 
 
 @Context.util
-async def makexeTeX(
+async def makexetex(
     ctx,
     source,
     targetid,
@@ -208,7 +201,7 @@ async def makexeTeX(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.DEBUG,
+        level=logging.WARNING,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -229,15 +222,16 @@ async def makexeTeX(
 
     # Build compile script
     script = (
-        ("{compile_script} {id} || exit;\n" "cd {path}\n" "{colour}\n" "{pad}")
-        .format(
+        "{compile_script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}".format(
             compile_script=xetex_compile_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
             pad=pad_script if pad else "",
-        )
-        .format(image="{}.png".format(targetid))
+        ).format(image="{}.png".format(targetid))
     )
 
     # Run the script in an async executor

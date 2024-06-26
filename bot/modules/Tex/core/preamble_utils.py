@@ -3,6 +3,7 @@ from datetime import datetime
 from io import BytesIO
 import asyncio
 import discord
+import difflib
 
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 
@@ -19,7 +20,7 @@ __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file
 preamble_test_code = r"""
 $98\%$ of $\mathbb{PEOPLE}$ can't solve \textbf{this} {\Huge 😂😂}
 
-$\Huge 🍇+🍇+🍇=3$
+\pdftexbanner
 """
 
 preamble_test_code_luatex = r"""
@@ -37,7 +38,7 @@ $
 preamble_test_code_xetex = r"""
 This is Xe\TeX, Version \the\XeTeXversion\XeTeXrevision\ (\TeX\ Live $\the\year$)
 
-\texttt{\textbackslash mdfivesum\{ABC\}}: $\mdfivesum{ABC}$
+\texttt{\textbackslash mdfivesum\{ABC\}}: \mdfivesum{ABC}
 """
 
 # Load list of preamble presets from directory
@@ -101,7 +102,96 @@ def tex_pagination(
         embed = discord.Embed(
             title=basetitle,
             colour=colour,
-            author=author,
+            # author=author,
+            description=desc,
+            timestamp=time,
+        )
+        embed.set_footer(text="{} Page {}/{}".format(footer, i + 1, blocknum))
+        if author is not None:
+            embed.set_author(name=author)
+        if extra_fields is not None:
+            for name, value in extra_fields:
+                if name and value:
+                    embed.add_field(name=name, value=value, inline=False)
+        embeds.append(embed)
+
+    return embeds
+
+
+async def tex_pagination_diff(
+    text_old,
+    tex_new,
+    basetitle="",
+    header=None,
+    timestamp=True,
+    author=None,
+    time=None,
+    colour=discord.Colour.dark_blue(),
+    extra_fields=None,
+    footer="",
+):
+    """
+    Run a `diff` on the old and new text, and view the result in a number of embedded pages.
+    """
+    if text_old is None:
+        # if text_old is None, that means it's the default preamble
+        # default preamble is in paradox/bot/modules/Tex/resources/default_preamble.tex
+        default_preamble: str = os.path.join("bot", "modules", "Tex", "resources", "default_preamble.tex")
+        with open(default_preamble, "r") as f:
+            text_old = f.read()
+
+    diff = "\n".join(
+        difflib.unified_diff(
+            text_old.splitlines(keepends=False),
+            tex_new.splitlines(keepends=False),
+            fromfile="current preamble",
+            tofile="pending preamble",
+            lineterm="",
+            n=0,
+        )
+    )
+
+    if diff:
+        blocks = split_text("".join(diff), 1000, code=True, syntax="diff")
+    else:
+        blocks = [None]
+
+    # Change time to a datetime object if it isn't one
+    if time is None:
+        time = datetime.utcnow()
+    elif isinstance(time, (float, int)):
+        time = datetime.fromtimestamp(time)
+
+    blocknum = len(blocks)
+
+    if blocknum == 1:
+        block = blocks[0] if blocks[0] else None
+        desc = (
+            "{}\n{}".format(header, block or "")
+            if header
+            else (block if block else None)
+        )
+
+        embed = discord.Embed(
+            title=basetitle, color=colour, description=desc, timestamp=time
+        )
+        if author is not None:
+            embed.set_author(name=author)
+        if extra_fields is not None:
+            for name, value in extra_fields:
+                if name and value:
+                    embed.add_field(name=name, value=value, inline=False)
+        if footer is not None:
+            embed.set_footer(text=footer)
+        return [embed]
+
+    embeds = []
+    for i, block in enumerate(blocks):
+        desc = "{}\n{}".format(header, block) if header else block
+        embed = discord.Embed(
+            title=basetitle,
+            colour=colour,
+            # author=author,
             description=desc,
             timestamp=time,
         )
@@ -178,7 +268,6 @@ async def view_preamble(
     file_message=None,
     **pagination_args,
 ):
-
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
@@ -187,6 +276,30 @@ async def view_preamble(
         asyncio.ensure_future(
             sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title)
         )
+
+    return out_msg
+
+
+async def view_preamble_diff(
+    ctx,
+    preamble_old,
+    preamble_pending,
+    title,
+    start_page=0,
+    file_react=False,
+    file_message=None,
+    **pagination_args,
+):
+    pages = await tex_pagination_diff(
+        preamble_old, preamble_pending, basetitle=title, **pagination_args
+    )
+    out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
+
+    # if file_react and out_msg is not None:
+    #     # Add the sendfile reaction if required
+    #     asyncio.ensure_future(
+    #         sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title)
+    #     )
 
     return out_msg
 
@@ -242,7 +355,9 @@ async def preamblelog(
 #         with BytesIO() as temp_file:
 #             temp_file.write(source.encode())
 #             temp_file.seek(0)
-#             await ctx.pager(pages, embed=True, locked=False, destination=logch, file_data=temp_file, file_name="source.tex")
+#             await ctx.pager(
+#                 pages, embed=True, locked=False, destination=logch, file_data=temp_file, file_name="source.tex"
+#             )
 
 
 async def resolve_pending_preamble(ctx, userid, info, colour=None):
@@ -686,12 +801,12 @@ async def test_submission(ctx, userid, manager):
     # Compile the latex with this preamble
     # Construct a for loop for testing, embedding and logging three LaTeX engines
     engines = ["pdfLaTeX", "XeLaTeX", "LuaLaTeX"]
+    file_path = "tex/staging/{id}/{id}.png".format(id=testid)
 
     for engine in engines:
         if engine.lower() == "pdflatex":
-            log = await ctx.makeTeX(preamble_test_code, testid, preamble=preamble)
+            log = await ctx.maketex(preamble_test_code, testid, preamble=preamble)
 
-            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
             if os.path.isfile(file_path):
                 dfile = discord.File(file_path)
             else:
@@ -699,21 +814,20 @@ async def test_submission(ctx, userid, manager):
 
             if not log:
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
-                out_msg = await ctx.reply(content=message, file=dfile)
+                await ctx.reply(content=message, file=dfile)
             else:
                 message = (
                     f"""Error(s) found: {engine} and pending preamble of {userid}"""
                 )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
-                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))
 
         if engine.lower() == "lualatex":
-            log = await ctx.makeluaTeX(
+            log = await ctx.makeluatex(
                 preamble_test_code_luatex, testid, preamble=preamble
             )
 
-            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
             if os.path.isfile(file_path):
                 dfile = discord.File(file_path)
             else:
@@ -721,21 +835,20 @@ async def test_submission(ctx, userid, manager):
 
             if not log:
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
-                out_msg = await ctx.reply(content=message, file=dfile)
+                await ctx.reply(content=message, file=dfile)
             else:
                 message = (
                     f"""Error(s) found: {engine} and pending preamble of {userid}"""
                 )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
-                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))
 
         if engine.lower() == "xelatex":
-            log = await ctx.makexeTeX(
+            log = await ctx.makexetex(
                 preamble_test_code_xetex, testid, preamble=preamble
             )
 
-            file_path = "tex/staging/{id}/{id}.png".format(id=testid)
             if os.path.isfile(file_path):
                 dfile = discord.File(file_path)
             else:
@@ -743,11 +856,11 @@ async def test_submission(ctx, userid, manager):
 
             if not log:
                 message = f"""No errors for {engine} and pending preamble of {userid}"""
-                out_msg = await ctx.reply(content=message, file=dfile)
+                await ctx.reply(content=message, file=dfile)
             else:
                 message = (
                     f"""Error(s) found: {engine} and pending preamble of {userid}"""
                 )
                 embed = discord.Embed(description="```\n{}\n```".format(log))
-                out_msg = await ctx.reply(content=message, file=dfile, embed=embed)
+                await ctx.reply(content=message, file=dfile, embed=embed)
                 # asyncio.ensure_future(ctx.offer_delete(out_msg))

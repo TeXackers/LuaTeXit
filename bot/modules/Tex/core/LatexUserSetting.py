@@ -241,7 +241,7 @@ class alwaysmath(LatexUserSetting, Boolean):
     @classmethod
     def response(cls, ctx, data):
         if not data:
-            return "The `tex` command will now render in paragraph mode, as usual."
+            return "The `tex` command will now render in text mode. (default)"
         else:
             return "The `tex` command will now render in maths mode, i.e., in a `gather*` environment."
 
@@ -326,7 +326,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
     tex_levels = {
         "CODEBLOCK": r"The strictest level, require a `tex` or `latex` syntax codeblock.",
         "STRICT": r"Also recognise environments, `$$...$$`, `\(...\)` and `\[...\]`.",
-        "WEAK": r"Also recognise paired single dollars, i.e. `$...$`.",
+        "WEAK": r"Also recognise paired single dollars, i.e. `$...$`, but not `\$...\$`",
     }
     tabled_levels = prop_tabulate(list(tex_levels.keys()), list(tex_levels.values()))
 

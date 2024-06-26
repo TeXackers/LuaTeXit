@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 import discord
 
@@ -74,25 +74,23 @@ async def cmd_texconfig(ctx):
         setting_table = prop_tabulate(properties, values)
 
         # Create the description
-        desc = (
-            "{0}\n"
-            "To see more detailed information use `{1}texconfig <option>`.\n"
-            "To set an option use `{1}texconfig <option> <value>`."
-        ).format(setting_table, ctx.best_prefix())
+        # desc = (
+        #     "{0}\n"
+        #     "To see more detailed information use `{1}texconfig <option>`.\n"
+        #     "To set an option use `{1}texconfig <option> <value>`."
+        # ).format(setting_table, ctx.best_prefix())
+
+        desc: str = f"""{setting_table}
+        To see more detailed information use `{ctx.best_prefix()}texconfig <option>`.
+        To set an option use `{ctx.best_prefix()}texconfig <option> <value>`."""
 
         # Create the preamble field contents
         if show_desc:
-            preamble_field = (
-                "Personal persistent compilation preamble, "
-                "used for defining macros and importing packages "
-                "that may be used across all compilations.\n"
-                "See `{}help preamble` for more information."
-            ).format(ctx.best_prefix())
+            preamble_field: str = f"""Personal persistent compilation preamble, used for defining macros and importing packages that may be used across all compilations.
+                See `{ctx.best_prefix()}help preamble` for more information."""
         else:
             if luser.preamble:
-                preamble_field = (
-                    "Using a custom personal preamble with `{}` lines!"
-                ).format(len(luser.preamble.splitlines()))
+                preamble_field: str = f"Using a personal preamble with `{len(luser.preamble.splitlines())}` lines!"
             else:
                 lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
                 if lguild.preamble:
@@ -100,7 +98,7 @@ async def cmd_texconfig(ctx):
                         "No personal preamble, using the custom guild preamble with `{}` lines."
                     ).format(len(lguild.preamble.splitlines()))
                 else:
-                    preamble_field = "No personal or guild preamble, using the global default preamble."
+                    preamble_field = "Using the global default preamble."
 
             preamble_field += (
                 "\nUse `{}preamble` to view or modify your preamble!".format(
@@ -112,8 +110,8 @@ async def cmd_texconfig(ctx):
         embed = discord.Embed(
             title="Personal LaTeX configuration.",
             description=desc,
-            timestamp=datetime.utcnow(),
-            color=ParaCC["purple"],
+            timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+            colour=ParaCC["purple"],
         )
         embed.add_field(name="Preamble", value=preamble_field)
 
@@ -187,6 +185,9 @@ async def cmd_autotex(ctx):
     luser = LatexUser.get(ctx.author.id)
 
     largs = ctx.args.lower()
+    # match ctx.args.lower():
+    #     case "on" | "off" | None:
+
     if not largs or largs in ["on", "off"]:
         # No arguments, toggle the user's listening setting.
         if largs == "off" or (not largs and luser.autotex):

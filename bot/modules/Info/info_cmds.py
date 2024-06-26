@@ -137,7 +137,11 @@ async def cmd_roleinfo(ctx: Context):
     num_users = len(role.members)
     created = role.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - role.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
+        strfdelta(
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - role.created_at.replace(tzinfo=datetime.timezone.utc),
+            minutes=True,
+        )
     )
     hoisted = "Yes" if role.hoist else "No"
     mentionable = "Yes" if role.mentionable else "No"
@@ -282,11 +286,19 @@ async def cmd_userinfo(ctx: Context):
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
     joined_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - user.joined_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
+        strfdelta(
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - user.joined_at.replace(tzinfo=datetime.timezone.utc),
+            minutes=True,
+        )
     )
     joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - user.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
+        strfdelta(
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - user.created_at.replace(tzinfo=datetime.timezone.utc),
+            minutes=True,
+        )
     )
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     prop_list = [
@@ -440,7 +452,11 @@ async def cmd_guildinfo(ctx: Context, flags):
     )
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
     created_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - guild.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)
+        strfdelta(
+            datetime.datetime.now(tz=datetime.timezone.utc)
+            - guild.created_at.replace(tzinfo=datetime.timezone.utc),
+            minutes=True,
+        )
     )
 
     prop_list = [

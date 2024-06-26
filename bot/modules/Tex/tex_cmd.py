@@ -9,7 +9,7 @@ from .core.tex_utils import ParseMode
 @module.cmd(
     "tex",
     desc="Render LaTeX code.",
-    aliases=[",", "mtex", "align", "latex", "texsp", "texw", "tikz", "luatex", "xetex"],
+    aliases=["latex", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex"],
     flags=[
         "config",
         "keepsourcefor",
@@ -23,11 +23,7 @@ from .core.tex_utils import ParseMode
 async def cmd_tex(ctx, flags):
     """
     Usage``:
-        {prefix}, <equations>
         {prefix}tex <code>
-        {prefix}align <align block>
-        {prefix}texsp <code>
-        {prefix}texw <code>
         {prefix}tikz <code>
         {prefix}luatex <code>
         {prefix}xetex <code>
@@ -47,29 +43,16 @@ async def cmd_tex(ctx, flags):
             is generally not required.
     Aliases::
         tex: Code is compiled in the default `document` environment.
-        , or mtex: Code is rendered in math mode, in a `gather*` environment.
-        align: Code is rendered in math mode, aligned in an `align*` environment.
-        texsp: Same as `tex`, but ||spoiler|| the output image.
-        texw: Don't pad the output (with transparent pixels) after compilation.
         tikz: Code is rendered in a `tikzpicture` environment.
         luatex: Code is compiled using LuaLaTeX engine.
         xetex: Code is compiled using XeLaTeX engine.
     Related:
         autotex, texconfig, preamble
-    LaTeX Resources:
-        [Our own LaTeX cheat-sheet](https://cdn.discordapp.com/attachments/570695825186095134/570696097572585483/texit_cheatsheet_1.pdf)
-        [LaTeX Mathematical symbols for undergrads (and everyone else)](http://tug.ctan.org/info/undergradmath/undergradmath.pdf)
-        [Find a LaTeX symbol by drawing it on Detexify](http://detexify.kirelabs.org/classify.html)
-        [Friendly introduction to mathematical LaTeX, with links](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#Adding_math_to_LaTeX)
-        [TeX Stackexchange, where every question has been asked before](https://tex.stackexchange.com/)
-        [The LaTeX Support Discord server, origin of the LaTeX Support Network!](https://discord.gg/CbbUP7cDGK)
     Examples``:
-        {prefix}tex This is a fraction: \\(\\frac{{1}}{{2}}\\)
-        {prefix}, \\int^\\infty_0 f(x)~dx
-        {prefix}align a + 1 &= 2\\\\ a &= 1
+        {prefix}tex \\pdftexbanner
         {prefix}tikz \\draw(0,0) circle (1);
         {prefix}luatex \\luatexbanner
-        {prefix}xetex \\XeTeXversion \\XeTeXrevision
+        {prefix}xetex \\the\\XeTeXversion\\XeTeXrevision
     """
     # Handle flags
     if any(flags.values()):
@@ -102,7 +85,7 @@ async def cmd_tex(ctx, flags):
             "Please use `{}help tex` for command help.".format(ctx.best_prefix())
         )
 
-    # TODO: Warning about \begin{document} and \documentclass
+    # WARNING FOR BEGIN DOCUMET - REMOVED
     # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
     #     await ctx.error_reply(
     #         "I compile the code you give me by putting it into a template LaTeX document, between "
@@ -118,20 +101,23 @@ async def cmd_tex(ctx, flags):
     luser = LatexUser.get(ctx.author.id)
 
     # Determine parse mode and flags
-    flags = {}
-    parse_mode = ParseMode.DOCUMENT
+    flags = dict()
+    parse_mode = 0
 
-    lalias = ctx.alias.lower()
-    if lalias in [",", "mtex"]:
-        parse_mode = ParseMode.GATHER
-    elif lalias == "align":
-        parse_mode = ParseMode.ALIGN
-    elif lalias == "tikz":
-        parse_mode = ParseMode.TIKZ
-    elif lalias == "texsp":
-        flags["spoiler"] = True
-    elif lalias == "texw":
-        flags["wide"] = True
+    # convert above if elif to match case
+    match ctx.alias.lower():
+        case "," | "mtex":
+            parse_mode = ParseMode.GATHER
+        case "align":
+            parse_mode = ParseMode.ALIGN
+        case "tikz":
+            parse_mode = ParseMode.TIKZ
+        case "texsp":
+            flags["spoiler"] = True
+        case "texw":
+            flags["wide"] = True
+        case _:
+            parse_mode = ParseMode.DOCUMENT
 
     # Clean mentions
     content = ctx.clean_arg_str()
@@ -146,33 +132,21 @@ async def cmd_tex(ctx, flags):
             "\\`\\`\\`tex\ncode\n\\`\\`\\`"
         )
 
-    if ctx.alias == "luatex":
+    match ctx.alias.lower():
+        # Create latex context for a given context, source, guild, user and other flags
+        # then compile LaTeX using a texcompile shell script of user's choice
+        # then keep the command alive until the context dies
+        case "lualatex" | "luatex" | "lua":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.luatexmake()
+            await lctx.lifetime()
 
-        # Create the LatexContext
-        lctx = LatexContext(ctx, source, lguild, luser, **flags)
+        case "xetex" | "xelatex":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.xetexmake()
+            await lctx.lifetime()
 
-        # Make the LaTeX using lutexcompile.sh
-        await lctx.luatexmake()
-
-        # Keep the command alive until the latex context dies
-        await lctx.lifetime()
-
-    elif ctx.alias == "xetex":
-        # Create the LatexContext
-        lctx = LatexContext(ctx, source, lguild, luser, **flags)
-
-        # Make the LaTeX using xetexcompile.sh
-        await lctx.xetexmake()
-
-        # Keep the command alive until the latex context dies
-        await lctx.lifetime()
-
-    else:
-        # Create the LatexContext
-        lctx = LatexContext(ctx, source, lguild, luser, **flags)
-
-        # Make the LaTeX
-        await lctx.make()
-
-        # Keep the command alive until the latex context dies
-        await lctx.lifetime()
+        case _:
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.make()
+            await lctx.lifetime()

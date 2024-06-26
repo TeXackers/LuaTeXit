@@ -8,7 +8,8 @@ from .module import maths_module as module
 
 # Create setting interface
 @module.guild_setting
-class guild_wolfid(ColumnData, String, GuildSetting):
+class GuildWolfID(ColumnData, String, GuildSetting):
+    """Permit the use of custom Wolfram AppID for `wolfram` command."""
     attr_name = "wolfram_id"
     category = "Misc"
 
@@ -21,7 +22,7 @@ class guild_wolfid(ColumnData, String, GuildSetting):
     long_desc = (
         "Custom wolfram application license token to run the `query` command.\n"
         "May be used to upgrade Wolfram queries to a different plan.\n"
-        "A limited license may be obtained for free "
+        "A limited licence may be obtained for free "
         "[here](https://products.wolframalpha.com/api/documentation/#obtaining-an-appid).\n"
         "After obtaining, configure this setting with your `AppID`.\n"
         "*Do not expose your AppID to untrusted members.*"

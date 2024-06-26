@@ -1,3 +1,4 @@
+import datetime
 import sys
 import platform
 import psutil
@@ -36,7 +37,7 @@ async def cmd_curr_load(ctx: Context) -> None:
     table_fields: list = []
 
     # Dev for LuaTeXit
-    table_fields.append(("Developer", r"Leothelion#3743"))
+    table_fields.append(("Developer", r"leothelion_"))
 
     # OS Name
     table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
@@ -166,8 +167,8 @@ async def cmd_about(ctx: Context):
 
     # Memory
     mem = psutil.virtual_memory()
-    mem_str = "{0:.2f}GB used out of {1:.2f}GB ({mem.percent}%)".format(
-        mem.used / (1024**3), mem.total / (1024**3), mem=mem
+    mem_str = "{0:.2f}GB used out of {1:.2f}GB ({2:.1f}%)".format(
+        mem.used / (1024**3), mem.total / (1024**3), mem.used / mem.total * 100
     )
     table_fields.append(("Memory", mem_str))
 
@@ -220,8 +221,10 @@ async def cmd_ping(ctx: Context):
     """
     # Edit a message and see how long it takes
     msg = await ctx.reply("Beep")
+    maketime:datetime.datetime = datetime.datetime.now()
     await msg.edit(content="Boop")
-    latency = ((msg.edited_at - msg.created_at).microseconds) // 1000
+    edittime: datetime.datetime = datetime.datetime.now()
+    latency = (edittime - maketime).microseconds // 1000
 
     await msg.edit(
         content="Ping: `{}`ms.\nHeartbeat: `{:.0f}`ms.".format(
@@ -239,7 +242,7 @@ async def cmd_invite(ctx: Context):
          Replies with a link to invite me to your server.
     """
     await ctx.reply(
-        "Visit <{}> to invite me!".format(ctx.client.app_info["invite_link"])
+        "Visit [here](https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot) to invite me!"
     )
 
 

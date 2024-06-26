@@ -9,6 +9,7 @@ from .module import latex_module as module
 
 from .core.preamble_utils import (
     view_preamble,
+    view_preamble_diff,
     judgement_reactions,
     preamblelog,
     approve_submission,
@@ -23,6 +24,7 @@ async def approval_queue(ctx):
     Show a selectable list of preambles to be approved/denied
     """
     # Run the whole thing in a loop, so we keep asking for judgements until there are none left
+
     while True:
         # Generate the list of users waiting for judgement
         waiting = ctx.client.data.user_pending_preambles.select_where(
@@ -66,13 +68,26 @@ async def approval_queue(ctx):
                 break
 
             # Display the preamble for judgement
+            currently_on_wait = waiting[0][0]
             judging = ctx.client.data.user_pending_preambles.select_where(
-                userid=waiting[result]["userid"]
+                userid=currently_on_wait
             )[0]
-            sub_msg = await view_preamble(
+
+            current = (
+                ctx.client.data.user_latex_preambles.select_where(
+                    userid=currently_on_wait
+                )[0]["preamble"]
+                if ctx.client.data.user_latex_preambles.select_where(
+                    userid=currently_on_wait
+                )
+                else None
+            )
+            print(current)
+            sub_msg = await view_preamble_diff(
                 ctx,
-                judging["pending_preamble"],
-                "Preamble submission!",
+                preamble_old=current,
+                preamble_pending=judging["pending_preamble"],
+                title="Preamble submission!",
                 start_page=-1,
                 author=waiting_list[result],
                 time=datetime.fromtimestamp(judging["submission_time"]),
@@ -147,156 +162,164 @@ async def user_admin(ctx, userid):
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
 
-    if result == 0:
-        # Show the preamble
-        preamble = current_preamble["preamble"]
-        if not preamble:
-            await ctx.reply("This user doesn't have a custom preamble set!")
-        else:
-            title = "Current preamble"
-            await view_preamble(ctx, preamble, title, author=author, file_react=True)
-    elif result == 1:
-        # Set the preamble. Takes file input as well as message input.
-        # Also asks for confirmation before setting.
-
-        if not await is_manager.run(ctx):
-            return await ctx.error_reply("This can only be used by bot managers.")
-
-        # Prompt for new preamble
-        prompt = "Please enter or upload the new preamble, or type `c` now to cancel."
-
-        preamble = None
-        offer_msg = await ctx.reply(prompt)
-        try:
-            result_msg = await ctx.client.wait_for(
-                "message",
-                check=lambda msg: (msg.author == ctx.author and msg.channel == ctx.ch),
-                timeout=600,
-            )
-        except asyncio.TimeoutError:
-            raise ResponseTimedOut("Timed out waiting for a menu selection.")
-        finally:
-            await offer_msg.delete()
-
-        # Grab response content, using the contents of the first attachment if it exists
-        if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
-            await ctx.error_reply("User menu cancelled.")
-        else:
-            if result_msg.attachments:
-                attachment = result_msg.attachments[0]
-
-                # If the file is over 1MB, it probably isn't a valid preamble.
-                if attachment.size >= 1000000:
-                    return await ctx.error_reply(
-                        "Attached file is too large to process (over `1MB`)."
-                    )
-
-                try:
-                    preamble = str(
-                        await attachment.read(), encoding="utf-8", errors="strict"
-                    )
-                except UnicodeError:
-                    return await ctx.error_reply(
-                        "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
-                    )
+    match result:
+        case 0:
+            # Show the preamble
+            preamble = current_preamble["preamble"]
+            if not preamble:
+                await ctx.reply("This user doesn't have a custom preamble set!")
             else:
-                preamble = result_msg.content
+                title = "Current preamble"
+                await view_preamble(
+                    ctx, preamble, title, author=author, file_react=True
+                )
+        case 1:
+            # Set the preamble. Takes file input as well as message input.
+            # Also asks for confirmation before setting.
 
-        # If out of all that we didn't get a preamble, return
-        if preamble is None:
-            return
+            if not await is_manager.run(ctx):
+                return await ctx.error_reply("This can only be used by bot managers.")
 
-        # Confirm submission
-        prompt = "Please confirm the following preamble modification."
-        result = await confirm(ctx, prompt, preamble)
-        if not result:
-            raise UserCancelled("Modification cancelled.")
-
-        # Finally, set the preamble
-        preamble_data.insert(
-            allow_replace=True,
-            userid=userid,
-            preamble=preamble,
-            previous_preamble=current_preamble["preamble"]
-            if current_preamble
-            else None,
-        )
-
-        await ctx.reply("The user's preamble was updated.")
-        await preamblelog(
-            ctx,
-            "Manual preamble update",
-            header="{} ({}) manually updated the preamble".format(
-                ctx.author, ctx.author.id
-            ),
-            user=user,
-            source=preamble,
-        )
-    elif result == 2:
-        # Reset the current preamble to the default
-
-        if not await is_manager.run(ctx):
-            return await ctx.error_reply("This can only be used by bot managers.")
-
-        preamble_data.insert(
-            allow_replace=True,
-            userid=userid,
-            preamble=None,
-            previous_preamble=current_preamble["preamble"]
-            if current_preamble
-            else None,
-        )
-
-        await resolve_pending_preamble(
-            ctx, userid, "Preamble was reset", colour=discord.Colour.red()
-        )
-        await ctx.reply("The user's preamble was reset to the default!")
-
-        await preamblelog(
-            ctx,
-            "Manual preamble reset",
-            header="{} ({}) manually reset the preamble".format(
-                ctx.author, ctx.author.id
-            ),
-            user=user,
-        )
-    elif result == 3:
-        # Judge the pending preamble
-        if not pending_preamble:
-            return await ctx.error_reply("This user no longer has a pending preamble!")
-
-        # Display the preamble for judgement
-        judging = pending_preamble
-        sub_msg = await view_preamble(
-            ctx,
-            judging["pending_preamble"],
-            "Preamble submission!",
-            start_page=-1,
-            author="{} ({})".format(judging["username"], userid),
-            time=datetime.fromtimestamp(judging["submission_time"]),
-            header=judging["submission_summary"],
-        )
-
-        # Give a warning, if required, about not being able to see the user
-        if (
-            judging["app"] != ctx.client.app
-            and ctx.client.get_guild(judging["submission_source_id"]) is None
-        ):
-            await ctx.reply(
-                "Warning: This user submitted their request from a different app, "
-                "and this shard cannot see the submission guild.\n"
-                "If this client does not share a guild with the user, "
-                "I will not be able to message them."
+            # Prompt for new preamble
+            prompt = (
+                "Please enter or upload the new preamble, or type `c` now to cancel."
             )
 
-        # Add the approval/denial/testing emojis to the submission
-        await judgement_reactions(ctx, judging["userid"], sub_msg)
+            preamble = None
+            offer_msg = await ctx.reply(prompt)
+            try:
+                result_msg = await ctx.client.wait_for(
+                    "message",
+                    check=lambda msg: (
+                        msg.author == ctx.author and msg.channel == ctx.ch
+                    ),
+                    timeout=600,
+                )
+            except asyncio.TimeoutError:
+                raise ResponseTimedOut("Timed out waiting for a menu selection.")
+            finally:
+                await offer_msg.delete()
 
-        # Remove the submission message, if possible
-        try:
-            await sub_msg.delete()
-        except discord.NotFound:
-            pass
+            # Grab response content, using the contents of the first attachment if it exists
+            if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
+                await ctx.error_reply("User menu cancelled.")
+            else:
+                if result_msg.attachments:
+                    attachment = result_msg.attachments[0]
+
+                    # Check the filesize, over 500KB is not okay
+                    if attachment.size >= 500000:
+                        return await ctx.error_reply("Attached file is too large.")
+
+                    try:
+                        preamble = str(
+                            await attachment.read(), encoding="utf-8", errors="strict"
+                        )
+                    except UnicodeError:
+                        return await ctx.error_reply(
+                            "Couldn't decode the attached file, please ensure it uses the `utf-8` encoding."
+                        )
+                else:
+                    preamble = result_msg.content
+
+            # If out of all that we didn't get a preamble, return
+            if preamble is None:
+                return
+
+            # Confirm submission
+            prompt = "Please confirm the following preamble modification."
+            result = await confirm(ctx, prompt, preamble)
+            if not result:
+                raise UserCancelled("Modification cancelled.")
+
+            # Finally, set the preamble
+            preamble_data.insert(
+                allow_replace=True,
+                userid=userid,
+                preamble=preamble,
+                previous_preamble=current_preamble["preamble"]
+                if current_preamble
+                else None,
+            )
+
+            await ctx.reply("The user's preamble was updated.")
+            await preamblelog(
+                ctx,
+                "Manual preamble update",
+                header="{} ({}) manually updated the preamble".format(
+                    ctx.author, ctx.author.id
+                ),
+                user=user,
+                source=preamble,
+            )
+        case 2:
+            # Reset the current preamble to the default
+
+            if not await is_manager.run(ctx):
+                return await ctx.error_reply("This can only be used by bot managers.")
+
+            preamble_data.insert(
+                allow_replace=True,
+                userid=userid,
+                preamble=None,
+                previous_preamble=current_preamble["preamble"]
+                if current_preamble
+                else None,
+            )
+
+            await resolve_pending_preamble(
+                ctx, userid, "Preamble was reset", colour=discord.Colour.red()
+            )
+            await ctx.reply("The user's preamble was reset to the default!")
+
+            await preamblelog(
+                ctx,
+                "Manual preamble reset",
+                header="{} ({}) manually reset the preamble".format(
+                    ctx.author, ctx.author.id
+                ),
+                user=user,
+            )
+        case 3:
+            # Judge the pending preamble
+            if not pending_preamble:
+                return await ctx.error_reply(
+                    "This user no longer has a pending preamble!"
+                )
+
+            # Display the preamble for judgement
+            judging = pending_preamble
+            sub_msg = await view_preamble(
+                ctx,
+                current_preamble,
+                judging["pending_preamble"],
+                "Preamble submission!",
+                start_page=-1,
+                author="{} ({})".format(judging["username"], userid),
+                time=datetime.fromtimestamp(judging["submission_time"]),
+                header=judging["submission_summary"],
+            )
+
+            # Give a warning, if required, about not being able to see the user
+            if (
+                judging["app"] != ctx.client.app
+                and ctx.client.get_guild(judging["submission_source_id"]) is None
+            ):
+                await ctx.reply(
+                    "Warning: This user submitted their request from a different app, "
+                    "and this shard cannot see the submission guild.\n"
+                    "If this client does not share a guild with the user, "
+                    "I will not be able to message them."
+                )
+
+            # Add the approval/denial/testing emojis to the submission
+            await judgement_reactions(ctx, judging["userid"], sub_msg)
+
+            # Remove the submission message, if possible
+            try:
+                await sub_msg.delete()
+            except discord.NotFound:
+                pass
 
 
 async def guild_admin(ctx, guildid):
@@ -334,103 +357,105 @@ async def guild_admin(ctx, guildid):
 
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
-
-    if result == 0:
-        # Show the preamble
-        preamble = current_preamble["preamble"]
-        if not preamble:
-            await ctx.reply("This guild doesn't have a custom preamble set!")
-        else:
-            title = "Current guild preamble"
-            await view_preamble(ctx, preamble, title, author=author, file_react=True)
-    elif result == 1:
-        # Set the preamble. Takes file input as well as message input.
-        # Also asks for confirmation before setting.
-
-        # Prompt for new preamble
-        prompt = (
-            "Please enter or upload the new guild preamble, or type `c` now to cancel."
-        )
-
-        preamble = None
-        offer_msg = await ctx.reply(prompt)
-        try:
-            result_msg = await ctx.client.wait_for(
-                "message",
-                check=lambda msg: (msg.author == ctx.author and msg.channel == ctx.ch),
-                timeout=600,
-            )
-        except asyncio.TimeoutError:
-            raise ResponseTimedOut("Timed out waiting for a menu selection.")
-        finally:
-            await offer_msg.delete()
-
-        # Grab response content, using the contents of the first attachment if it exists
-        if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
-            await ctx.error_reply("Guild menu cancelled.")
-        else:
-            if result_msg.attachments:
-                attachment = result_msg.attachments[0]
-
-                # If the file is over 1MB, it probably isn't a valid preamble.
-                if attachment.size >= 1000000:
-                    return await ctx.error_reply(
-                        "Attached file is too large to process (over `1MB`)."
-                    )
-
-                try:
-                    preamble = str(
-                        await attachment.read(), encoding="utf-8", errors="strict"
-                    )
-                except UnicodeError:
-                    return await ctx.error_reply(
-                        "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
-                    )
+    match result:
+        case 0:
+            # Show the preamble
+            preamble = current_preamble["preamble"]
+            if not preamble:
+                await ctx.reply("This guild doesn't have a custom preamble set!")
             else:
-                preamble = result_msg.content
+                title = "Current guild preamble"
+                await view_preamble(
+                    ctx, preamble, title, author=author, file_react=True
+                )
+        case 1:
+            # Set the preamble. Takes file input as well as message input.
+            # Also asks for confirmation before setting.
 
-        # If out of all that we didn't get a preamble, return
-        if preamble is None:
-            return
+            # Prompt for new preamble
+            prompt = "Please enter or upload the new guild preamble, or type `c` now to cancel."
 
-        # Confirm submission
-        prompt = "Please confirm the following preamble modification."
-        result = await confirm(ctx, prompt, preamble)
-        if not result:
-            raise UserCancelled("Modification cancelled.")
+            preamble = None
+            offer_msg = await ctx.reply(prompt)
+            try:
+                result_msg = await ctx.client.wait_for(
+                    "message",
+                    check=lambda msg: (
+                        msg.author == ctx.author and msg.channel == ctx.ch
+                    ),
+                    timeout=600,
+                )
+            except asyncio.TimeoutError:
+                raise ResponseTimedOut("Timed out waiting for a menu selection.")
+            finally:
+                await offer_msg.delete()
 
-        # Finally, set the preamble
-        preamble_data.insert(allow_replace=True, guildid=guildid, preamble=preamble)
-        LatexGuild.get(guildid).load()
+            # Grab response content, using the contents of the first attachment if it exists
+            if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
+                await ctx.error_reply("Guild menu cancelled.")
+            else:
+                if result_msg.attachments:
+                    attachment = result_msg.attachments[0]
 
-        await ctx.reply("The guild's preamble was updated.")
-        await preamblelog(
-            ctx,
-            "Manual preamble update",
-            header="{} ({}) manually updated the preamble".format(
-                ctx.author, ctx.author.id
-            ),
-            user=guild,
-            source=preamble,
-        )
-    elif result == 2:
-        # Reset the current preamble to the default
-        preamble_data.delete_where(guildid=guildid)
-        LatexGuild.get(guildid).load()
+                    # If the file is over 1MB, it probably isn't a valid preamble.
+                    if attachment.size >= 1000000:
+                        return await ctx.error_reply(
+                            "Attached file is too large to process (over `1MB`)."
+                        )
 
-        await resolve_pending_preamble(
-            ctx, guildid, "Guild preamble was reset", colour=discord.Colour.red()
-        )
-        await ctx.reply("The guild's preamble was reset to the default!")
+                    try:
+                        preamble = str(
+                            await attachment.read(), encoding="utf-8", errors="strict"
+                        )
+                    except UnicodeError:
+                        return await ctx.error_reply(
+                            "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
+                        )
+                else:
+                    preamble = result_msg.content
 
-        await preamblelog(
-            ctx,
-            "Manual guild preamble reset",
-            header="{} ({}) manually reset the preamble".format(
-                ctx.author, ctx.author.id
-            ),
-            user=guild,
-        )
+            # If out of all that we didn't get a preamble, return
+            if preamble is None:
+                return
+
+            # Confirm submission
+            prompt = "Please confirm the following preamble modification."
+            result = await confirm(ctx, prompt, preamble)
+            if not result:
+                raise UserCancelled("Modification cancelled.")
+
+            # Finally, set the preamble
+            preamble_data.insert(allow_replace=True, guildid=guildid, preamble=preamble)
+            LatexGuild.get(guildid).load()
+
+            await ctx.reply("The guild's preamble was updated.")
+            await preamblelog(
+                ctx,
+                "Manual preamble update",
+                header="{} ({}) manually updated the preamble".format(
+                    ctx.author, ctx.author.id
+                ),
+                user=guild,
+                source=preamble,
+            )
+        case 2:
+            # Reset the current preamble to the default
+            preamble_data.delete_where(guildid=guildid)
+            LatexGuild.get(guildid).load()
+
+            await resolve_pending_preamble(
+                ctx, guildid, "Guild preamble was reset", colour=discord.Colour.red()
+            )
+            await ctx.reply("The guild's preamble was reset to the default!")
+
+            await preamblelog(
+                ctx,
+                "Manual guild preamble reset",
+                header="{} ({}) manually reset the preamble".format(
+                    ctx.author, ctx.author.id
+                ),
+                user=guild,
+            )
 
 
 async def general_menu(ctx):

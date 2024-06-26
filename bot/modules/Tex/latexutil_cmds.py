@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup, NavigableString
 import discord
+import random
 import requests
 
 import urllib.parse
@@ -16,6 +17,13 @@ Provides ctan and texdoc commands.
 texdoc_url = "http://texdoc.net/pkg/{}"
 ctan_url = "https://ctan.org/{}"
 lion_url = "https://ctan.org/lion/files/ctan_lion_350x350.png"
+bend_url = "https://cdn.discordapp.com/attachments/1043075521476579398/1043077445911322624/dangerous-bend.png"
+comp_url = (
+    "https://cdn.discordapp.com/attachments/884225590666887188/"
+    "949152868768837662/Screen_Shot_2022-03-04_at_14.54.10.png"
+)
+
+thumbnails = [lion_url, bend_url, comp_url]
 
 
 def soup_site(url: str) -> BeautifulSoup:
@@ -274,7 +282,7 @@ async def cmd_ctan(ctx):
     # e.g `:E` for packages start with an E
     # but we allow hyphens,underscores,dots to be in there because they can be
     # used in a package name
-    if not re.sub(r"-|_|\.", "", ctx.args).isalnum():
+    if not re.sub(r"[-_.]", "", ctx.args).isalnum():
         return await ctx.error_reply(f"`{ctx.args}` is not a valid package name!")
 
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
@@ -342,6 +350,7 @@ async def cmd_ctan(ctx):
         description=emb_desc,
         color=discord.Color.from_rgb(66, 66, 133),  # ctan's #424285 color
     )
-    embed.set_thumbnail(url=lion_url)
+    # randomly choose url from thumbnail list
+    embed.set_thumbnail(url=random.choice(thumbnails))
 
     return await out_msg.edit(content="", embed=embed)

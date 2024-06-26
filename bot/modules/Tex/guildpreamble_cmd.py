@@ -283,6 +283,7 @@ async def cmd_gpreamble(ctx, flags):
         nonmatching_brackets = not (
             (new_submission.count("(") == new_submission.count(")"))
             and (new_submission.count("{") == new_submission.count("}"))
+            and (new_submission.count("[") == new_submission.count("]"))
         )
         warnings = []
         if nonmatching_brackets:

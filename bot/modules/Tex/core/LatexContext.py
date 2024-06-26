@@ -15,7 +15,7 @@ from .tex_utils import ParseMode, TexNameStyle
 from ..resources import default_preamble, failed_image_path
 from .LatexUser import LatexUser
 from .LatexGuild import LatexGuild
-from .tex_compile import makeTeX, makeluaTeX, makexeTeX  # noqa
+from .tex_compile import maketex, makeluatex, makexetex  # noqa
 
 
 class BucketFull(Exception):
@@ -110,6 +110,7 @@ class LatexContext:
     # Compiled regex for the `$` latex content checker
     single_dollars_pattern = re.compile(r"\$(?=\S)[^$]+(?<=\S)\$")
     double_dollars_pattern = re.compile(r"\$\$[^$]+\$\$")
+    generic_dollar_pattern = re.compile(r"[^$\\]\$[^$]*[^\\]\$")
 
     # Locks to avoid simultaneous compilation for each user
     user_locks = {}  # userid: Lock
@@ -318,6 +319,9 @@ class LatexContext:
             # Compile the source
             error = await self.compile()
             self._errors = error
+            if error == "list":
+                error = None
+                self._errors = None
 
             # Build header messages, presented above LaTeX output image
             if self._dm_source:
@@ -373,7 +377,7 @@ class LatexContext:
         """
         Compile the source
         """
-        return await self.ctx.makeTeX(
+        return await self.ctx.maketex(
             self.source,
             self.luser.id,
             self.preamble,
@@ -432,6 +436,9 @@ class LatexContext:
             # Compile the source
             error = await self.luatexcompile()
             self._errors = error
+            if error == "list":
+                error = None
+                self._errors = None
 
             # Build header messages, presented above LaTeX output image
             if self._dm_source:
@@ -487,7 +494,7 @@ class LatexContext:
         """
         Compile the source
         """
-        return await self.ctx.makeluaTeX(
+        return await self.ctx.makeluatex(
             self.source,
             self.luser.id,
             self.preamble,
@@ -546,6 +553,9 @@ class LatexContext:
             # Compile the source
             error = await self.xetexcompile()
             self._errors = error
+            if error == "list":
+                error = None
+                self._errors = None
 
             # Build header messages, presented above LaTeX output image
             if self._dm_source:
@@ -601,7 +611,7 @@ class LatexContext:
         """
         Compile the source
         """
-        return await self.ctx.makexeTeX(
+        return await self.ctx.makexetex(
             self.source,
             self.luser.id,
             self.preamble,
@@ -743,7 +753,7 @@ class LatexContext:
 
         if "$" in content and content.strip("$"):
             # Regex match for the $ pattern
-            return cls.single_dollars_pattern.search(content) is not None
+            return cls.generic_dollar_pattern.search(content) is not None
         else:
             return False
 

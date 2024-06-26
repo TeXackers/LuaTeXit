@@ -38,19 +38,19 @@ class LatexGuild:
         self.id = id
 
         # Whether latex is automatically compiled
-        self.autotex = None  # type: bool
+        self.autotex: bool | None = None
 
         # How strict the latex detector is for automatic compilation
-        self.autotex_level = None  # type: AutoTexLevel
+        self.autotex_level: AutoTexLevel | None = None
 
         # Whether the automatic latex detector only reads codeblocks
-        self.require_codeblocks = None  # type: bool
+        self.require_codeblocks: bool | None = None
 
         # The list of channels the automatic latex detector reads. If None, read all channels.
-        self.latex_channels = None  # type: List[int]
+        self.latex_channels: list[int] | None = None
 
         # The default preamble used when compiling latex in this guild
-        self.preamble = None  # type: str
+        self.preamble: str | None = None
 
         # Load values from database
         self.load()
@@ -76,7 +76,7 @@ class LatexGuild:
         if rows:
             row = rows[0]
             if row["autotex"] is not None:
-                self.autotex = row["autotex"]  # type: bool
+                self.autotex: bool = row["autotex"]
 
             if row["autotex_level"] is not None:
                 self.autotex_level = AutoTexLevel(row["autotex_level"])

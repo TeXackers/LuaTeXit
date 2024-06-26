@@ -26,12 +26,12 @@ info = {
 
 disabled_modules = [
     "Fun",
-    "Maths",
+    # "Maths",
     "Starboard",
     "Social",
 ]
 disabled_commands = {
-    "colour",
+    # "colour",
     "echo",
     "emoji",
     "invitebot",

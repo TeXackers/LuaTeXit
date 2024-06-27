@@ -73,15 +73,8 @@ async def approval_queue(ctx):
                 userid=currently_on_wait
             )[0]
 
-            current = (
-                ctx.client.data.user_latex_preambles.select_where(
-                    userid=currently_on_wait
-                )[0]["preamble"]
-                if ctx.client.data.user_latex_preambles.select_where(
-                    userid=currently_on_wait
-                )
-                else None
-            )
+            current_preamble_row = ctx.client.data.user_latex_preambles.select_where(userid=currently_on_wait)
+            current = current_preamble_row[0]["preamble"] if current_preamble_row else None
             print(current)
             sub_msg = await view_preamble_diff(
                 ctx,

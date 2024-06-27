@@ -6,9 +6,9 @@ with open(HELP_FILE, "r") as help_file:
 
 def load_into(bot):
     info = {
-        "dev_list": [299175087389802496, 408905098312548362],
+        "dev_list": [220148284168077312],
         "info_str": "Paradox test configuration.\nUse `{prefix}help` for information on how to use me, and `{prefix}list` to see all my commands!",
-        "invite_link": "http://texit.paradoxical.pw",
+        "invite_link": "https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot",
         "donate_link": "https://www.patreon.com/texit",
         "support_guild": "https://discord.gg/FY9jH7M",
         "brief": False,

@@ -36,33 +36,43 @@ Commands provided:
 async def cmd_curr_load(ctx: Context) -> None:
     table_fields: list = []
 
-    # Dev for LuaTeXit
-    table_fields.append(("Developer", r"leothelion_"))
+    # separate for MacOS vs linux
+    if platform.system() == "Darwin":
+        # OS Name
+        table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
 
-    # OS Name
-    table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
+        # Architecture for MacOS
+        table_fields.append(("Arch", platform.mac_ver()[2].upper()))
 
-    # Architecture for MacOS
-    table_fields.append(("Arch", platform.mac_ver()[2].upper()))
-
-    # CPU Name
-    table_fields.append(
-        (
-            "CPU",
-            subprocess.check_output(
-                ["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]
+        # CPU Name
+        table_fields.append(
+            (
+                "CPU",
+                subprocess.check_output(
+                    ["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]
+                )
+                .strip()
+                .decode(),
             )
-            .strip()
-            .decode(),
         )
-    )
-    # CPU
-    table_fields.append(
-        (
-            "CPU Load",
-            f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)",
+        # CPU
+        table_fields.append(
+            (
+                "CPU Load",
+                f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)",
+            )
         )
-    )
+    else:
+        # OS Name
+        table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
+        # Architecture for linux
+        table_fields.append(("Arch", platform.machine()))
+        # CPU Name
+        table_fields.append((
+            "CPU",
+            "Intel Core i5-8350U"
+        ))
+
 
     # Memory
     mem_total: int = psutil.virtual_memory().total >> 20
@@ -72,9 +82,10 @@ async def cmd_curr_load(ctx: Context) -> None:
     )
 
     # Versions
-    py_version, py_build = sys.version.split("\n")
-    compiler: str = re.findall(r"\((.*)\)", py_build)[0]
-    table_fields.append(("Py Version", py_version.split("(")[0]))
+    py_version: str = platform.python_version()
+    py_build: str = platform.python_build()[1]
+    compiler: str = platform.python_compiler()
+    table_fields.append(("Py Version", f"{py_version} ({py_build})"))
 
     table_fields.append(
         (
@@ -95,14 +106,16 @@ async def cmd_curr_load(ctx: Context) -> None:
             .replace("Version ", ""),
         )
     )
+    # XeTeX parsed differently
+    # Example output:
+    # XeTeX 3.141592653-2.6-0.999996 (TeX Live 2024/Arch Linux)
     table_fields.append(
         (
             "XeTeX Version",
             subprocess.check_output(["xetex", "--version"])
             .decode()
             .split("\n")[0]
-            .split(", ")[1]
-            .replace("Version ", ""),
+            .split(" ")[1]
         )
     )
     table_fields.append(("Compiler", compiler))

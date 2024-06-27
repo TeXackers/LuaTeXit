@@ -1,19 +1,15 @@
+\usepackage{xcolor}
+\usepackage{tikz}
 \usepackage{iftex}
+%% Engine-specific loadings, modify at your peril %%
 \ifluatex
-	\PassOptionsToPackage{no-math}{fontspec}
-	\usepackage[theoremfont, trueslanted, largesc, p, osf]{newpxtext}
-	\usepackage[vvarbb]{newpxmath}
-	\usepackage{polyglossia}
+	\input{../../presets/default-luatex.tex}
 \fi
 \ifxetex
-	\PassOptionsToPackage{no-math}{fontspec}
-	\usepackage[theoremfont, trueslanted, largesc, p, osf]{newpxtext}
-	\usepackage[vvarbb]{newpxmath}
-	\usepackage{polyglossia}
+	\input{../../presets/default-xetex.tex}
 \fi
 \ifpdftex
 	\usepackage[T2A, T1]{fontenc}
-	\usepackage[utf8]{inputenc}
 	\usepackage{newpxtext, newpxmath}
 	\usepackage[var0, varl, narrow]{zi4}
 	\usepackage{mathtools}

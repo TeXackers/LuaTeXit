@@ -15,6 +15,7 @@ from ..resources import (
     compile_script_path,
     luatex_compile_script_path,
     xetex_compile_script_path,
+    plain_compile_script_path,
 )
 
 """
@@ -69,17 +70,55 @@ fi
 """
 
 # Header for every LaTeX source file
-header = """\\documentclass[varwidth, margin=2em,]{standalone}
+header: str = """\\documentclass[varwidth, margin=2em,]{standalone}
 \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
 \\ifpdftex\\usepackage{hwemoji}\\fi
 """
 
 # The format of the source to compile
-to_compile = """{header}
+to_compile: str = """{header}
 {preamble}
 \\begin{{document}}
 {source}
 \\end{{document}}"""
+
+
+to_compile_plaintex: str = """
+\\catcode`\\@=11
+
+\\voffset=-1in
+\\hoffset=-1in
+
+\\hsize=300pt
+\\parindent=\\z@
+
+\\newdimen\\pagemargin \\pagemargin=10pt
+\\newdimen\\textwidth \\textwidth=\\hsize
+\\newdimen\\textheight \\textheight=\\vsize
+\\newskip\\smallskipamount \\smallskipamount=3.0pt plus 1.0pt minus 1.0pt
+\\newskip\\medskipamount \\medskipamount=6.0pt plus 2.0pt minus 2.0pt
+\\newskip\\bigskipamount \\bigskipamount=12.0pt plus 4.0pt minus 4.0pt
+
+\\output={{\\texitoutput}}
+\\def\\texitoutput{{%
+    \\setbox\\z@\\vbox{{%
+        \\kern\\pagemargin
+        \\hbox{{\\kern\\pagemargin \\pagebody \\kern\\pagemargin}}
+        \\kern\\pagemargin
+    }}
+    \\pageheight\\ht\\z@
+    \\pagewidth\\wd\\z@
+    \\shipout\\box\\z@
+}}
+\\def\\pagebody{{\\vbox{{%
+    \\unvbox\\@cclv \\unskip
+    \\setbox\\z@=\\lastbox
+    \\nointerlineskip \\hbox{{\\unhbox\\z@ \\/}}%
+}}}}
+
+\\catcode`\\@=12
+{source}
+\\bye"""
 
 
 @Context.util
@@ -227,6 +266,58 @@ async def makexetex(
         "{colour}\n"
         "{pad}".format(
             compile_script=xetex_compile_script_path,
+            id=targetid,
+            path=path,
+            colour=colourschemes[colour] or "",
+            pad=pad_script if pad else "",
+        ).format(image="{}.png".format(targetid))
+    )
+
+    # Run the script in an async executor
+    return await ctx.run_in_shell(script)
+
+
+@Context.util
+async def makeplaintex(
+    ctx,
+    source,
+    targetid,
+    preamble=default_preamble,
+    colour="default",
+    # header=header,
+    pad=True,
+):
+    log(
+        "Beginning plainTeX compilation for (tid:{targetid}).\n{content}".format(
+            targetid=targetid,
+            content="\n".join(("\t" + line for line in source.splitlines())),
+        ),
+        level=logging.WARNING,
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+    )
+
+    # Target's staging directory
+    path = "tex/staging/{}".format(targetid)
+
+    # Remove the staging directory, if it exists
+    shutil.rmtree(path, ignore_errors=True)
+
+    # Recreate staging directory
+    os.makedirs(path, exist_ok=True)
+
+    fn = "{}/{}.tex".format(path, targetid)
+
+    with open(fn, "w") as work:
+        work.write(to_compile_plaintex.format(source=source))
+        work.close()
+
+    # Build compile script
+    script = (
+        "{compile_script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}".format(
+            compile_script=plain_compile_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",

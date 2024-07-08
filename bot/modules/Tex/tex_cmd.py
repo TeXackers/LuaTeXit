@@ -9,7 +9,7 @@ from .core.tex_utils import ParseMode
 @module.cmd(
     "tex",
     desc="Render LaTeX code.",
-    aliases=["latex", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex"],
+    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plaintex", "plain", "gather", "align", "texsp", "texw", "mtex"],
     flags=[
         "config",
         "keepsourcefor",
@@ -23,10 +23,11 @@ from .core.tex_utils import ParseMode
 async def cmd_tex(ctx, flags):
     """
     Usage``:
-        {prefix}tex <code>
-        {prefix}tikz <code>
+        {prefix}pdftex <code>
         {prefix}luatex <code>
         {prefix}xetex <code>
+        {prefix}plain <code>
+        {prefix}tikz <code>
 
     Description:
         Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
@@ -42,17 +43,19 @@ async def cmd_tex(ctx, flags):
             messages containing LaTeX will automatically be compiled and this command \
             is generally not required.
     Aliases::
-        tex: Code is compiled in the default `document` environment.
-        tikz: Code is rendered in a `tikzpicture` environment.
+        pdftex: Code is compiled in the default pdfLaTeX environment.
         luatex: Code is compiled using LuaLaTeX engine.
         xetex: Code is compiled using XeLaTeX engine.
+        plain: Code is compiled using plain LuaTeX engine.
+        tikz: Code is rendered in a `tikzpicture` environment.
     Related:
         autotex, texconfig, preamble
     Examples``:
-        {prefix}tex \\pdftexbanner
+        {prefix}pdftex \\pdftexbanner
         {prefix}tikz \\draw(0,0) circle (1);
         {prefix}luatex \\luatexbanner
         {prefix}xetex \\the\\XeTeXversion\\XeTeXrevision
+        {prefix}plain \\luatexbanner
     """
     # Handle flags
     if any(flags.values()):
@@ -102,7 +105,7 @@ async def cmd_tex(ctx, flags):
 
     # Determine parse mode and flags
     flags = dict()
-    parse_mode = 0
+    parse_mode = ParseMode.DOCUMENT
 
     # convert above if elif to match case
     match ctx.alias.lower():
@@ -117,7 +120,7 @@ async def cmd_tex(ctx, flags):
         case "texw":
             flags["wide"] = True
         case _:
-            parse_mode = ParseMode.DOCUMENT
+            pass
 
     # Clean mentions
     content = ctx.clean_arg_str()
@@ -136,17 +139,25 @@ async def cmd_tex(ctx, flags):
         # Create latex context for a given context, source, guild, user and other flags
         # then compile LaTeX using a texcompile shell script of user's choice
         # then keep the command alive until the context dies
-        case "lualatex" | "luatex" | "lua":
+        case "pdf" | "pdftex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
-            await lctx.luatexmake()
+            await lctx.make()
             await lctx.lifetime()
-
+        # case "lualatex" | "luatex" | "lua":
+        #     lctx = LatexContext(ctx, source, lguild, luser, **flags)
+        #     await lctx.luatexmake()
+        #     await lctx.lifetime()
         case "xetex" | "xelatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.xetexmake()
             await lctx.lifetime()
+        
+        case "plaintex" | "plain":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.plaintexmake()
+            await lctx.lifetime()
 
         case _:
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
-            await lctx.make()
+            await lctx.luatexmake()
             await lctx.lifetime()

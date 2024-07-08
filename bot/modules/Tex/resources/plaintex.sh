@@ -4,23 +4,27 @@ cd "tex/staging/$1/" || exit 1
 
 # find . ! -name "$1.tex" -type f -exec rm -f {} +
 
-timeout 1m latexmk -pdf -synctex=1 -interaction=nonstopmode -file-line-error -halt-on-error "$1.tex" > texput.log #2>&1
+timeout 1m luatex -file-line-error -halt-on-error "$1.tex" > plaintex.log #2>&1
 
 RET=$?
 if [ $RET -eq 0 ];
 then
- echo "";
+    echo "";
 elif [ $RET -eq 124 ];
 then
- echo "Compilation timed out!";
+    echo "Compilation timed out!";
 else
-    grep -A 10 -m 1 "^!" "$1.log";
+    grep -A 10 -m 1 "^!" "plaintex.log";
 fi
 
 if [ ! -f "$1.pdf" ];
 then
   cp "../../failed.png" "$1.png"
   exit 1
+# check if .dvi might be present
+elif [ -f "$1.dvi"];
+then
+  dvipdfmx "$1.dvi" > /dev/null
 fi
 
 # -density <geometry>: horizontal and vertical density of the image

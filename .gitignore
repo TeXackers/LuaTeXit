@@ -1,5 +1,8 @@
 # Data file
 *.db
+data/**
+logs/**
+**/__pycache__
 
 # Conf files
 *.conf

@@ -136,7 +136,7 @@ async def maketex(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.WARNING,
+        level=logging.DEBUG,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -188,7 +188,7 @@ async def makeluatex(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.WARNING,
+        level=logging.DEBUG,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -240,7 +240,7 @@ async def makexetex(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.WARNING,
+        level=logging.DEBUG,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 
@@ -292,7 +292,7 @@ async def makeplaintex(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
-        level=logging.WARNING,
+        level=logging.DEBUG,
         context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
     )
 

@@ -1,16 +1,26 @@
+\usepackage{iftex}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usepackage{iftex}
-%% Engine-specific loadings, modify at your peril %%
-\ifluatex
-	\input{../../presets/default-luatex.tex}
-\fi
-\ifxetex
-	\input{../../presets/default-xetex.tex}
-\fi
+\usepackage{mathtools}
+\usepackage{siunitx}
+\usepackage{diffcoeff}
+\usepackage{esvect}
+\usepackage{array, booktabs, nicematrix}
+\usepackage{mleftright}
+\let\AMSleft\left
+\let\AMSright\right
+\let\left\mleft
+\let\right\mright
+\usepackage{lipsum}
+
+% Engine-specific loadings
 \ifpdftex
-	\usepackage[T2A, T1]{fontenc}
-	\usepackage{newpxtext, newpxmath}
-	\usepackage[var0, varl, narrow]{zi4}
-	\usepackage{mathtools}
+	\usepackage[T1]{fontenc}
+	\usepackage{amssymb, amsthm}
+	\usepackage[cal=cm, scr=rsfs, frak=euler, bb=ams]{mathalpha}
+	\usepackage{lmodern}
+\else
+	\usepackage{fontspec}
+	\setmainfont{CMU Serif}
+	\usepackage{unicode-math}
 \fi

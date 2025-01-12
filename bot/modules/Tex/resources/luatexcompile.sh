@@ -5,7 +5,7 @@ cd "tex/staging/$1/" || exit 1
 # compile_start=$(date +%s.%N)
 # sudo -u $(whoami) timeout 1m pdflatex $1.tex > texput.log 2>&1
 # sudo -u "$(whoami)" timeout 1m latexmk -lualatex -no-shell-escape "$1.tex" > texput.log 2>&1
-timeout 1m latexmk -lualatex -no-shell-escape -halt-on-error "$1.tex" > texput_luatex.log #2>&1
+timeout 5m latexmk -lualatex -shell-escape -file-line-error -interaction=nonstopmode "$1.tex" > texput_luatex.log #2>&1
 # compile_end=$(date +%s.%N)
 # compile_time=$(echo "$compile_end - $compile_start" | bc)
 # echo "compile took $compile_time secs." >> texput.log

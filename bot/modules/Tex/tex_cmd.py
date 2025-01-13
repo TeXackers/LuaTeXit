@@ -9,7 +9,7 @@ from .core.tex_utils import ParseMode
 @module.cmd(
     "tex",
     desc="Render LaTeX code.",
-    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plaintex", "plain", "gather", "align", "texsp", "texw", "mtex"],
+    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plaintex", "plain", "gather", "align", "texsp", "texw", "mtex", "pytex", "python"],
     flags=[
         "config",
         "keepsourcefor",
@@ -27,6 +27,7 @@ async def cmd_tex(ctx, flags):
         {prefix}luatex <code>
         {prefix}xetex <code>
         {prefix}plain <code>
+        {prefix}pytex <code>
         {prefix}tikz <code>
 
     Description:
@@ -47,6 +48,7 @@ async def cmd_tex(ctx, flags):
         luatex: Code is compiled using LuaLaTeX engine.
         xetex: Code is compiled using XeLaTeX engine.
         plain: Code is compiled using plain LuaTeX engine.
+        pytex: Code is compiled using LuaTeX/pythonTeX.
         tikz: Code is rendered in a `tikzpicture` environment.
     Related:
         autotex, texconfig, preamble
@@ -56,6 +58,7 @@ async def cmd_tex(ctx, flags):
         {prefix}luatex \\luatexbanner
         {prefix}xetex \\the\\XeTeXversion\\XeTeXrevision
         {prefix}plain \\luatexbanner
+        {prefix}pytex \\py{{2+2}}
     """
     # Handle flags
     if any(flags.values()):
@@ -155,6 +158,11 @@ async def cmd_tex(ctx, flags):
         case "plaintex" | "plain":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.plaintexmake()
+            await lctx.lifetime()
+        
+        case "pytex" | "python":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.pythontexmake()
             await lctx.lifetime()
 
         case _:

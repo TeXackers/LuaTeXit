@@ -15,7 +15,7 @@ from .tex_utils import ParseMode, TexNameStyle
 from ..resources import default_preamble, failed_image_path
 from .LatexUser import LatexUser
 from .LatexGuild import LatexGuild
-from .tex_compile import maketex, makeluatex, makexetex, makeplaintex  # noqa
+from .tex_compile import maketex, makeluatex, makexetex, makeplaintex, makepythontex  # noqa
 
 
 class BucketFull(Exception):
@@ -731,6 +731,124 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.makeplaintex(
+            self.source,
+            self.luser.id,
+            self.preamble,
+            self.luser.colour,
+            pad=not self.wide,
+        )
+
+
+    async def pythontexmake(self):
+        """
+        Make the latex message, handling ratelimits, compilation, and output.
+        """
+        ctx = self.ctx
+        luser = self.luser
+
+        # Retrieve and request the user's bucket, creating if required
+        if luser.id not in self.user_buckets:
+            self.user_buckets[luser.id] = Bucket(5, 20)
+
+        try:
+            self.user_buckets[luser.id].request()
+        except BucketOverFull:
+            # A warning was already given, fail silently
+            log(
+                "Aborting compile due to `BucketOverfull`.",
+                context="mid:{}".format(ctx.msg.id),
+                level=logging.INFO,
+            )
+            return None
+        except BucketFull:
+            log(
+                "Aborting compile due to BucketFull`.",
+                context="mid:{}".format(ctx.msg.id),
+                level=logging.INFO,
+            )
+            # Ratelimit warning
+            await ctx.error_reply(
+                "Too many requests, please slow down!\n"
+                "(You may try again in `5` seconds.)"
+            )
+            return None
+
+        # Retrieve the user lock, creating it if required
+        if luser.id not in self.user_locks:
+            self.user_locks[luser.id] = asyncio.Lock()
+
+        async with self.user_locks[luser.id]:
+            # Don't compile if the bucket is already overfull
+            if self.user_buckets[luser.id].overfull:
+                log(
+                    "Aborting compile due to a newly overfull bucket.",
+                    context="mid:{}".format(ctx.msg.id),
+                    level=logging.INFO,
+                )
+                return
+
+            # Compile the source
+            error = await self.pythontexcompile()
+            self._errors = error
+            if error == "list":
+                error = None
+                self._errors = None
+
+            # Build header messages, presented above LaTeX output image
+            if self._dm_source:
+                source_message = "```fix\nLaTeX source sent via direct message.\n```"
+            else:
+                source_message = "```latex\n{}\n```".format(self.source)
+
+            if error:
+                self._show_emoji = self.emoji_show_errors
+                self._header_shown = "{}{}Compilation error:```{}```".format(
+                    self._header_name, source_message, error
+                )
+                self._header_collapsed = (
+                    "{}Compile Error! "
+                    "Click the {} reaction for more information.\n"
+                    "(You may edit your message to recompile.)"
+                ).format(self._header_name, self._show_emoji)
+            else:
+                self._show_emoji = self.emoji_show_source
+                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_collapsed = self._header_name
+
+            # Fire deletion of source, if required
+            if not error and self.keepsourcefor is not None:
+                self._source_deletion_task = asyncio.ensure_future(
+                    self.delete_source(delay=self.keepsourcefor)
+                )
+                self.ctx.tasks.append(self._source_deletion_task)
+
+            # Obtain the output image path, potentially the failed image
+            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
+            exists = True if os.path.isfile(file_path) else False
+            file_path = failed_image_path if not exists else file_path
+
+            # Build the file object for sending, possibly spoilered
+            output_file = discord.File(
+                file_path, spoiler=exists and self._spoiler_output
+            )
+
+            # Finally, send the output and start the reaction handler
+            try:
+                self._output_message = await self.ctx.reply(
+                    content=self._header_collapsed, file=output_file
+                )
+                self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
+                self.ctx.tasks.append(self._lifetime_task)
+            except discord.Forbidden:
+                pass
+
+        return self._output_message
+
+    async def pythontexcompile(self):
+        """
+        Compile the source
+        """
+        return await self.ctx.makepythontex(
             self.source,
             self.luser.id,
             self.preamble,

@@ -1,12 +1,17 @@
 from bs4 import BeautifulSoup, NavigableString
+import datetime
 import discord
 import random
 import requests
+import subprocess as sh
+import re
+
+from logger import log
 
 import urllib.parse
 import re
 
-from utils.lib import prop_tabulate
+from utils.lib import prop_tabulate, split_text, paginate_list
 
 from .module import latex_module as module
 
@@ -354,3 +359,406 @@ async def cmd_ctan(ctx):
     embed.set_thumbnail(url=random.choice(thumbnails))
 
     return await out_msg.edit(content="", embed=embed)
+
+ISO639_1: dict = {
+    "aa": "Afar",
+    "ab": "Abkhazian",
+    "ae": "Avestan",
+    "af": "Afrikaans",
+    "ak": "Akan",
+    "am": "Amharic",
+    "an": "Aragonese",
+    "ar": "Arabic",
+    "as": "Assamese",
+    "av": "Avaric",
+    "ay": "Aymara",
+    "az": "Azerbaijani",
+    "ba": "Bashkir",
+    "be": "Belarusian",
+    "bg": "Bulgarian",
+    "bh": "Bihari",
+    "bi": "Bislama",
+    "bm": "Bambara",
+    "bn": "Bengali",
+    "bo": "Tibetan",
+    "br": "Breton",
+    "bs": "Bosnian",
+    "ca": "Catalan",
+    "ce": "Chechen",
+    "ch": "Chamorro",
+    "co": "Corsican",
+    "cr": "Cree",
+    "cs": "Czech",
+    "cu": "Church Slavic",
+    "cv": "Chuvash",
+    "cy": "Welsh",
+    "da": "Danish",
+    "de": "German",
+    "dv": "Divehi",
+    "dz": "Dzongkha",
+    "ee": "Ewe",
+    "el": "Greek",
+    "en": "English",
+    "eo": "Esperanto",
+    "es": "Spanish",
+    "et": "Estonian",
+    "eu": "Basque",
+    "fa": "Persian",
+    "ff": "Fulah",
+    "fi": "Finnish",
+    "fj": "Fijian",
+    "fo": "Faroese",
+    "fr": "French",
+    "fy": "Western Frisian",
+    "ga": "Irish",
+    "gd": "Scottish Gaelic",
+    "gl": "Galician",
+    "gn": "Guarani",
+    "gu": "Gujarati",
+    "gv": "Manx",
+    "ha": "Hausa",
+    "he": "Hebrew",
+    "hi": "Hindi",
+    "ho": "Hiri Motu",
+    "hr": "Croatian",
+    "ht": "Haitian",
+    "hu": "Hungarian",
+    "hy": "Armenian",
+    "hz": "Herero",
+    "ia": "Interlingua",
+    "id": "Indonesian",
+    "ie": "Interlingue",
+    "ig": "Igbo",
+    "ii": "Nuosu",
+    "ik": "Inupiaq",
+    "io": "Ido",
+    "is": "Icelandic",
+    "it": "Italian",
+    "iu": "Inuktitut",
+    "ja": "Japanese",
+    "jv": "Javanese",
+    "ka": "Georgian",
+    "kg": "Kongo",
+    "ki": "Kikuyu",
+    "kj": "Kwanyama",
+    "kk": "Kazakh",
+    "kl": "Kalaallisut",
+    "km": "Khmer",
+    "kn": "Kannada",
+    "ko": "Korean",
+    "kr": "Kanuri",
+    "ks": "Kashmiri",
+    "ku": "Kurdish",
+    "kv": "Komi",
+    "kw": "Cornish",
+    "ky": "Kyrgyz",
+    "la": "Latin",
+    "lb": "Luxembourgish",
+    "lg": "Ganda",
+    "li": "Limburgish",
+    "ln": "Lingala",
+    "lo": "Lao",
+    "lt": "Lithuanian",
+    "lu": "Luba-Katanga",
+    "lv": "Latvian",
+    "mg": "Malagasy",
+    "mh": "Marshallese",
+    "mi": "Maori",
+    "mk": "Macedonian",
+    "ml": "Malayalam",
+    "mn": "Mongolian",
+    "mr": "Marathi",
+    "ms": "Malay",
+    "mt": "Maltese",
+    "my": "Burmese",
+    "na": "Nauru",
+    "nb": "Norwegian Bokmål",
+    "nd": "North Ndebele",
+    "ne": "Nepali",
+    "ng": "Ndonga",
+    "nl": "Dutch",
+    "nn": "Norwegian Nynorsk",
+    "no": "Norwegian",
+    "nr": "South Ndebele",
+    "nv": "Navajo",
+    "ny": "Chichewa",
+    "oc": "Occitan",
+    "oj": "Ojibwa",
+    "om": "Oromo",
+    "or": "Oriya",
+    "os": "Ossetian",
+    "pa": "Punjabi",
+    "pi": "Pali",
+    "pl": "Polish",
+    "ps": "Pashto",
+    "pt": "Portuguese",
+    "qu": "Quechua",
+    "rm": "Romansh",
+    "rn": "Rundi",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "rw": "Kinyarwanda",
+    "sa": "Sanskrit",
+    "sc": "Sardinian",
+    "sd": "Sindhi",
+    "se": "Northern Sami",
+    "sg": "Sango",
+    "si": "Sinhala",
+    "sk": "Slovak",
+    "sl": "Slovenian",
+    "sm": "Samoan",
+    "sn": "Shona",
+    "so": "Somali",
+    "sq": "Albanian",
+    "sr": "Serbian",
+    "ss": "Swati",
+    "st": "Southern Sotho",
+    "su": "Sundanese",
+    "sv": "Swedish",
+    "sw": "Swahili",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "tg": "Tajik",
+    "th": "Thai",
+    "ti": "Tigrinya",
+    "tk": "Turkmen",
+    "tl": "Tagalog",
+    "tn": "Tswana",
+    "to": "Tonga",
+    "tr": "Turkish",
+    "ts": "Tsonga",
+    "tt": "Tatar",
+    "tw": "Twi",
+    "ty": "Tahitian",
+    "ug": "Uyghur",
+    "uk": "Ukrainian",
+    "ur": "Urdu",
+    "uz": "Uzbek",
+    "ve": "Venda",
+    "vi": "Vietnamese",
+    "vo": "Volapük",
+    "wa": "Walloon",
+    "wo": "Wolof",
+    "xh": "Xhosa",
+    "yi": "Yiddish",
+    "yo": "Yoruba",
+    "za": "Zhuang",
+    "zh": "Chinese",
+    "zu": "Zulu"
+}
+
+
+def glyph_or_unicode(arg: str) -> list[str] | None:
+    """
+    Purpose: Making four or five digit to be used in `:charset` for fc-list.
+
+    Parse the input and determine if it is a unicode or a glyph.
+    If it's a glyph, then convert it to its unicode hex value.
+    The final output is a string containing a four (preferred) or five-letter unicode hex value.
+    Remove any U+ as fontconfig doesn't need it.
+    """
+    assert arg is not None, "No argument given."
+    
+    # if space or comma in arg, split it
+    if "," in arg:
+        argstack: list[str] = arg.split(",")
+    else:
+        argstack: list[str] = [arg]
+    output: list[str | None] = list()
+
+    for a in argstack:
+        a = a.strip().lower().lstrip("u+")
+
+        # User enters glyph(s)
+        if len(a) == 1:
+            # It's a glyph
+            output.append(f"{hex(ord(a))[2:]:0>5}")
+
+        # User enters unicode(s)
+        elif len(a) > 1:
+            a_test = f"{a:0>5}"
+            # Is it unicode? Each letter must be between 0-9 or a-f
+            if all([True if c in "0123456789abcdef" else False for c in a_test]):
+                # also ensure that the hex value is no greater than 1FA6D
+                if int(a_test, 16) <= int(0x1FA6D):
+                    output.append(a_test)
+                else:
+                    output.append(None)
+            else:
+                output.append(None)
+        else:
+            output.append(None)
+
+    # remove empty strings
+    output = [o for o in output if o is not None]
+
+    return output
+
+
+async def fc_pagination(
+    text,
+    basetitle="Font Query",
+    header=None,
+    time=None,
+    colour=discord.Colour.from_str("#EFEA4F"),
+    flags: dict | None = None
+):
+    if text:
+        blocks: list[str] = split_text(text, 1000, code=True, syntax="sh")
+    else:
+        blocks: list[None] = [None]
+
+    if not time:
+        time = datetime.datetime.now(datetime.UTC)
+    else:
+        time = datetime.datetime.fromtimestamp(time)
+    
+    blocknum = len(blocks)
+
+    if blocknum == 1:
+        block = blocks[0] if blocks[0] else None
+        if header:
+            desc = (f"{header}\n{block or ''}")
+        else:
+            desc = (block if block else None)
+
+        embed = discord.Embed(
+            title = basetitle,
+            color = colour,
+            timestamp = time,
+            description = desc
+        )
+        
+        if flags:
+            for key, value in flags.items():
+                embed.add_field(name=key, value=value, inline=False)
+        return [embed]
+    
+    embeds = []
+    for i, block in enumerate(blocks):
+        if header:
+            desc = (f"{header}\n{block}")
+        else:
+            desc = block
+
+        embed = discord.Embed(
+            title = basetitle,
+            color = colour,
+            timestamp = time,
+            description = desc
+        )
+        
+        embed.set_footer(text = f"Page {i+1}/{blocknum}")
+        
+        if flags:
+            for key, value in flags.items():
+                embed.add_field(name=key, value=value, inline=False)
+        embeds.append(embed)
+    
+    return embeds
+
+
+async def view_embeds(
+    ctx,
+    text,
+    title,
+    start_page = 0,
+    file_react=False,
+    file_message=None,
+    **pagination_args
+):
+    pages = await fc_pagination(
+        text,
+        basetitle=title,
+        **pagination_args
+    )
+    
+    msg = await ctx.pager(pages, start_page=start_page, locked=False)
+    
+    return msg
+
+
+@module.cmd(
+    "findfont",
+    desc="Looks for fonts supporting a given argument",
+    aliases=["fc"],
+    flags=["char==", "lang==", "name=="]
+)
+async def cmd_findfont(ctx, flags):
+    """
+    Usage``:
+        {prefix}findfont <feature>
+    Description:
+        Search for fonts in LuaTeXit's sys;c tem for a given feature or features.
+    Examples``:
+        {prefix}findfont --lang <iso639-1>
+        {prefix}findfont --char <comma-sep'd unicode|glyph(s)>
+    """
+    fclist_chars: str = ""
+    fclist_lang: str = ""
+    params_dict: dict = {}
+    
+    if flags["char"]:
+        requested_chars = glyph_or_unicode(flags["char"])
+        if not requested_chars:
+            return await ctx.error_reply("Invalid unicode or glyph(s).")
+        elif len(requested_chars) == 1:
+            fclist_chars = ":charset=" + str(requested_chars[0])
+            params_dict["Characters"] = str(requested_chars[0])
+        else:
+            fclist_chars = ":charset=" + ",".join(requested_chars);
+            params_dict["Characters"] = ", ".join(requested_chars)
+
+    if flags["lang"]:
+        # lowered version of ISO639-1 values dict
+        lang_names = [lang.lower() for lang in ISO639_1.values()]
+        if not flags["lang"].lower() in ISO639_1.keys() or not flags["lang"].lower() in lang_names:
+            # if lang was the only arg, then raise error
+            # otherwise try your best
+            if not flags["char"]:
+                return await ctx.error_reply("Invalid language code.")
+            else:
+                pass
+        else:
+            fclist_lang = ":lang=" + flags["lang"].lower()
+            params_dict["Languages"] = ISO639_1[flags["lang"].lower()]
+
+    
+    fclist_params = "".join([fclist_chars, fclist_lang])
+    findfont_cmd = [
+        "fc-list",
+        fclist_params,
+        ":",
+        "family"
+    ]
+
+
+    fc = sh.Popen(findfont_cmd, stdout=sh.PIPE, stderr=sh.PIPE)
+    fc_out, fc_err = fc.communicate()
+    
+    if fc_err:
+        return await ctx.error_reply(f"Error: {fc_err.decode('utf-8')}")
+    
+    fc_out = fc_out.decode("utf-8").split("\n")
+    
+    if not fc_out:
+        return await ctx.error_reply("No fonts found.")
+    
+    fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
+
+    
+    if flags["name"]:
+        params_dict["Name Query"] = flags["name"]
+        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if flags["name"].lower() in f]
+        fc_out = sorted(list(set(fc_out)))
+    else:
+        fc_out = sorted(list(set(fc_out_preprocessed)))
+
+    
+    
+    await view_embeds(
+        ctx,
+        "\n".join(fc_out),
+        "Font Query",
+        flags=params_dict
+    )

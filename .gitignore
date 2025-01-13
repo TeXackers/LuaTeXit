@@ -22,7 +22,8 @@ contextBot/*
 # Tex files except for tex/failed dir
 **.aux
 **.out
-tex/**
+tex/presets/**
+tex/staging/**
 !tex/failed/**
 
 **.synctex*

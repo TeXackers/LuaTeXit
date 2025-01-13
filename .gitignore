@@ -19,10 +19,11 @@ Nanny
 # ContextBot contents
 contextBot/*
 
-# Tex files
+# Tex files except for tex/failed dir
 **.aux
 **.out
 tex/**
+!tex/failed/**
 
 **.synctex*
 

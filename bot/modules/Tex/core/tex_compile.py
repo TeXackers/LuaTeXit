@@ -49,7 +49,7 @@ colourschemes["darkgrey"] = gencolour("'rgb(35, 39, 42)'")
 
 colourschemes[
     "trans_white"
-] = r"convert {image} +negate -bordercolor transparent -border 40 {image}"
+] = r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}"
 colourschemes["trans_black"] = None
 colourschemes["transparent"] = colourschemes["trans_white"]
 
@@ -65,7 +65,7 @@ extra=$((minwidth-width))
 if [ $extra -gt 0 ]; then
     convert {image} \
         -gravity East +antialias -splice ${{extra}}x\
-        -alpha set -background transparent -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image}
+        -alpha set -background transparent -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image} >>/dev/null
 fi
 """
 

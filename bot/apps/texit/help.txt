@@ -32,3 +32,5 @@ Use `{prefix}list` to see all my commands and `{prefix}help cmd` to get detailed
 If you still have any questions, requests, comments, or other feedback, please let us know with the `{prefix}feedback` command or join our friendly support server at {support}
 
 You can invite the upstream bot at {invite}. There is no need to donate me, but our upstream bot can get use some: <{donate}>.
+
+Plus, you are always welcome to contribute: <{github}>

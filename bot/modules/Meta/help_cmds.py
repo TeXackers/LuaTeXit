@@ -43,6 +43,7 @@ async def cmd_help(ctx: Context):
             invite=ctx.client.app_info["invite_link"],
             support=ctx.client.app_info["support_guild"],
             donate=ctx.client.app_info["donate_link"],
+            github=ctx.client.app_info["github"],
         )
         help_filename = ctx.client.app_info.get("help_file", None)
         help_file = discord.File(help_filename) if help_filename else None

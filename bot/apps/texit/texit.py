@@ -17,11 +17,12 @@ info = {
     ),
     "invite_link": "https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot",
     "donate_link": "https://www.patreon.com/texit",
+    "github": "https://github.com/ponte-vecchio/LuaTeXit",
     "support_guild": "https://discord.gg/FY9jH7M",
     "brief": True,
     "app": "texit",
     "help_str": help_str,
-    "help_file": "bot/resources/apps/texit/luatexit_thanks.pdf",
+    "help_file": "bot/resources/apps/texit/luatexit_thanks.png",
 }
 
 disabled_modules = [

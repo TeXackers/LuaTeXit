@@ -29,7 +29,7 @@ def gencolour(colour, negate=True):
     """
     Build the colour conversion command for the provided colour, negating black text if required
     """
-    return r"convert {{image}} {} -bordercolor transparent -border 50 \
+    return r"magick convert {{image}} {} -bordercolor transparent -border 50 \
         -background {} -flatten {{image}}".format(
         "-channel RGB +negate" if negate else "", colour
     )
@@ -58,21 +58,26 @@ colourschemes["default"] = colourschemes["white"]
 # Script which pads images to a minimum width of 1000
 # pad_script = ""
 pad_script = r"""
-width=`convert {image} -format "%[fx:w]" info:`
+width=`magick convert {image} -format "%[fx:w]" info:`
 minwidth=1000
 extra=$((minwidth-width))
 
 if [ $extra -gt 0 ]; then
-    convert {image} \
+    magick convert {image} \
         -gravity East +antialias -splice ${{extra}}x\
         -alpha set -background transparent -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image} >>/dev/null
 fi
 """
 
 # Header for every LaTeX source file
-header: str = """\\documentclass[varwidth, margin=2em,]{standalone}
+header: str = """\\documentclass[varwidth, margin=20pt]{standalone}
 \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
 \\ifpdftex\\usepackage{hwemoji}\\fi
+\\RequirePackage{mleftright}
+\\let\\AMSleft\\left
+\\let\\AMSright\\right
+\\let\\left\\mleft
+\\let\\right\\mright
 """
 
 # The format of the source to compile

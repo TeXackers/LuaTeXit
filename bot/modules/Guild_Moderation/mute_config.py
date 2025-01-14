@@ -1,6 +1,5 @@
-from settings import ColumnData, Role, GuildSetting
-from registry import tableInterface, Column, ColumnType, tableSchema
-
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import ColumnData, GuildSetting, Role
 from wards import guild_admin
 
 from .module import guild_moderation_module as module

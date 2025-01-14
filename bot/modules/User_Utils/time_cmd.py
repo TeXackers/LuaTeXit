@@ -1,16 +1,15 @@
-import discord
-from datetime import datetime
-from pytz import timezone, all_timezones
 import itertools
 import random
+from datetime import datetime
 
+import discord
+from pytz import all_timezones, timezone
+from utils import interactive, seekers  # noqa
 from utils.lib import paginate_list
-from utils import seekers, interactive  # noqa
 
-from .module import utils_module as module
-
-from .countrymap import countries
 from . import time_data as tdata  # noqa
+from .countrymap import countries
+from .module import utils_module as module
 
 """
 Provides a time command for setting user timezone and displaying time.

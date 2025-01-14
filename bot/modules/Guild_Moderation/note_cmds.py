@@ -1,10 +1,10 @@
 from datetime import datetime as dt
-import discord
 
+import discord
 from wards import guild_moderator
 
 from .module import guild_moderation_module as module
-from .tickets import Ticket, describes_ticket, TicketType
+from .tickets import Ticket, TicketType, describes_ticket
 
 
 @module.cmd("note", desc="Create a moderation note on a member.", aliases=["addnote"])

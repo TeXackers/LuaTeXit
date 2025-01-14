@@ -1,5 +1,4 @@
-from . import Ticket, describes_ticket, TicketType
-
+from . import Ticket, TicketType, describes_ticket
 
 flat_tickets = [
     (TicketType.MUTE, "Mute"),

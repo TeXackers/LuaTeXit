@@ -1,21 +1,25 @@
+import asyncio
+import logging
 import os
 import re
 import time
-import logging
-import asyncio
-import discord
 
+import discord
+from cmdClient import Context, cmdClient
 from logger import log
 
-from cmdClient import cmdClient, Context
-
 from ..module import latex_module as module
-
-from .tex_utils import ParseMode, TexNameStyle
 from ..resources import default_preamble, failed_image_path
-from .LatexUser import LatexUser
 from .LatexGuild import LatexGuild
-from .tex_compile import maketex, makeluatex, makexetex, makeplaintex, makepythontex  # noqa
+from .LatexUser import LatexUser
+from .tex_compile import (  # noqa
+    makeluatex,
+    makeplaintex,
+    makepythontex,
+    maketex,
+    makexetex,
+)
+from .tex_utils import ParseMode, TexNameStyle
 
 
 class BucketFull(Exception):

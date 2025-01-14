@@ -1,9 +1,8 @@
-from .module import latex_module as module
-
 from .core.LatexContext import LatexContext
 from .core.LatexGuild import LatexGuild
 from .core.LatexUser import LatexUser
 from .core.tex_utils import ParseMode
+from .module import latex_module as module
 
 
 @module.cmd(

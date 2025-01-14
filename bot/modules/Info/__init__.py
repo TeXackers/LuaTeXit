@@ -1,2 +1,1 @@
-from . import module
-from . import info_cmds
+from . import info_cmds, module

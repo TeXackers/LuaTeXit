@@ -1,5 +1,6 @@
-import aiohttp
 import json
+
+import aiohttp
 import discord
 
 from .module import maths_module as module

@@ -1,7 +1,6 @@
-from registry import tableSchema, Column, ColumnType, tableInterface
+from registry import Column, ColumnType, tableInterface, tableSchema
 
 from .module import meta_module as module
-
 
 # Define data schema
 schema = tableSchema(

@@ -1,22 +1,22 @@
-from datetime import datetime
 import asyncio
-import discord
+from datetime import datetime
 
-from cmdClient.lib import UserCancelled, ResponseTimedOut
+import discord
+from cmdClient.lib import ResponseTimedOut, UserCancelled
 from wards import is_manager, is_reviewer
 
-from .module import latex_module as module
-
+from .core.LatexGuild import LatexGuild
 from .core.preamble_utils import (
-    view_preamble,
-    view_preamble_diff,
+    approve_submission,
+    confirm,
+    deny_submission,
     judgement_reactions,
     preamblelog,
-    approve_submission,
-    deny_submission,
+    resolve_pending_preamble,
+    view_preamble,
+    view_preamble_diff,
 )
-from .core.preamble_utils import confirm, resolve_pending_preamble
-from .core.LatexGuild import LatexGuild
+from .module import latex_module as module
 
 
 async def approval_queue(ctx):

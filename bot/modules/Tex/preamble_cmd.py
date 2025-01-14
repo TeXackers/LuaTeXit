@@ -3,24 +3,20 @@
 import os
 
 import discord
-
 from cmdClient.lib import ResponseTimedOut
-
 from utils import interactive  # noqa
 from utils.lib import substitute_ranges
 
-from .module import latex_module as module
-
 from .core.LatexGuild import LatexGuild
 from .core.preamble_utils import (
-    preamblelog,
-    view_preamble,
-    submit_preamble,
-    resolve_pending_preamble,
     confirm,
+    preamblelog,
+    resolve_pending_preamble,
+    submit_preamble,
+    view_preamble,
 )
+from .module import latex_module as module
 from .resources import default_preamble
-
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 

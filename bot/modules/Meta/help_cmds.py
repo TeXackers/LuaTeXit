@@ -1,10 +1,10 @@
 import asyncio
+
 import discord
 from cmdClient import Context
-
+from constants import sorted_cats
 from utils import ctx_addons  # noqa
 from utils.lib import prop_tabulate
-from constants import sorted_cats
 from wards import is_manager
 
 from .module import meta_module as module

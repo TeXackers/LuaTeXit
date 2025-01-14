@@ -1,17 +1,16 @@
+import asyncio
 import logging
 import traceback
-import asyncio
+
 import discord
-
-from logger import log
 from cmdClient import cmdClient
+from logger import log
 
-from .module import latex_module as module
-
-from .core.LatexUser import LatexUser
-from .core.LatexGuild import LatexGuild
 from .core.LatexContext import LatexContext
-from .core.tex_utils import ParseMode, AutoTexLevel
+from .core.LatexGuild import LatexGuild
+from .core.LatexUser import LatexUser
+from .core.tex_utils import AutoTexLevel, ParseMode
+from .module import latex_module as module
 
 
 async def latex_message_parser(client, message):

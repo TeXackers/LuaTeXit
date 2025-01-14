@@ -1,13 +1,12 @@
-import re
 import asyncio
-import discord
+import re
 
+import discord
 from cmdClient.lib import SafeCancellation
 
+from .ModAction import ActionState, ModAction
 from .module import guild_moderation_module as module
-
 from .tickets import TicketType
-from .ModAction import ModAction, ActionState
 
 
 class HammerAction(ModAction):

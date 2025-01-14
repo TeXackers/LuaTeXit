@@ -1,8 +1,9 @@
 from ..module import latex_module as module
-
+from . import (
+    guild_config,  # noqa
+    guild_data,  # noqa
+)
 from .tex_utils import AutoTexLevel
-from . import guild_data  # noqa
-from . import guild_config  # noqa
 
 
 class LatexGuild:

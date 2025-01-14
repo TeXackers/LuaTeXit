@@ -1,4 +1,1 @@
-from . import botinfo_cmds
-from . import help_cmds
-from . import prefix_cmd
-from . import feedback_cmds
+from . import botinfo_cmds, feedback_cmds, help_cmds, prefix_cmd

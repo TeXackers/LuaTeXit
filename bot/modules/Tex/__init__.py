@@ -1,9 +1,11 @@
-from . import core
-from . import tex_cmd
-from . import autotex
-from . import texconfig_cmd
-from . import latex_exthelp
-from . import preamble_cmd
-from . import guildpreamble_cmd
-from . import preambleadmin_cmds
-from . import latexutil_cmds
+from . import (
+    autotex,
+    core,
+    guildpreamble_cmd,
+    latex_exthelp,
+    latexutil_cmds,
+    preamble_cmd,
+    preambleadmin_cmds,
+    tex_cmd,
+    texconfig_cmd,
+)

@@ -1,8 +1,8 @@
 import sys
-from io import StringIO
 import traceback
+from io import StringIO
 
-from registry import tableSchema, Column, ColumnType, tableInterface
+from registry import Column, ColumnType, tableInterface, tableSchema
 from wards import is_master
 
 from .module import bot_admin_module as module

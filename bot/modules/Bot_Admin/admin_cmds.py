@@ -1,15 +1,14 @@
-import discord
-import aiohttp
 import inspect
 
+import aiohttp
+import discord
 from cmdClient import Context
-from .module import bot_admin_module as module
-from wards import is_master, is_manager
-
 from utils.ctx_addons import format_usage  # noqa
 from utils.interactive import pager  # noqa
 from utils.lib import split_text
+from wards import is_manager, is_master
 
+from .module import bot_admin_module as module
 
 """
 Administration level commands for the bot

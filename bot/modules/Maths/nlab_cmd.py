@@ -1,8 +1,8 @@
-import aiohttp
-from bs4 import BeautifulSoup
 import urllib
-import discord
 
+import aiohttp
+import discord
+from bs4 import BeautifulSoup
 from utils.lib import emb_add_fields
 
 from .module import maths_module as module

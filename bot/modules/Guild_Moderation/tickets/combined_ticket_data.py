@@ -1,9 +1,8 @@
 from registry import tableInterface
 
 from ..module import guild_moderation_module as module
-
+from . import FlatTickets, TimedMuteTicket  # noqa
 from .ticket_data import ticket_schema
-from . import TimedMuteTicket, FlatTickets  # noqa
 
 combined_raw_schema = """\
 CREATE VIEW

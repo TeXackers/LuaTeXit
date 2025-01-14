@@ -1,12 +1,10 @@
 from cmdClient.lib import ResponseTimedOut
-
 from utils.lib import substitute_ranges
-from wards import in_guild, guild_admin
-
-from .module import latex_module as module
+from wards import guild_admin, in_guild
 
 from .core.LatexGuild import LatexGuild
-from .core.preamble_utils import preamblelog, view_preamble, confirm
+from .core.preamble_utils import confirm, preamblelog, view_preamble
+from .module import latex_module as module
 from .resources import default_preamble
 
 

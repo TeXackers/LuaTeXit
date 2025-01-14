@@ -1,20 +1,19 @@
 import datetime
+
 import discord
+from cmdClient import Context
+from constants import ParaCC
 from discord import Status
 from discord.http import Route
-
-from cmdClient import Context
-
-from wards import in_guild
-from constants import ParaCC
 from utils.lib import (
     emb_add_fields,
-    paginate_list,
-    strfdelta,
-    prop_tabulate,
     format_activity,
     join_list,
+    paginate_list,
+    prop_tabulate,
+    strfdelta,
 )
+from wards import in_guild
 
 from .module import info_module as module
 

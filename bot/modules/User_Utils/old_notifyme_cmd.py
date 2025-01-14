@@ -2,9 +2,8 @@ import asyncio
 from string import punctuation as punc
 
 import discord
-from pytz import timezone
-
 from paraCH import paraCH
+from pytz import timezone
 
 cmds = paraCH()
 

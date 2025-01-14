@@ -1,24 +1,20 @@
-from typing import Optional
 import asyncio
+from typing import Optional
 
 import discord
-
-from settings import (
-    ColumnData,
-    ListData,
-    String,
-    Integer,
-    Channel,
-    RoleList,
-    GuildSetting,
-)
-from registry import tableInterface, Column, ColumnType, tableSchema
-
-from wards import guild_manager
-
-from utils.lib import shard_of
-
 from paraModule import paraModule
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import (
+    Channel,
+    ColumnData,
+    GuildSetting,
+    Integer,
+    ListData,
+    RoleList,
+    String,
+)
+from utils.lib import shard_of
+from wards import guild_manager
 
 module = paraModule(
     "Starboard",

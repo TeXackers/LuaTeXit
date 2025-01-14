@@ -1,14 +1,12 @@
-import re
 import asyncio
 import datetime
+import re
 from enum import Enum
 
 import discord
-
 from cmdClient import Context
-from cmdClient.lib import ResponseTimedOut, UserCancelled, SafeCancellation
-
-from utils.lib import strfdelta, parse_dur
+from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
+from utils.lib import parse_dur, strfdelta
 
 
 class ActionState(Enum):

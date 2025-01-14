@@ -1,7 +1,6 @@
+from wards import guild_manager, in_guild
+
 from .module import guild_admin_module as module
-
-from wards import in_guild, guild_manager
-
 
 protected_commands = ["list", "help", "support", "disable", "config"]
 

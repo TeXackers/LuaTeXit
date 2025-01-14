@@ -1,7 +1,6 @@
-from settings import GuildSetting, String, ColumnData
-from registry import tableInterface, tableSchema, Column, ColumnType
-
-from wards import guild_admin, fail_ward
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import ColumnData, GuildSetting, String
+from wards import fail_ward, guild_admin
 
 from .module import maths_module as module
 

@@ -1,6 +1,5 @@
-from paraCH import paraCH
 import discord
-
+from paraCH import paraCH
 
 cmds = paraCH()
 

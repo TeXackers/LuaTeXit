@@ -1,15 +1,12 @@
 import datetime
 
 import discord
-
+from constants import ParaCC
 from utils.lib import prop_tabulate
 
-from .module import latex_module as module
-
-from .core.LatexUser import LatexUser
 from .core.LatexGuild import LatexGuild
-
-from constants import ParaCC
+from .core.LatexUser import LatexUser
+from .module import latex_module as module
 
 
 @module.cmd(

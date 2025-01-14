@@ -1,12 +1,10 @@
 import discord
-
-from settings import SettingType, Boolean, Integer, String, IntegerEnum, BadUserInput
+from constants import ParaCC
+from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
 from utils.lib import prop_tabulate
 
-from .tex_utils import TexNameStyle, AutoTexLevel
 from . import user_data  # noqa
-
-from constants import ParaCC
+from .tex_utils import AutoTexLevel, TexNameStyle
 
 
 class LatexUserSetting(SettingType):

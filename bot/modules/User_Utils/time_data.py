@@ -1,7 +1,6 @@
-from registry import tableSchema, Column, ColumnType, tableInterface
+from registry import Column, ColumnType, tableInterface, tableSchema
 
 from .module import utils_module as module
-
 
 schema = tableSchema(
     "user_time_settings",

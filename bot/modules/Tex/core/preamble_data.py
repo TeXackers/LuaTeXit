@@ -1,7 +1,6 @@
-from registry import tableSchema, Column, ColumnType, tableInterface
+from registry import Column, ColumnType, tableInterface, tableSchema
 
 from ..module import latex_module as module
-
 
 # The active user and guild preambles
 user_preamble_schema = tableSchema(

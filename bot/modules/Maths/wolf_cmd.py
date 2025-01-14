@@ -1,21 +1,21 @@
-import discord
 import asyncio
-import aiohttp
-from urllib import parse
 import json
 from io import BytesIO
+from urllib import parse
+
+import aiohttp
+import discord
 from PIL import Image, ImageChops, ImageDraw, ImageFont
-
-from .module import maths_module as module
-from .resources import font_path
-
 from utils.lib import emb_add_fields
 
 from . import wolf_data  # noqa
+from .module import maths_module as module
+from .resources import font_path
 
 # Provides Wolf
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
+WOLFRAM_ID = ""
 WEB = "https://www.wolframalpha.com/"
 # WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
 WOLF_ICON = (
@@ -24,14 +24,16 @@ WOLF_ICON = (
 WOLF_SMALL_ICON = "https://media.discordapp.net/attachments/670154440413675540/703864724122632253/a.png"
 
 # truetype/liberation2/LiberationSans-Bold.ttf
-FONT = ImageFont.truetype(font_path, 15, encoding="unic")
+# FONT = ImageFont.truetype(font_path, 15, encoding="unic")
+FONT = ImageFont.truetype(font_path, 15)
 
 
 def build_web_url(query):
     """
     Returns the url for Wolfram Alpha search for this query.
     """
-    return "{}input/?i={}".format(WEB, parse.quote_plus(query))
+    # return "{}input/?i={}".format(WEB, parse.quote_plus(query))
+    return "{}input/?i={}".format(WEB, parse.quote_plus(query, safe=""))
 
 
 async def get_query(query, appid, **kwargs):
@@ -49,7 +51,7 @@ async def get_query(query, appid, **kwargs):
     """
     # Default params
     payload = {
-        "input": query,
+        "input": parse.quote(query),
         "appid": appid,
         "format": "image,plaintext",
         "reinterpret": "true",
@@ -58,11 +60,17 @@ async def get_query(query, appid, **kwargs):
     }
 
     # Allow kwargs to overwrite and add to the default params
-    payload.update(kwargs)
+    # payload.update(kwargs)
+    # print(payload)
+
+    # build the full url
+    query_url = "{}appid={}&input={}&output={}&units={}&mag={}&plotwidth={}".format(
+        ENDPOINT, appid, parse.quote_plus(query), "json", "metric", 1.5, 400
+    )
 
     # Get the query response
     async with aiohttp.ClientSession() as session:
-        async with session.get(ENDPOINT, params=payload) as r:
+        async with session.get(query_url) as r:
             if r.status == 200:
                 # Read the response, interp as json, and return
                 data = await r.read()
@@ -127,7 +135,7 @@ async def glue_pods(flat_pods):
         indent = pod[2] * indent_width
         if pod[0]:
             atoms.append({"coord": (margin + indent, y_coord), "text": pod[0]})
-            text_width, text_height = FONT.getsize(pod[0])
+            _, _, text_width, text_height = FONT.getbbox(pod[0])
             y_coord += text_height
             max_width = max(text_width + indent + 2 * margin, max_width)
         if pod[1]:
@@ -293,10 +301,16 @@ async def cmd_query(ctx, flags):
         result = await get_query(ctx.args, appid)
     except Exception as e:
         print(e)
-        return await ctx.error_reply(
-            "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
-            "If the problem persists please contact support."
-        )
+        print("Trying with Wolfram Alpha Pro...")
+        try:
+            result = await get_query(ctx.args, WOLFRAM_ID)
+        except Exception as pro_e:
+            print(pro_e)
+            return await ctx.error_reply(
+                "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
+                "If the problem persists please contact support."
+            )
+
     if not result:
         await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
@@ -310,13 +324,11 @@ async def cmd_query(ctx, flags):
             "If the problem persists, please contact support."
         )
 
-    link = "[Click here to refine your query online]({})".format(
-        build_web_url(ctx.args)
-    )
-    link2 = "[Upgrade to WolframAlpha Pro!]({})".format(
-        "http://www.wolframalpha.com/pro/"
-    )
+    # link = "[Click here to refine your query online]({})".format(
+    #     build_web_url(ctx.args)
+    # )
     if not result["queryresult"]["success"] or result["queryresult"]["numpods"] == 0:
+        print(result)
         if result["queryresult"]["error"] and "code" in result["queryresult"]["error"]:
             error = result["queryresult"]["error"]
             if custom_appid:
@@ -341,11 +353,11 @@ async def cmd_query(ctx, flags):
         else:
             desc = (
                 "Wolfram Alpha doesn't understand your query!\n"
-                "Perhaps try rephrasing your question?\n{}"
-            ).format(link)
+                "Perhaps try rephrasing your question?"
+            )
         embed = discord.Embed(description=desc)
         embed.set_footer(
-            icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author)
+            icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
         )
         embed.set_thumbnail(url=WOLF_ICON)
         await ctx.safe_delete_msgs(temp_msg)
@@ -354,9 +366,9 @@ async def cmd_query(ctx, flags):
 
     if flags["text"]:
         fields = await pods_to_textdata(result["queryresult"]["pods"])
-        embed = discord.Embed(description=link)
+        embed = discord.Embed(description="")
         embed.set_footer(
-            icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author)
+            icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
         )
         embed.set_thumbnail(url=WOLF_ICON)
         emb_add_fields(embed, fields)
@@ -370,14 +382,14 @@ async def cmd_query(ctx, flags):
     data = (await pods_to_filedata(important))[0]
     output_data = [data]
 
-    embed = discord.Embed(description=link + "\n" + link2)
+    embed = discord.Embed(description="")
     embed.set_author(
         name="Results provided by WolframAlpha",
         icon_url=WOLF_SMALL_ICON,
         url="http://www.wolframalpha.com/pro/",
     )
     embed.set_footer(
-        icon_url=ctx.author.avatar_url, text="Requested by {}".format(ctx.author)
+        icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
     )
     embed.set_thumbnail(url=WOLF_ICON)
     embed.set_image(url="attachment://wolf.png")

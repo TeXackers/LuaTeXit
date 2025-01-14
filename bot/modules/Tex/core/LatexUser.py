@@ -1,7 +1,8 @@
 from ..module import latex_module as module
-
-from . import LatexUserSetting
-from . import user_data  # noqa
+from . import (
+    LatexUserSetting,
+    user_data,  # noqa
+)
 
 
 class LatexUser:

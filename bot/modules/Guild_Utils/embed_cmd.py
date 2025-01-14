@@ -1,3 +1,7 @@
+import asyncio
+import string
+
+import discord
 from paraCH import paraCH
 import discord
 import string

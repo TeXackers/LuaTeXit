@@ -1,22 +1,20 @@
+import logging
 import os
 import shutil
-import logging
 
 from cmdClient import Context
-
 from logger import log
 from utils import ctx_addons  # noqa
 
 from ..module import latex_module as module
-
 from ..resources import (
+    compile_script_path,
     default_preamble,
     failed_image_path,
-    compile_script_path,
     luatex_compile_script_path,
-    xetex_compile_script_path,
     plain_compile_script_path,
     pythontex_compile_script_path,
+    xetex_compile_script_path,
 )
 
 """

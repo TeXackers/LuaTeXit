@@ -3,8 +3,8 @@ import mimetypes as mtypes
 from io import BytesIO
 
 import aiohttp
-from PIL import Image
 import discord
+from PIL import Image
 
 from .module import utils_module as module
 

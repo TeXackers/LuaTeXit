@@ -1,7 +1,5 @@
 import discord
-import requests
 from cmdClient import Context
-from utils.interactive import pager
 from utils.lib import paginate_list
 
 from .module import fun_module as module
@@ -87,8 +85,7 @@ async def cmd_discrim(ctx: Context):
         paginate_list(
             user_strs,
             title="{} user{} found".format(
-                len(user_strs), "s" if len(user_strs) > 1 else "", discrim
-            ),
+                len(user_strs), "s" if len(user_strs) > 1 else "", ),
         )
     )
 

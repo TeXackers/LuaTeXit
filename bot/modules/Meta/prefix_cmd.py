@@ -1,6 +1,5 @@
-from .module import meta_module as module
-
 from . import userprefix_data  # noqa
+from .module import meta_module as module
 
 """
 Provides a prefix command.

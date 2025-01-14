@@ -1,16 +1,14 @@
 from settings import (
-    GuildSetting,
     Boolean,
-    IntegerEnum,
     ChannelList,
     ColumnData,
+    GuildSetting,
+    IntegerEnum,
     ListData,
 )
-
 from wards import guild_manager
 
 from ..module import latex_module as module
-
 from .LatexGuild import LatexGuild
 from .tex_utils import AutoTexLevel
 

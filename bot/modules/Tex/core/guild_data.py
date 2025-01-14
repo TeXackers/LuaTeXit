@@ -1,9 +1,7 @@
-from registry import tableSchema, Column, ColumnType, tableInterface
+from registry import Column, ColumnType, tableInterface, tableSchema
 
 from ..module import latex_module as module
-
 from . import preamble_data  # noqa
-
 
 # Define data schema
 config_schema = tableSchema(

@@ -1,20 +1,16 @@
 import datetime
-import sys
 import platform
-import psutil
 import subprocess
-import re
+import sys
 
 # from datetime import datetime
-
 import discord
+import psutil
 from cmdClient import Context
-
-from utils.lib import prop_tabulate
 from utils.ctx_addons import best_prefix  # noqa
+from utils.lib import prop_tabulate
 
 from .module import meta_module as module
-
 
 """
 Commands providing basic meta information about the bot.

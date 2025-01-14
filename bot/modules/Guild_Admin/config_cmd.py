@@ -1,14 +1,10 @@
 import discord
-
-from utils.lib import prop_tabulate
-from utils.ctx_addons import best_prefix  # noqa
-
 from settings import BadUserInput
-
+from utils.ctx_addons import best_prefix  # noqa
+from utils.lib import prop_tabulate
 from wards import guild_manager, in_guild
 
 from .module import guild_admin_module as module
-
 
 conf_pages = {
     "General options": ["Guild admin", "Starboard", "LaTeX", "Misc"],

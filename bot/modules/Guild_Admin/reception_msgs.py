@@ -1,11 +1,10 @@
 import logging
+
 import discord
 from cmdClient import cmdClient
-
 from logger import log
-from settings import ColumnData, String, Channel, GuildSetting
-from registry import tableInterface, Column, ColumnType, tableSchema
-
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import Channel, ColumnData, GuildSetting, String
 from wards import guild_manager
 
 from .module import guild_admin_module as module

@@ -1,14 +1,13 @@
 from registry import (
-    tableInterface,
     Column,
     ColumnType,
-    tableSchema,
     ForeignKey,
     ReferenceAction,
+    tableInterface,
+    tableSchema,
 )
 
 from ..module import guild_moderation_module as module
-
 
 # Define data schemas
 ticket_schema = tableSchema(

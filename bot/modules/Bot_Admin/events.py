@@ -1,13 +1,10 @@
-import discord
 from datetime import datetime
 
+import discord
 from cmdClient import cmdClient
-import constants
-
 from utils.lib import mail
 
 from .module import bot_admin_module as module
-
 
 """
 Event handlers for posting the leave/join guild messages in the guild log

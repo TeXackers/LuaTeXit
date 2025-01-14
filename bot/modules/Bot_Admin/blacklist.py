@@ -1,9 +1,9 @@
 import asyncio
 
-from registry import tableSchema, Column, ColumnType, tableInterface
-from wards import is_master
-from utils.lib import paginate_list
+from registry import Column, ColumnType, tableInterface, tableSchema
 from utils.interactive import pager  # noqa
+from utils.lib import paginate_list
+from wards import is_master
 
 from .module import bot_admin_module as module
 

@@ -1,14 +1,13 @@
-import sys
-from io import StringIO
-import traceback
 import asyncio
+import sys
+import traceback
+from io import StringIO
 
 from cmdClient import Context
 from utils.ctx_addons import run_in_shell  # noqa
 from wards import is_master
 
 from .module import bot_admin_module as module
-
 
 """
 Exec level commands to manage the bot.

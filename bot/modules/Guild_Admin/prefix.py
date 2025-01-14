@@ -1,6 +1,5 @@
-from settings import GuildSetting, String, ColumnData
-from registry import tableInterface, tableSchema, Column, ColumnType
-
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import ColumnData, GuildSetting, String
 from wards import guild_manager
 
 from .module import guild_admin_module as module

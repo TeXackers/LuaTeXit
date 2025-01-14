@@ -1,21 +1,16 @@
 """
 ABC and data definitions for manual moderation tickets.
 """
-from typing import Mapping
-from typing import Any, List, Optional, Type, TypeVar
-from datetime import datetime as dt
+import datetime
+from typing import Any, List, Mapping, Optional, Type, TypeVar
 
 import discord
-
 from cmdClient.cmdClient import cmdClient
 from registry import tableInterface
-
 from utils.lib import jumpto
 
 from ..module import guild_moderation_module as module
-
 from .TicketTypes import TicketType
-
 
 T = TypeVar("T", bound="Ticket")
 
@@ -115,7 +110,7 @@ class Ticket:
         # Base embed
         embed = discord.Embed(
             title="Ticket #{}".format(self.ticketgid),
-            timestamp=dt.fromtimestamp(self.created_at),
+            timestamp=datetime.datetime.fromtimestamp(self.created_at),
         )
 
         # Moderator information
@@ -158,7 +153,7 @@ class Ticket:
         name = "(#{}) **{}** on {} by {}".format(
             self.ticketgid,
             self._ticket_type.name,
-            dt.fromtimestamp(self.created_at),
+            datetime.datetime.fromtimestamp(self.created_at),
             self._client.get_user(self.modid) or self.modid,
         )
         value = self.reason or "No reason given"
@@ -214,7 +209,7 @@ class Ticket:
             agentid=agentid,
             auditid=auditid,
             reason=reason,
-            created_at=int(dt.utcnow().timestamp()),
+            created_at=int(datetime.datetime.now(datetime.UTC).timestamp()),
         )
 
         # Retrieve the ticket id

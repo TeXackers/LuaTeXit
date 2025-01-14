@@ -1,12 +1,10 @@
 import asyncio
 import datetime
+
 import discord
-
-from paraCH import paraCH
-
+from mod_utils import mod_parse, multi_mod_action, test_action
 from ModEvent import ModEvent
-from mod_utils import mod_parse, test_action, multi_mod_action
-
+from paraCH import paraCH
 
 cmds = paraCH()
 
@@ -82,7 +80,7 @@ async def mute(ctx, user, **kwargs):
         )
         embed = await unmute_event.embedify()
 
-        now = datetime.datetime.utcnow().timestamp()
+        now = datetime.datetime.now(datetime.UTC).timestamp()
         to_store = (user.id, now + dur.total_seconds(), embed.to_dict())
         scheduled_unmutes = (
             await ctx.data.servers_long.get(ctx.server.id, "unmutes")
@@ -241,7 +239,7 @@ async def register_scheduled_unmutes(bot):
                     member = server.get_member(uid)
                     if not member:
                         continue
-                    dur = ts - datetime.datetime.utcnow().timestamp()
+                    dur = ts - datetime.datetime.now(datetime.UTC).timestamp()
                     dur = dur if dur > 0 else 1
                     embed = discord.Embed.from_data(embed_dict)
                     scheduled += 1

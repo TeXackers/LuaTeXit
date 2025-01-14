@@ -1,19 +1,16 @@
-import os
-from datetime import datetime
-from io import BytesIO
 import asyncio
-import discord
+import datetime
 import difflib
+import os
+from io import BytesIO
 
+import discord
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
-
-from wards import is_manager, is_reviewer
-
-from utils.lib import split_text, mail
 from utils import interactive  # noqa
+from utils.lib import mail, split_text
+from wards import is_reviewer
 
 from ..resources import default_preamble, failed_image_path
-
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
@@ -69,9 +66,9 @@ def tex_pagination(
 
     # Change time to a datetime object if it isn't one
     if time is None:
-        time = datetime.utcnow()
+        time = datetime.datetime.now(datetime.UTC)
     elif isinstance(time, (float, int)):
-        time = datetime.fromtimestamp(time)
+        time = datetime.datetime.fromtimestamp(time)
 
     blocknum = len(blocks)
 
@@ -158,9 +155,9 @@ async def tex_pagination_diff(
 
     # Change time to a datetime object if it isn't one
     if time is None:
-        time = datetime.utcnow()
+        time = datetime.datetime.now(datetime.UTC)
     elif isinstance(time, (float, int)):
-        time = datetime.fromtimestamp(time)
+        time = datetime.datetime.fromtimestamp(time)
 
     blocknum = len(blocks)
 
@@ -413,7 +410,7 @@ async def submit_preamble(ctx, user, submission, info):
         app=ctx.client.app,
         username=user.name,
         pending_preamble=submission,
-        submission_time=int(datetime.utcnow().timestamp()),
+        submission_time=int(datetime.datetime.now(datetime.UTC).timestamp()),
         submission_summary=info,
         submission_source_id=ctx.author.id if not ctx.guild else ctx.guild.id,
         submission_source_name="DM" if not ctx.guild else ctx.guild.name,
@@ -443,7 +440,7 @@ async def submit_preamble(ctx, user, submission, info):
 #     # Send the preamble request to the submission channel
 #     title = "New preamble submission!"
 #     author = "{} ({})".format(user, user.id)
-#     time = datetime.utcnow()
+#     time = datetime.datetime.now(datetime.UTC)
 
 #     submission_channel = ctx.bot.objects["latex_preamble_subch"]
 #     sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
@@ -451,7 +448,7 @@ async def submit_preamble(ctx, user, submission, info):
 #                                   destination=submission_channel)
 
 #     # Store the pending preamble info
-#     info_pack = (datetime.timestamp(time), info, sub_msg.id)
+#     info_pack = (datetime.datetime.timestamp(time), info, sub_msg.id)
 #     await ctx.data.users.set(ctx.authid, "pending_preamble_info", info_pack)
 
 #     # Add the approval/denial/testing emojis to the submission
@@ -539,7 +536,7 @@ async def approve_submission(ctx, userid, manager, reason=None):
         \nYour preamble has been modified and may be seen using the `preamble` command.\
         \nShould you wish to revert these changes, please use `preamble --revert`."
     embed = discord.Embed(title="Preamble request approval", description=default_msg)
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.datetime.now(datetime.UTC)
 
     # If the user no longer has a pending preamble, let the reviewer know and exit
     if not ctx.client.data.user_pending_preambles.select_where(userid=userid):
@@ -690,7 +687,7 @@ async def deny_submission(ctx, userid, manager, reason=None):
         "If you want assistance setting your preamble, please join our [support guild]({})."
     ).format(ctx.client.app_info["support_guild"])
     embed = discord.Embed(title="Preamble request rejection", description=default_msg)
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.datetime.now(datetime.UTC)
 
     # Check whether this needs editing
     if reason is None:

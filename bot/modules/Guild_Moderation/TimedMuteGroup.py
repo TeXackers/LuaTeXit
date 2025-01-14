@@ -1,27 +1,24 @@
-from typing import List
-import traceback
-import logging
 import asyncio
-import datetime as dt
+import datetime
+import logging
+import traceback
+from typing import List
 
 import discord
-
 from cmdClient.cmdClient import cmdClient
-
 from registry import (
-    tableInterface,
     Column,
     ColumnType,
     ForeignKey,
     ReferenceAction,
+    tableInterface,
     tableSchema,
 )
 from utils.lib import strfdelta
 
 from .module import guild_moderation_module as module
-
-from .tickets import TicketType
 from .mute_utils import unmute_memberid
+from .tickets import TicketType
 
 
 class TimedMuteGroup:
@@ -203,7 +200,7 @@ class TimedMuteGroup:
         try:
             # Sleep for the required time
             await asyncio.sleep(
-                self.ticket.unmute_timestamp - dt.datetime.utcnow().timestamp()
+                self.ticket.unmute_timestamp - datetime.datetime.now(datetime.UTC).timestamp()
             )
 
             # Execute the unmutes
@@ -259,7 +256,7 @@ class TimedMuteGroup:
                     "Automatic unmute after {}.\n"
                     "[Click here for the original mute ticket]({})"
                 ).format(
-                    strfdelta(dt.timedelta(seconds=self.ticket.duration)),
+                    strfdelta(datetime.timedelta(seconds=self.ticket.duration)),
                     self.ticket.jumpto,
                 )
                 await TicketType.UNMUTE.Ticket.create(

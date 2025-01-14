@@ -1,20 +1,16 @@
 import asyncio
-import datetime as dt
+import datetime
 
 import discord
-
 from cmdClient.lib import SafeCancellation
-
 from wards import guild_moderator
 
-from .module import guild_moderation_module as module
-
 from . import mute_config  # noqa
-
+from .ModAction import ActionState, ModAction
+from .module import guild_moderation_module as module
+from .mute_utils import mute_member, unmute_member
 from .tickets import TicketType
 from .TimedMuteGroup import TimedMuteGroup
-from .ModAction import ModAction, ActionState
-from .mute_utils import mute_member, unmute_member
 
 
 class _MuteTypeAction(ModAction):
@@ -164,7 +160,7 @@ class TimedMuteAction(_MuteTypeAction):
             # Temporary mute
 
             # Collect mute data
-            unmute_at = int(dt.datetime.utcnow().timestamp() + self.duration)
+            unmute_at = int(datetime.datetime.now(datetime.UTC).timestamp() + self.duration)
 
             # Create and post ticket
             ticket = TicketType.TEMPMUTE.Ticket.create(

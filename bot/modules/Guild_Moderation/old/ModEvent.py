@@ -1,5 +1,6 @@
+import datetime
+
 import discord
-from datetime import datetime
 
 
 class ModEvent:
@@ -32,7 +33,7 @@ class ModEvent:
         self.user_strs = ["`{}`: {}".format(user.id, user.__str__()) for user in users]
         self.timeout = timeout
         self.reason = reason
-        self.init_time = datetime.utcnow()
+        self.init_time = datetime.datetime.now(datetime.UTC)
         self.embed = None
 
     async def embedify(self):

@@ -1,8 +1,9 @@
 import asyncio
-import subprocess
 import datetime
-import discord
 import re
+import subprocess
+
+import discord
 import iso8601
 
 
@@ -279,7 +280,7 @@ def load_into(bot):
 
     @bot.util
     async def from_now(ctx, time_diff):
-        now = datetime.datetime.utcnow().timestamp()
+        now = datetime.datetime.now(datetime.UTC).timestamp()
         return now + time_diff
 
     @bot.util

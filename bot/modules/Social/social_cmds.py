@@ -1,8 +1,9 @@
-from paraCH import paraCH
+import datetime
+
 import discord
-from datetime import datetime, timedelta
-from pytz import timezone
 import iso8601
+from paraCH import paraCH
+from pytz import timezone
 
 cmds = paraCH()
 
@@ -36,7 +37,7 @@ async def cmd_profile(ctx):
                 badges += str(badge_emoj) + " "
     ctx.authid = tempid
 
-    created_ago = ctx.strfdelta(datetime.utcnow() - user.created_at)
+    created_ago = ctx.strfdelta(datetime.datetime.now(datetime.UTC) - user.created_at)
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     rep = await ctx.data.users.get(user.id, "rep")
     given_rep = await ctx.data.users.get(user.id, "given_rep")
@@ -67,7 +68,7 @@ async def cmd_profile(ctx):
             return
         timestr = "%I:%M %p on %a, %d/%m/%Y"
         timestr = (
-            iso8601.parse_date(datetime.now().isoformat())
+            iso8601.parse_date(datetime.datetime.now(datetime.UTC).isoformat())
             .astimezone(TZ)
             .strftime(timestr)
         )
@@ -92,7 +93,7 @@ async def cmd_rep(ctx):
         With stats, shows how many times you have repped and your last rep time.
     """
     cooldown = 24 * 60 * 60
-    now = datetime.utcnow()
+    now = datetime.datetime.now(datetime.UTC)
     now_timestamp = int(now.strftime("%s"))
     last_rep = await ctx.data.users.get(ctx.authid, "last_rep_time")
 
@@ -107,13 +108,13 @@ async def cmd_rep(ctx):
         if ctx.arg_str == "":
             can_give_in = cooldown - given_ago
             if can_give_in > 0:
-                can_give_str = ctx.strfdelta(timedelta(seconds=can_give_in), sec=True)
+                can_give_str = ctx.strfdelta(datetime.timedelta(seconds=can_give_in), sec=True)
                 msg = "You may give reputation in {}.".format(can_give_str)
             else:
                 msg = "You may now give reputation!"
         else:
             given_rep = await ctx.data.users.get(ctx.authid, "given_rep")
-            last_rep_str = ctx.strfdelta(timedelta(seconds=given_ago))
+            last_rep_str = ctx.strfdelta(datetime.timedelta(seconds=given_ago))
             msg = "You have given **{}** reputation point{}! You last gave a reputation point **{}** ago.".format(
                 given_rep, "s" if int(given_rep) > 1 else "", last_rep_str
             )
@@ -138,7 +139,7 @@ async def cmd_rep(ctx):
             given_ago = now_timestamp - int(last_rep)
             if given_ago < cooldown:
                 msg = "Cool down! You may give reputation in {}.".format(
-                    ctx.strfdelta(timedelta(seconds=(cooldown - given_ago)), sec=True)
+                    ctx.strfdelta(datetime.timedelta(seconds=(cooldown - given_ago)), sec=True)
                 )
                 await ctx.reply(msg)
                 return

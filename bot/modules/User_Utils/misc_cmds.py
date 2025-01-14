@@ -1,14 +1,11 @@
-from datetime import datetime
 import string
 
-import discord
 import aiohttp
+import discord
 
 # from pytz import timezone
-
 from utils import seekers  # noqa
-from utils.lib import split_text, prop_tabulate
-
+from utils.lib import prop_tabulate, split_text
 from wards import in_guild
 
 from .module import utils_module as module
@@ -290,7 +287,7 @@ async def cmd_piggybank(ctx):
 #         return
 #     elif (ctx.params[0] in ["+", "-"]) and len(ctx.params) == 2:
 #         action = ctx.params[0]
-#         now = datetime.utcnow().strftime('%s')
+#         now = datetime.datetime.now(datetime.UTC).strftime('%s')
 #         try:
 #             amount = float(ctx.params[1].strip("$#"))
 #         except ValueError:

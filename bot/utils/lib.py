@@ -1,8 +1,8 @@
 import datetime
-import iso8601
 import re
 
 import discord
+import iso8601
 
 # from logger import log
 
@@ -90,7 +90,7 @@ def timestamp_utcnow():
     """
     Return the current integer UTC timestamp.
     """
-    return int(datetime.datetime.timestamp(datetime.datetime.utcnow()))
+    return int(datetime.datetime.timestamp(datetime.datetime.now(datetime.UTC)))
 
 
 def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):

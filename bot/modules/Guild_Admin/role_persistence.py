@@ -1,14 +1,11 @@
+import datetime
 import logging
-import datetime as dt
-
-from cmdClient.lib import UserCancelled
-
-from settings import GuildSetting, Boolean, RoleList, ListData, BoolData
-from registry import tableInterface, tableSchema, Column, ColumnType
 from logging import log
 
+from cmdClient.lib import UserCancelled
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import BoolData, Boolean, GuildSetting, ListData, RoleList
 from utils.interactive import ask  # noqa
-
 from wards import guild_admin, guild_manager
 
 from .module import guild_admin_module as module
@@ -121,7 +118,7 @@ async def store_roles(client, member):
     role_list = [role.id for role in member.roles]
 
     # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
-    if dt.datetime.utcnow().timestamp() - member.joined_at.timestamp() < 10:
+    if datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp() < 10:
         return
 
     # Delete the stored roles associated to this member

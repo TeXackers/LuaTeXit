@@ -1,17 +1,13 @@
-from bs4 import BeautifulSoup, NavigableString
 import datetime
-import discord
 import random
-import requests
+import re
 import subprocess as sh
-import re
-
-from logger import log
-
 import urllib.parse
-import re
 
-from utils.lib import prop_tabulate, split_text, paginate_list
+import discord
+import requests
+from bs4 import BeautifulSoup, NavigableString
+from utils.lib import prop_tabulate, split_text
 
 from .module import latex_module as module
 
@@ -663,8 +659,6 @@ async def view_embeds(
     text,
     title,
     start_page = 0,
-    file_react=False,
-    file_message=None,
     **pagination_args
 ):
     pages = await fc_pagination(
@@ -692,7 +686,8 @@ async def cmd_findfont(ctx, flags):
         Search for fonts in LuaTeXit's sys;c tem for a given feature or features.
     Examples``:
         {prefix}findfont --lang <iso639-1>
-        {prefix}findfont --char <comma-sep'd unicode|glyph(s)>
+        {prefix}findfont --char <unicode hex code(s)|glyph(s)>
+        {prefix}findfont --name <pattern>
     """
     fclist_chars: str = ""
     fclist_lang: str = ""
@@ -706,15 +701,12 @@ async def cmd_findfont(ctx, flags):
             fclist_chars = ":charset=" + str(requested_chars[0])
             params_dict["Characters"] = str(requested_chars[0])
         else:
-            fclist_chars = ":charset=" + ",".join(requested_chars);
+            fclist_chars = ":charset=" + ",".join(requested_chars)
             params_dict["Characters"] = ", ".join(requested_chars)
 
     if flags["lang"]:
-        # lowered version of ISO639-1 values dict
         lang_names = [lang.lower() for lang in ISO639_1.values()]
-        if not flags["lang"].lower() in ISO639_1.keys() or not flags["lang"].lower() in lang_names:
-            # if lang was the only arg, then raise error
-            # otherwise try your best
+        if flags["lang"].lower() not in ISO639_1.keys() or flags["lang"].lower() not in lang_names:
             if not flags["char"]:
                 return await ctx.error_reply("Invalid language code.")
             else:
@@ -735,18 +727,19 @@ async def cmd_findfont(ctx, flags):
 
     fc = sh.Popen(findfont_cmd, stdout=sh.PIPE, stderr=sh.PIPE)
     fc_out, fc_err = fc.communicate()
-    
+
+    # Error out early
     if fc_err:
         return await ctx.error_reply(f"Error: {fc_err.decode('utf-8')}")
-    
+
     fc_out = fc_out.decode("utf-8").split("\n")
-    
+
     if not fc_out:
         return await ctx.error_reply("No fonts found.")
-    
+
     fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
 
-    
+
     if flags["name"]:
         params_dict["Name Query"] = flags["name"]
         fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if flags["name"].lower() in f]
@@ -754,8 +747,6 @@ async def cmd_findfont(ctx, flags):
     else:
         fc_out = sorted(list(set(fc_out_preprocessed)))
 
-    
-    
     await view_embeds(
         ctx,
         "\n".join(fc_out),

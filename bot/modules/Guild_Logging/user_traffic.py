@@ -1,17 +1,15 @@
-import logging
 import asyncio
-from datetime import datetime
+import datetime
+import logging
+
 import discord
 from discord import Status
-
-from settings import GuildSetting, Channel, ColumnData
-from registry import tableInterface, tableSchema, Column, ColumnType
-
-from utils.lib import strfdelta, prop_tabulate, format_activity, join_list
+from registry import Column, ColumnType, tableInterface, tableSchema
+from settings import Channel, ColumnData, GuildSetting
+from utils.lib import format_activity, join_list, prop_tabulate, strfdelta
 from wards import guild_manager
 
 from .module import guild_logging_module as module
-
 
 # Map providing human readable names for each status
 statusnames = {
@@ -48,7 +46,7 @@ async def join_logger(client, member):
         client.conf.emojis.getemoji(member.status.name), statusnames[member.status]
     )
     created_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - member.created_at, minutes=True)
+        strfdelta(datetime.datetime.now(datetime.UTC) - member.created_at, minutes=True)
     )
     created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
@@ -89,7 +87,7 @@ async def join_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now(),
+        timestamp=datetime.datetime.now(),
     )
     embed.set_author(
         name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"),
@@ -127,7 +125,7 @@ async def departure_logger(client, member):
     avatar = member.avatar_url
 
     joined_ago = "({} ago)".format(
-        strfdelta(datetime.utcnow() - member.joined_at, minutes=True)
+        strfdelta(datetime.datetime.now(datetime.UTC) - member.joined_at, minutes=True)
     )
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 

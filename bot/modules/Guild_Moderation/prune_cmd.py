@@ -1,12 +1,11 @@
-import discord
 import asyncio
 
+import discord
+
 # from datetime import datetime
-
 from cmdClient.lib import ResponseTimedOut, UserCancelled
-
-from wards import guild_moderator
 from utils import seekers  # noqa
+from wards import guild_moderator
 
 from .module import guild_moderation_module as module
 
@@ -279,7 +278,7 @@ async def cmd_prune(ctx, flags):
 #     embed = discord.Embed(title="Messages purged", color=discord.Colour.red(), description="**{}** messages purged in {}.".format(len(message_list), ctx.ch.mention))
 #     embed.add_field(name="Message Breakdown", value=counts, inline=False)
 #     embed.add_field(name="Reason", value=reason, inline=False)
-#     embed.set_footer(icon_url=ctx.author.avatar_url, text=datetime.utcnow().strftime("Acting Moderator: {} at %I:%M %p, %d/%m/%Y".format(ctx.author)))
+#     embed.set_footer(icon_url=ctx.author.avatar_url, text=datetime.datetime.now(datetime.UTC).strftime("Acting Moderator: {} at %I:%M %p, %d/%m/%Y".format(ctx.author)))
 #     try:
 #         await ctx.bot.send_message(modlog, embed=embed)
 #     except discord.Forbidden:

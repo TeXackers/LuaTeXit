@@ -1,16 +1,13 @@
-from datetime import datetime
-
 import asyncio
-import discord
+import datetime
+
 import aiohttp
-from discord.http import Route
-
+import discord
 from cmdClient import cmdClient
-
+from discord.http import Route
 from utils.lib import prop_tabulate, strfdelta
 
 from .module import utils_module as module
-
 
 emoji_url = "https://cdn.discordapp.com/emojis/{id}.{img_type}"
 
@@ -130,7 +127,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
                         title="Custom emojis in this guild",
                         description=block,
                         colour=discord.Colour.light_grey(),
-                        timestamp=datetime.now(),
+                        timestamp=datetime.datetime.now(),
                     )
                     for block in blocks
                 ]
@@ -354,7 +351,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
             prop_list.append("Server")
             value_list.append(emoji_obj.guild.name if emoji_obj.guild else "Unknown")
 
-            created_ago = strfdelta(datetime.utcnow() - emoji_obj.created_at)
+            created_ago = strfdelta(datetime.datetime.now(datetime.UTC) - emoji_obj.created_at)
             created = emoji_obj.created_at.strftime("%I:%M %p, %d/%m/%Y")
             prop_list.append("Created at")
             value_list.append(created)

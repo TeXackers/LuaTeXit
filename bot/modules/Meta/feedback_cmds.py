@@ -1,6 +1,6 @@
-import discord
-from datetime import datetime
+import datetime
 
+import discord
 from cmdClient import Context
 from constants import ParaCC
 
@@ -48,14 +48,14 @@ async def cmd_feedback(ctx: Context):
     embed = discord.Embed(
         title="Feedback",
         color=ParaCC["blue"],
-        timestamp=datetime.now(),
+        timestamp=datetime.datetime.now(),
         description=response,
     )
     embed.set_author(
         name="{} ({})".format(ctx.author, ctx.author.id), icon_url=ctx.author.avatar_url
     )
     embed.set_footer(
-        text=datetime.utcnow().strftime(
+        text=datetime.datetime.now(datetime.UTC).strftime(
             "Sent from {}".format(ctx.guild.name if ctx.guild else "DM")
         )
     )

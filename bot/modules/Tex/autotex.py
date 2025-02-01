@@ -110,7 +110,7 @@ async def latex_message_parser(client, message):
         lctx = LatexContext(ctx, source, lguild=lguild, luser=luser)
 
         # Compile the source
-        output_msg = await lctx.make()
+        output_msg = await lctx.luatexmake()
 
         if output_msg:
             log(

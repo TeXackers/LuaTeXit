@@ -25,7 +25,7 @@ info = {
 }
 
 disabled_modules = [
-    "Fun",
+    # "Fun",
     # "Maths",
     "Starboard",
     "Social",

@@ -14,12 +14,12 @@ elif [ $RET -eq 124 ];
 then
     echo "[E107] Compilation timed out!";
 else
-    grep -A 10 -m 1 "^!" "plaintex.log";
+    grep -A 10 -m 1 "^\./" "plaintex.log" | sed "s+\./$1\.tex.*:++"
 fi
 
 if [ ! -f "$1.pdf" ];
 then
-  echo "[E102]";
+  # echo "[E102]";
   cp "../../failed/1x2.png" "$1.png"
   exit 1
 # check if .dvi might be present

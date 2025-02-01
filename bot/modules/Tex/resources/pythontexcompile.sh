@@ -2,7 +2,7 @@ cd "tex/staging/$1/" || exit 1
 
 timeout 1m latexmk -lualatex -shell-escape -halt-on-error "$1.tex" > texput_pytex.log && \
 timeout 10s /usr/bin/pythontex "$1.tex" > texput_pytex.log && \
-timeout 1m latexmk -lualatex -shell-escape -halt-on-error "$1.tex" > texput_pytex.log
+timeout 1m latexmk -lualatex -shell-escape -halt-on-error "$1.tex" >> texput_pytex.log
 
 RET=$?
 if [ $RET -eq 0 ];

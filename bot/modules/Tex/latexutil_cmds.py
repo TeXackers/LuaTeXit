@@ -497,7 +497,7 @@ async def cmd_findfont(ctx, flags):
     Usage``:
         {prefix}findfont <feature>
     Description:
-        Search for fonts in LuaTeXit's sys;c tem for a given feature or features.
+        Search for fonts in LuaTeXit's system for a given feature or features.
     Examples``:
         {prefix}findfont --lang <iso639 | name>
         {prefix}findfont --char <unicode hex code | glyph(s)>

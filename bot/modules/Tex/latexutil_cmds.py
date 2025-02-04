@@ -558,7 +558,10 @@ async def cmd_findfont(ctx, flags):
     if not fc_out:
         return await ctx.error_reply("No fonts found.")
 
+    # Remove fonts that start with `.`
     fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
+    # Split by `,` and only grab the first element
+    fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
 
 
     if flags["name"]:
@@ -567,10 +570,12 @@ async def cmd_findfont(ctx, flags):
         fc_out = sorted(list(set(fc_out)))
     else:
         fc_out = sorted(list(set(fc_out_preprocessed)))
+        # remove empty strings
+        fc_out = [f for f in fc_out if f]
 
     await view_embeds(
         ctx,
         "\n".join(fc_out),
-        "Font Query",
+        f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
         flags=params_dict
     )

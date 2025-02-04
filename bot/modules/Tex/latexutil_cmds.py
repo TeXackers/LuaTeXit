@@ -5,6 +5,7 @@ import subprocess as sh
 import urllib.parse
 
 import discord
+import iso639
 import requests
 from bs4 import BeautifulSoup, NavigableString
 from utils.lib import prop_tabulate, split_text
@@ -356,193 +357,6 @@ async def cmd_ctan(ctx):
 
     return await out_msg.edit(content="", embed=embed)
 
-ISO639_1: dict = {
-    "aa": "Afar",
-    "ab": "Abkhazian",
-    "ae": "Avestan",
-    "af": "Afrikaans",
-    "ak": "Akan",
-    "am": "Amharic",
-    "an": "Aragonese",
-    "ar": "Arabic",
-    "as": "Assamese",
-    "av": "Avaric",
-    "ay": "Aymara",
-    "az": "Azerbaijani",
-    "ba": "Bashkir",
-    "be": "Belarusian",
-    "bg": "Bulgarian",
-    "bh": "Bihari",
-    "bi": "Bislama",
-    "bm": "Bambara",
-    "bn": "Bengali",
-    "bo": "Tibetan",
-    "br": "Breton",
-    "bs": "Bosnian",
-    "ca": "Catalan",
-    "ce": "Chechen",
-    "ch": "Chamorro",
-    "co": "Corsican",
-    "cr": "Cree",
-    "cs": "Czech",
-    "cu": "Church Slavic",
-    "cv": "Chuvash",
-    "cy": "Welsh",
-    "da": "Danish",
-    "de": "German",
-    "dv": "Divehi",
-    "dz": "Dzongkha",
-    "ee": "Ewe",
-    "el": "Greek",
-    "en": "English",
-    "eo": "Esperanto",
-    "es": "Spanish",
-    "et": "Estonian",
-    "eu": "Basque",
-    "fa": "Persian",
-    "ff": "Fulah",
-    "fi": "Finnish",
-    "fj": "Fijian",
-    "fo": "Faroese",
-    "fr": "French",
-    "fy": "Western Frisian",
-    "ga": "Irish",
-    "gd": "Scottish Gaelic",
-    "gl": "Galician",
-    "gn": "Guarani",
-    "gu": "Gujarati",
-    "gv": "Manx",
-    "ha": "Hausa",
-    "he": "Hebrew",
-    "hi": "Hindi",
-    "ho": "Hiri Motu",
-    "hr": "Croatian",
-    "ht": "Haitian",
-    "hu": "Hungarian",
-    "hy": "Armenian",
-    "hz": "Herero",
-    "ia": "Interlingua",
-    "id": "Indonesian",
-    "ie": "Interlingue",
-    "ig": "Igbo",
-    "ii": "Nuosu",
-    "ik": "Inupiaq",
-    "io": "Ido",
-    "is": "Icelandic",
-    "it": "Italian",
-    "iu": "Inuktitut",
-    "ja": "Japanese",
-    "jv": "Javanese",
-    "ka": "Georgian",
-    "kg": "Kongo",
-    "ki": "Kikuyu",
-    "kj": "Kwanyama",
-    "kk": "Kazakh",
-    "kl": "Kalaallisut",
-    "km": "Khmer",
-    "kn": "Kannada",
-    "ko": "Korean",
-    "kr": "Kanuri",
-    "ks": "Kashmiri",
-    "ku": "Kurdish",
-    "kv": "Komi",
-    "kw": "Cornish",
-    "ky": "Kyrgyz",
-    "la": "Latin",
-    "lb": "Luxembourgish",
-    "lg": "Ganda",
-    "li": "Limburgish",
-    "ln": "Lingala",
-    "lo": "Lao",
-    "lt": "Lithuanian",
-    "lu": "Luba-Katanga",
-    "lv": "Latvian",
-    "mg": "Malagasy",
-    "mh": "Marshallese",
-    "mi": "Maori",
-    "mk": "Macedonian",
-    "ml": "Malayalam",
-    "mn": "Mongolian",
-    "mr": "Marathi",
-    "ms": "Malay",
-    "mt": "Maltese",
-    "my": "Burmese",
-    "na": "Nauru",
-    "nb": "Norwegian Bokmål",
-    "nd": "North Ndebele",
-    "ne": "Nepali",
-    "ng": "Ndonga",
-    "nl": "Dutch",
-    "nn": "Norwegian Nynorsk",
-    "no": "Norwegian",
-    "nr": "South Ndebele",
-    "nv": "Navajo",
-    "ny": "Chichewa",
-    "oc": "Occitan",
-    "oj": "Ojibwa",
-    "om": "Oromo",
-    "or": "Oriya",
-    "os": "Ossetian",
-    "pa": "Punjabi",
-    "pi": "Pali",
-    "pl": "Polish",
-    "ps": "Pashto",
-    "pt": "Portuguese",
-    "qu": "Quechua",
-    "rm": "Romansh",
-    "rn": "Rundi",
-    "ro": "Romanian",
-    "ru": "Russian",
-    "rw": "Kinyarwanda",
-    "sa": "Sanskrit",
-    "sc": "Sardinian",
-    "sd": "Sindhi",
-    "se": "Northern Sami",
-    "sg": "Sango",
-    "si": "Sinhala",
-    "sk": "Slovak",
-    "sl": "Slovenian",
-    "sm": "Samoan",
-    "sn": "Shona",
-    "so": "Somali",
-    "sq": "Albanian",
-    "sr": "Serbian",
-    "ss": "Swati",
-    "st": "Southern Sotho",
-    "su": "Sundanese",
-    "sv": "Swedish",
-    "sw": "Swahili",
-    "ta": "Tamil",
-    "te": "Telugu",
-    "tg": "Tajik",
-    "th": "Thai",
-    "ti": "Tigrinya",
-    "tk": "Turkmen",
-    "tl": "Tagalog",
-    "tn": "Tswana",
-    "to": "Tonga",
-    "tr": "Turkish",
-    "ts": "Tsonga",
-    "tt": "Tatar",
-    "tw": "Twi",
-    "ty": "Tahitian",
-    "ug": "Uyghur",
-    "uk": "Ukrainian",
-    "ur": "Urdu",
-    "uz": "Uzbek",
-    "ve": "Venda",
-    "vi": "Vietnamese",
-    "vo": "Volapük",
-    "wa": "Walloon",
-    "wo": "Wolof",
-    "xh": "Xhosa",
-    "yi": "Yiddish",
-    "yo": "Yoruba",
-    "za": "Zhuang",
-    "zh": "Chinese",
-    "zu": "Zulu"
-}
-
 
 def glyph_or_unicode(arg: str) -> list[str] | None:
     """
@@ -683,10 +497,10 @@ async def cmd_findfont(ctx, flags):
     Usage``:
         {prefix}findfont <feature>
     Description:
-        Search for fonts in LuaTeXit's sys;c tem for a given feature or features.
+        Search for fonts in LuaTeXit's system for a given feature or features.
     Examples``:
-        {prefix}findfont --lang <iso639-1>
-        {prefix}findfont --char <unicode hex code(s)|glyph(s)>
+        {prefix}findfont --lang <iso639 | name>
+        {prefix}findfont --char <unicode hex code | glyph(s)>
         {prefix}findfont --name <pattern>
     """
     fclist_chars: str = ""
@@ -705,16 +519,23 @@ async def cmd_findfont(ctx, flags):
             params_dict["Characters"] = ", ".join(requested_chars)
 
     if flags["lang"]:
-        lang_names = [lang.lower() for lang in ISO639_1.values()]
-        if flags["lang"].lower() not in ISO639_1.keys() or flags["lang"].lower() not in lang_names:
-            if not flags["char"]:
-                return await ctx.error_reply("Invalid language code.")
-            else:
-                pass
+        if len(flags["lang"]) > 3:
+            try:
+                requested_language = iso639.Language.match(flags["lang"].capitalize())
+            except iso639.LanguageNotFoundError:
+                return await ctx.error_reply(f"Invalid language code.")
         else:
-            fclist_lang = ":lang=" + flags["lang"].lower()
-            params_dict["Languages"] = ISO639_1[flags["lang"].lower()]
+            try:
+                requested_language = iso639.Language.match(flags["lang"])
+            except iso639.LanguageNotFoundError:
+                return await ctx.error_reply(f"Invalid language code.")
+        
+        params_dict["Languages"] = requested_language.name
 
+        if requested_language.part1:
+            fclist_lang = ":lang=" + requested_language.part1
+        else:
+            fclist_lang = ":lang=" + requested_language.part2t
     
     fclist_params = "".join([fclist_chars, fclist_lang])
     findfont_cmd = [
@@ -737,7 +558,10 @@ async def cmd_findfont(ctx, flags):
     if not fc_out:
         return await ctx.error_reply("No fonts found.")
 
+    # Remove fonts that start with `.`
     fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
+    # Split by `,` and only grab the first element
+    fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
 
 
     if flags["name"]:
@@ -746,10 +570,12 @@ async def cmd_findfont(ctx, flags):
         fc_out = sorted(list(set(fc_out)))
     else:
         fc_out = sorted(list(set(fc_out_preprocessed)))
+        # remove empty strings
+        fc_out = [f for f in fc_out if f]
 
     await view_embeds(
         ctx,
         "\n".join(fc_out),
-        "Font Query",
+        f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
         flags=params_dict
     )

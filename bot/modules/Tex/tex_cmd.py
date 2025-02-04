@@ -111,7 +111,7 @@ async def cmd_tex(ctx, flags):
 
     # convert above if elif to match case
     match ctx.alias.lower():
-        case "," | "mtex":
+        case "," | "mtex" | "gather":
             parse_mode = ParseMode.GATHER
         case "align":
             parse_mode = ParseMode.ALIGN
@@ -123,6 +123,10 @@ async def cmd_tex(ctx, flags):
             flags["wide"] = True
         case _:
             pass
+    
+    # alwaysmath
+    if luser.alwaysmath and parse_mode == ParseMode.DOCUMENT:
+        parse_mode = ParseMode.GATHER
 
     # Clean mentions
     content = ctx.clean_arg_str()

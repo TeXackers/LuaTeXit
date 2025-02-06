@@ -324,13 +324,16 @@ async def cmd_list(ctx: Context):
         for catname in sorted_cats:
             if catname in groups:
                 cat = groups[catname][0]
-                props, values, commands = zip(*groups[catname][1])
-                table = prop_tabulate(props, values)
-                table = "\n".join(
-                    ("~~{}~~" if commands[i].disabled else "{}").format(line)
-                    for i, line in enumerate(table.splitlines())
-                )
-                stringy_groups.append((cat, table))
+                try:
+                    props, values, commands = zip(*groups[catname][1])
+                    table = prop_tabulate(props, values)
+                    table = "\n".join(
+                        ("~~{}~~" if commands[i].disabled else "{}").format(line)
+                        for i, line in enumerate(table.splitlines())
+                    )
+                    stringy_groups.append((cat, table))
+                except ValueError:
+                    continue
 
         # Now put everything into embeds
         help_embeds = []  # List of embed pages to respond with

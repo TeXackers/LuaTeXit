@@ -114,7 +114,6 @@ class LatexContext:
     # Compiled regex for the `$` latex content checker
     single_dollars_pattern = re.compile(r"\$(?=\S)[^$]+(?<=\S)\$")
     double_dollars_pattern = re.compile(r"\$\$[^$]+\$\$")
-    generic_dollar_pattern = re.compile(r"[^$\\]\$[^$]*[^\\]\$")
 
     # Locks to avoid simultaneous compilation for each user
     user_locks = {}  # userid: Lock
@@ -996,7 +995,7 @@ class LatexContext:
 
         if "$" in content and content.strip("$"):
             # Regex match for the $ pattern
-            return cls.generic_dollar_pattern.search(content) is not None
+            return cls.single_dollars_pattern.search(content) is not None
         else:
             return False
 

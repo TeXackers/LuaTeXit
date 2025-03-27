@@ -35,24 +35,25 @@ def gencolour(colour, negate=True):
 
 
 # Dictionary of valid colours and the associated transformation commands
-colourschemes = dict()
-
-colourschemes["white"] = gencolour("white", False)
-colourschemes["black"] = gencolour("black")
-
-colourschemes["light"] = gencolour("'rgb(233, 233, 233)'", False)
-colourschemes["dark"] = gencolour("'rgb(20, 20, 20)'")
-
-colourschemes["gray"] = colourschemes["grey"] = gencolour("'rgb(54, 57, 63)'")
-colourschemes["darkgrey"] = gencolour("'rgb(35, 39, 42)'")
-
-colourschemes[
-    "trans_white"
-] = r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}"
-colourschemes["trans_black"] = None
-colourschemes["transparent"] = colourschemes["trans_white"]
-
-colourschemes["default"] = colourschemes["white"]
+colourschemes = {
+    "default": gencolour("'rgb(255, 255, 255)'", False),
+    # New Discord UI colours
+    "light": gencolour("'rgb(251, 251, 251)'", False),
+    "ash": gencolour("'rgb(51, 51, 56)'", True),
+    "dark": gencolour("'rgb(29, 29, 33)'", True),
+    'onyx': gencolour("'rgb(0, 0, 0)'", True),
+    # Make the old colours adaptive to the new UI
+    "white": gencolour("'rgb(255, 255, 255)'", False),
+    "grey": gencolour("'rgb(51, 51, 56)'", True), # ash
+    "gray": gencolour("'rgb(51, 51, 56)'", True), # ash
+    "darkgrey": gencolour("'rgb(29, 29, 33)'", True), # dark
+    "darkgray": gencolour("'rgb(29, 29, 33)'", True), # dark
+    "black": gencolour("'rgb(0, 0, 0)'", True), # onyx
+    # Trans colours
+    "transparent": r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}",
+    "trans_white": r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}",
+    "trans_black": None,
+}
 
 # Script which pads images to a minimum width of 1000
 # pad_script = ""
@@ -70,7 +71,7 @@ fi
 
 # Header for every LaTeX source file
 header: str = """\\documentclass[varwidth, margin=20pt]{standalone}
-\\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
+% \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
 \\ifpdftex\\usepackage{hwemoji}\\fi
 \\RequirePackage{mleftright}
 \\let\\AMSleft\\left

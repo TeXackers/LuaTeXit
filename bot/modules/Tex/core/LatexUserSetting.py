@@ -181,11 +181,10 @@ class colour(LatexUserSetting, String):
 
     colourschemes = {
         "white": "Pure white background, with black text.",
-        "light": "Very light grey bckground, with black text.",
-        "grey": "Discord-grey background, with white text. (Recommended)",
-        "darkgrey": "Dark grey background, with white text.",
-        "dark": "Dark background, with white text.",
-        "black": "Pure black background, with white text.",
+        "light": "Very light grey background, with black text.",
+        "ash": "Discord's `ash` background, with white text. (Recommended)",
+        "dark": "Discord's `dark` background with white text.",
+        "onyx": "Discord's `onyx` background, with white text.",
         "transparent": "Transparent background, with white text. (May cause issues)",
         "trans_black": "Transparent background, with black text. (May cause issues)",
     }
@@ -193,8 +192,16 @@ class colour(LatexUserSetting, String):
         list(colourschemes.keys()), list(colourschemes.values())
     )
 
-    default = "grey"
-    _options = list(colourschemes.keys()) + ["gray", "trans_white"]
+    default = "white"
+    _options = list(colourschemes.keys()) + [
+        "grey",
+        "gray",
+        "trans_white",
+        "darkgrey",
+        "darkgray",
+        "black",
+        "default"
+    ]
     _parsing_failed_response = (
         "Unknown colourscheme `{{userstr}}`. "
         "Valid colourschemes:\n{}".format(tabled_colourschemes)

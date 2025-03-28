@@ -182,7 +182,7 @@ class colour(LatexUserSetting, String):
     colourschemes = {
         "white": "Pure white background, with black text.",
         "light": "Very light grey background, with black text.",
-        "ash": "Discord's `ash` background, with white text. (Recommended)",
+        "ash": "Discord's `ash` background, with white text.",
         "dark": "Discord's `dark` background with white text.",
         "onyx": "Discord's `onyx` background, with white text.",
         "transparent": "Transparent background, with white text. (May cause issues)",

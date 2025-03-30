@@ -23,7 +23,7 @@ then
   cp "../../failed/1x2.png" "$1.png"
   exit 1
 # check if .dvi might be present
-elif [ -f "$1.dvi"];
+elif [ -f "$1.dvi" ];
 then
   dvipdfmx "$1.dvi" > /dev/null
 fi

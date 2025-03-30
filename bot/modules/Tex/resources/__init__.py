@@ -14,10 +14,10 @@ with open(os.path.join(__location__, "whitelist.txt"), "r") as pw:
 failed_image_path = os.path.join(__location__, "failed.png")
 
 # Store the path to the latex compile script
-compile_script_path = os.path.join(__location__, "texcompile.sh")
+pdflatex_script_path = os.path.join(__location__, "pdflatex_compiler.sh")
+pdftex_script_path = os.path.join(__location__, "pdftex_compiler.sh")
 
-# pdftex_compile_sript_path = os.path.join(__location__, "pdftexcompile.sh")
-luatex_compile_script_path = os.path.join(__location__, "luatexcompile.sh")
-xetex_compile_script_path = os.path.join(__location__, "xetexcompile.sh")
-plain_compile_script_path = os.path.join(__location__, "plaintex.sh")
-pythontex_compile_script_path = os.path.join(__location__, "pythontexcompile.sh")
+lualatex_script_path = os.path.join(__location__, "lualatex_compiler.sh")
+luatex_script_path = os.path.join(__location__, "luatex_compiler.sh")
+xelatex_script_path = os.path.join(__location__, "xelatex_compiler.sh")
+pythontex_script_path = os.path.join(__location__, "pythontex_compiler.sh")

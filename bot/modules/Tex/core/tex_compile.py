@@ -8,13 +8,14 @@ from utils import ctx_addons  # noqa
 
 from ..module import latex_module as module
 from ..resources import (
-    compile_script_path,
     default_preamble,
     failed_image_path,
-    luatex_compile_script_path,
-    plain_compile_script_path,
-    pythontex_compile_script_path,
-    xetex_compile_script_path,
+    lualatex_script_path,
+    luatex_script_path,
+    pdflatex_script_path,
+    pdftex_script_path,
+    pythontex_script_path,
+    xelatex_script_path,
 )
 
 """
@@ -39,13 +40,13 @@ colourschemes = {
     "default": gencolour("'rgb(255, 255, 255)'", False),
     # New Discord UI colours
     "light": gencolour("'rgb(251, 251, 251)'", False),
-    "ash": gencolour("'rgb(51, 51, 56)'", True),
+    "ash": gencolour("'rgb(51, 51, 57)'", True),
     "dark": gencolour("'rgb(29, 29, 33)'", True),
     'onyx': gencolour("'rgb(0, 0, 0)'", True),
     # Make the old colours adaptive to the new UI
     "white": gencolour("'rgb(255, 255, 255)'", False),
-    "grey": gencolour("'rgb(51, 51, 56)'", True), # ash
-    "gray": gencolour("'rgb(51, 51, 56)'", True), # ash
+    "grey": gencolour("'rgb(51, 51, 57)'", True), # ash
+    "gray": gencolour("'rgb(51, 51, 57)'", True), # ash
     "darkgrey": gencolour("'rgb(29, 29, 33)'", True), # dark
     "darkgray": gencolour("'rgb(29, 29, 33)'", True), # dark
     "black": gencolour("'rgb(0, 0, 0)'", True), # onyx
@@ -100,6 +101,10 @@ to_compile_plaintex: str = """
 \\newdimen\\pagemargin \\pagemargin=10pt
 \\newdimen\\textwidth \\textwidth=\\hsize
 \\newdimen\\textheight \\textheight=\\vsize
+\\let\\pdfpagewidth\\textwidth
+\\let\\pageheight\\textheight
+\\let\\pdfpageheight\\textheight
+\\let\\pagewidth\\textwidth
 \\newskip\\smallskipamount \\smallskipamount=3.0pt plus 1.0pt minus 1.0pt
 \\newskip\\medskipamount \\medskipamount=6.0pt plus 2.0pt minus 2.0pt
 \\newskip\\bigskipamount \\bigskipamount=12.0pt plus 4.0pt minus 4.0pt
@@ -162,11 +167,11 @@ async def maketex(
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
+        "{script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
         "{pad}".format(
-            compile_script=compile_script_path,
+            script=pdflatex_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
@@ -214,11 +219,11 @@ async def makeluatex(
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
+        "{script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
         "{pad}".format(
-            compile_script=luatex_compile_script_path,
+            script=lualatex_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
@@ -266,11 +271,11 @@ async def makexetex(
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
+        "{script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
         "{pad}".format(
-            compile_script=xetex_compile_script_path,
+            script=xelatex_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
@@ -283,7 +288,7 @@ async def makexetex(
 
 
 @Context.util
-async def makeplaintex(
+async def make_plain_luatex(
     ctx,
     source,
     targetid,
@@ -293,7 +298,7 @@ async def makeplaintex(
     pad=True,
 ):
     log(
-        "Beginning plainTeX compilation for (tid:{targetid}).\n{content}".format(
+        "Beginning plain LuaTeX compilation for (tid:{targetid}).\n{content}".format(
             targetid=targetid,
             content="\n".join(("\t" + line for line in source.splitlines())),
         ),
@@ -318,11 +323,63 @@ async def makeplaintex(
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
+        "{script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
         "{pad}".format(
-            compile_script=plain_compile_script_path,
+            script=luatex_script_path,
+            id=targetid,
+            path=path,
+            colour=colourschemes[colour] or "",
+            pad=pad_script if pad else "",
+        ).format(image="{}.png".format(targetid))
+    )
+
+    # Run the script in an async executor
+    return await ctx.run_in_shell(script)
+
+
+@Context.util
+async def make_plain_pdftex(
+    ctx,
+    source,
+    targetid,
+    preamble=default_preamble,
+    colour="default",
+    # header=header,
+    pad=True,
+):
+    log(
+        "Beginning plain pdfTeX compilation for (tid:{targetid}).\n{content}".format(
+            targetid=targetid,
+            content="\n".join(("\t" + line for line in source.splitlines())),
+        ),
+        level=logging.DEBUG,
+        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+    )
+
+    # Target's staging directory
+    path = "tex/staging/{}".format(targetid)
+
+    # Remove the staging directory, if it exists
+    shutil.rmtree(path, ignore_errors=True)
+
+    # Recreate staging directory
+    os.makedirs(path, exist_ok=True)
+
+    fn = "{}/{}.tex".format(path, targetid)
+
+    with open(fn, "w") as work:
+        work.write(to_compile_plaintex.format(source=source))
+        work.close()
+
+    # Build compile script
+    script = (
+        "{script} {id} || exit;\n"
+        "cd {path}\n"
+        "{colour}\n"
+        "{pad}".format(
+            script=pdftex_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",
@@ -370,11 +427,11 @@ async def makepythontex(
 
     # Build compile script
     script = (
-        "{compile_script} {id} || exit;\n"
+        "{script} {id} || exit;\n"
         "cd {path}\n"
         "{colour}\n"
         "{pad}".format(
-            compile_script=pythontex_compile_script_path,
+            script=pythontex_script_path,
             id=targetid,
             path=path,
             colour=colourschemes[colour] or "",

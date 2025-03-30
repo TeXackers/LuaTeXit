@@ -8,7 +8,7 @@ from .module import latex_module as module
 @module.cmd(
     "tex",
     desc="Render LaTeX code.",
-    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plaintex", "plain", "gather", "align", "texsp", "texw", "mtex", "pytex", "python"],
+    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plainpdf", "plainlua", "gather", "align", "texsp", "texw", "mtex", "pytex", "python"],
     flags=[
         "config",
         "keepsourcefor",
@@ -22,10 +22,11 @@ from .module import latex_module as module
 async def cmd_tex(ctx, flags):
     """
     Usage``:
-        {prefix}pdftex <code>
         {prefix}luatex <code>
+        {prefix}pdftex <code>
         {prefix}xetex <code>
-        {prefix}plain <code>
+        {prefix}plainlua <code>
+        {prefix}plainpdf <code>
         {prefix}pytex <code>
         {prefix}tikz <code>
 
@@ -43,20 +44,22 @@ async def cmd_tex(ctx, flags):
             messages containing LaTeX will automatically be compiled and this command \
             is generally not required.
     Aliases::
-        pdftex: Code is compiled in the default pdfLaTeX environment.
-        luatex: Code is compiled using LuaLaTeX engine.
-        xetex: Code is compiled using XeLaTeX engine.
-        plain: Code is compiled using plain LuaTeX engine.
-        pytex: Code is compiled using LuaTeX/pythonTeX.
-        tikz: Code is rendered in a `tikzpicture` environment.
+        luatex: Code is compiled using LuaLaTeX.
+        pdftex: Code is compiled using pdfLaTeX.
+        xetex: Code is compiled using XeLaTeX.
+        plainlua: Code is compiled using plain LuaTeX.
+        plainpdf: Code is compiled using plain pdfTeX.
+        pytex: Code is compiled using LuaLaTeX + pythonTeX.
+        tikz: Code is rendered in a `tikzpicture` environment using LuaLaTeX.
     Related:
         autotex, texconfig, preamble
     Examples``:
+        {prefix}luatex \\luatexbanner
         {prefix}pdftex \\pdftexbanner
         {prefix}tikz \\draw(0,0) circle (1);
-        {prefix}luatex \\luatexbanner
         {prefix}xetex \\the\\XeTeXversion\\XeTeXrevision
-        {prefix}plain \\luatexbanner
+        {prefix}plainlua \\luatexbanner
+        {prefix}plainpdf \\pdftexbanner
         {prefix}pytex \\py{{2+2}}
     """
     # Handle flags
@@ -145,24 +148,31 @@ async def cmd_tex(ctx, flags):
         # Create latex context for a given context, source, guild, user and other flags
         # then compile LaTeX using a texcompile shell script of user's choice
         # then keep the command alive until the context dies
-        case "pdf" | "pdftex":
+        case "lua" | "lualatex":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.lualatexmake()
+            await lctx.lifetime()
+
+        case "pdf" | "pdflatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.make()
             await lctx.lifetime()
-        # case "lualatex" | "luatex" | "lua":
-        #     lctx = LatexContext(ctx, source, lguild, luser, **flags)
-        #     await lctx.luatexmake()
-        #     await lctx.lifetime()
+
         case "xetex" | "xelatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.xetexmake()
             await lctx.lifetime()
-        
-        case "plaintex" | "plain":
+
+        case "plainlua" :
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
-            await lctx.plaintexmake()
+            await lctx.plain_luatex_make()
             await lctx.lifetime()
-        
+
+        case "plainpdf" | "pdfplain":
+            lctx = LatexContext(ctx, source, lguild, luser, **flags)
+            await lctx.plain_pdftex_make()
+            await lctx.lifetime()
+
         case "pytex" | "python":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.pythontexmake()

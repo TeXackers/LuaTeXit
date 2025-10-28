@@ -523,12 +523,12 @@ async def cmd_findfont(ctx, flags):
             try:
                 requested_language = iso639.Language.match(flags["lang"].capitalize())
             except iso639.LanguageNotFoundError:
-                return await ctx.error_reply(f"Invalid language code.")
+                return await ctx.error_reply("Invalid language code.")
         else:
             try:
                 requested_language = iso639.Language.match(flags["lang"])
             except iso639.LanguageNotFoundError:
-                return await ctx.error_reply(f"Invalid language code.")
+                return await ctx.error_reply("Invalid language code.")
         
         params_dict["Languages"] = requested_language.name
 

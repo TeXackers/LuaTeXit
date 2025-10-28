@@ -185,8 +185,8 @@ class colour(LatexUserSetting, String):
         "ash": "Discord's `ash` background, with white text.",
         "dark": "Discord's `dark` background with white text.",
         "onyx": "Discord's `onyx` background, with white text.",
-        "transparent": "Transparent background, with white text. (May cause issues)",
-        "trans_black": "Transparent background, with black text. (May cause issues)",
+        "transparent": "Transparent background, with white text.",
+        "trans_black": "Transparent background, with black text.",
     }
     tabled_colourschemes = prop_tabulate(
         list(colourschemes.keys()), list(colourschemes.values())

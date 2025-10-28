@@ -52,7 +52,9 @@ async def cmd_calc(ctx):
         )
         return
     await ctx.reply(
-        "Result{}:\n```\n{}\n```".format(
-            "s" if len(exprs) > 1 else "", "\n".join(answer["result"])
+        "Result{}:\n```\n{}\n```\n-# Requested by: {}".format(
+            "s" if len(exprs) > 1 else "",
+            "\n".join(answer["result"]),
+            ctx.author
         )
     )

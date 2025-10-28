@@ -150,7 +150,7 @@ async def cmd_tex(ctx, flags):
         # then keep the command alive until the context dies
         case "lua" | "lualatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
-            await lctx.lualatexmake()
+            await lctx.luatexmake()
             await lctx.lifetime()
 
         case "pdf" | "pdflatex":

@@ -363,7 +363,7 @@ async def cmd_colour(ctx):
     if not (len(hexstr) == 6 and all(c in string.hexdigits for c in hexstr)):
         await ctx.error_reply("Please give me a valid hex colour (e.g. #0047AB)")
         return
-    fetchstr = "http://thecolorapi.com/id?hex={}&format=json".format(hexstr)
+    fetchstr = "https://www.thecolorapi.com/id?hex={}".format(hexstr)
     async with aiohttp.ClientSession() as session:
         async with session.get(fetchstr) as r:
             if r.status == 200:

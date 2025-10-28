@@ -25,50 +25,38 @@ Provides a single context utility to compile LaTeX code from a user and return a
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 
-def gencolour(colour, negate=True):
+def gencolour(bgcolour: str, textcolour: str) -> str:
     """
-    Build the colour conversion command for the provided colour, negating black text if required
+    Build the colour definition commands for the provided colourscheme
     """
-    return r"magick convert {{image}} {} -bordercolor transparent -border 50 \
-        -background {} -flatten {{image}}".format(
-        "-channel RGB +negate" if negate else "", colour
-    )
+    return rf"bgcolor={bgcolour}, textcolor={textcolour}"
 
 
 # Dictionary of valid colours and the associated transformation commands
-colourschemes = {
-    "default": gencolour("'rgb(255, 255, 255)'", False),
-    # New Discord UI colours
-    "light": gencolour("'rgb(251, 251, 251)'", False),
-    "ash": gencolour("'rgb(51, 51, 57)'", True),
-    "dark": gencolour("'rgb(29, 29, 33)'", True),
-    'onyx': gencolour("'rgb(0, 0, 0)'", True),
-    # Make the old colours adaptive to the new UI
-    "white": gencolour("'rgb(255, 255, 255)'", False),
-    "grey": gencolour("'rgb(51, 51, 57)'", True), # ash
-    "gray": gencolour("'rgb(51, 51, 57)'", True), # ash
-    "darkgrey": gencolour("'rgb(29, 29, 33)'", True), # dark
-    "darkgray": gencolour("'rgb(29, 29, 33)'", True), # dark
-    "black": gencolour("'rgb(0, 0, 0)'", True), # onyx
+colourschemes: dict = {
+    "default": gencolour("ffffff", "000000"),
+    # New Discord UI colours (in HEX)
+    "light": gencolour("dfdfdf", "1d1d1d"),
+    "ash": gencolour("323339", "DFDFDF"),
+    "dark": gencolour("1A1A1E", "DFDFDF"),
+    "onyx": gencolour("070709", "ffffff"),
+    "white": gencolour("ffffff", "000000"),
     # Trans colours
-    "transparent": r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}",
-    "trans_white": r"magick {image} -channel RGB +negate -bordercolor transparent -border 40 {image}",
-    "trans_black": None,
+    "transparent": gencolour("trans", "ffffff"),
+    "trans_white": gencolour("trans", "ffffff"),
+    "trans_black": gencolour("trans", "000000"),
 }
 
-# Script which pads images to a minimum width of 1000
-# pad_script = ""
-pad_script = r"""
-width=`magick convert {image} -format "%[fx:w]" info:`
-minwidth=1000
-extra=$((minwidth-width))
-
-if [ $extra -gt 0 ]; then
-    magick convert {image} \
-        -gravity East +antialias -splice ${{extra}}x\
-        -alpha set -background transparent -alpha Background -channel alpha -fx "i>${{width}}-5?0:a" +channel {image} >>/dev/null
-fi
-"""
+# add alias names to colourschemes
+colourschemes.update(
+    {
+        "grey": colourschemes["ash"], # ash
+        # "gray": colourschemes["ash"], # ash
+        "darkgrey": colourschemes["dark"], # dark
+        # "darkgray": colourschemes["dark"], # dark
+        "black": colourschemes["onyx"], # onyx
+    }
+)
 
 # Header for every LaTeX source file
 header: str = r"""
@@ -102,11 +90,14 @@ header: str = r"""
 """
 
 # The format of the source to compile
-to_compile: str = """{header}
+to_compile: str = """\\documentclass[12pt, singlepage, {colour}, {alwayswide}]{{texit}}
+{header}
+\\usepackage{{iftex}}
 {preamble}
 \\begin{{document}}
 {source}
-\\end{{document}}"""
+\\end{{document}}
+"""
 
 
 to_compile_plaintex: str = """
@@ -182,22 +173,26 @@ async def maketex(
     fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, "w") as work:
-        work.write(to_compile.format(header=header, preamble=preamble, source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
         "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
-            script=pdflatex_script_path,
-            id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
-        ).format(image="{}.png".format(targetid))
-    )
+    ).format(
+        script=pdflatex_script_path,
+        id=targetid,
+        path=path
+    ).format(image="{}.png".format(targetid))
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -234,22 +229,26 @@ async def makeluatex(
     fn = f"tex/staging/{targetid}/{targetid}.tex"
 
     with open(fn, "w") as work:
-        work.write(to_compile.format(header=header, preamble=preamble, source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
         "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
-            script=lualatex_script_path,
-            id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
-        ).format(image="{}.png".format(targetid))
-    )
+    ).format(
+        script=lualatex_script_path,
+        id=targetid,
+        path=path
+    ).format(image="{}.png".format(targetid))
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -286,22 +285,26 @@ async def makexetex(
     fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, "w") as work:
-        work.write(to_compile.format(header=header, preamble=preamble, source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
         "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
+        ).format(
             script=xelatex_script_path,
             id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
+            path=path
         ).format(image="{}.png".format(targetid))
-    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -338,22 +341,26 @@ async def make_plain_luatex(
     fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, "w") as work:
-        work.write(to_compile_plaintex.format(source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
         "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
+        ).format(
             script=luatex_script_path,
             id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
+            path=path
         ).format(image="{}.png".format(targetid))
-    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -390,22 +397,26 @@ async def make_plain_pdftex(
     fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, "w") as work:
-        work.write(to_compile_plaintex.format(source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
         "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
+        ).format(
             script=pdftex_script_path,
             id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
+            path=path
         ).format(image="{}.png".format(targetid))
-    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -442,22 +453,25 @@ async def makepythontex(
     fn = "{}/{}.tex".format(path, targetid)
 
     with open(fn, "w") as work:
-        work.write(to_compile.format(header=header, preamble=preamble, source=source))
+        work.write(
+            to_compile.format(
+                colour = colourschemes[colour] or "",
+                alwayswide = "minpagewidth=110pt" if pad else "",
+                header = header,
+                preamble = preamble,
+                source = source
+            )
+        )
         work.close()
 
     # Build compile script
     script = (
         "{script} {id} || exit;\n"
-        "cd {path}\n"
-        "{colour}\n"
-        "{pad}".format(
+        "cd {path}\n").format(
             script=pythontex_script_path,
             id=targetid,
-            path=path,
-            colour=colourschemes[colour] or "",
-            pad=pad_script if pad else "",
+            path=path
         ).format(image="{}.png".format(targetid))
-    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)

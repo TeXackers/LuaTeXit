@@ -40,7 +40,7 @@ fi
 # -quality <value>: JPEG/MIFF/PNG compression level
 # -repage <geometry>: size and location of an image canvas
 # -trim: trim image edges
-timeout 10 magick convert -density 600 -quality 100 -depth 16 -gamma 2 -fuzz 1% -trim +repage "$1.pdf" -colorspace RGB +profile "icc" PNG64:"$1.png" >> /dev/null;
+timeout 20 gs -q -r1800 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 # convert_end=$(date +%s.%N)
 # convert_time=$(echo "$convert_end - $convert_start" | bc)

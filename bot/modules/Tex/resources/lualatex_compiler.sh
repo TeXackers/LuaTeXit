@@ -19,28 +19,44 @@ then
     echo "";
 elif [ $RET -eq 124 ];
 then
-    echo "[E177] Compilation timed out!";
-    # cp "../../failed/1x7.png" "$1.png"
+    head -n 2 $1.tex > failed.tex
+    printf '%s\n' '\usepackage{fontspec}\setmainfont{DIN Condensed}' '\begin{document}' '\MakeUppercase{Недостаточно часов}' '\end{document}' >> failed.tex
+    timeout 10 \
+        lualatex -no-shell-escape \
+            -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
+            failed.tex >> /dev/null
+    cp failed.pdf "$1.pdf"
+    if [ ! -f "$1.pdf" ];
+    then
+        cp ../../failed/1x7.png "$1.png"
+        exit 1
+    fi
 else
     grep -A 6 -m 1 "^!" "$1.log";
 fi
 
+
 if [ ! -f "$1.pdf" ];
 then
-    # 172
-    # echo "\n[E172]";
-    cp "../../failed/1x2.png" "$1.png"
+    head -n 2 $1.tex > failed.tex
+    printf '%s\n' '\usepackage{fontspec}\setmainfont{DIN Condensed}' '\begin{document}' '\MakeUppercase{Compilation Failed}' '\end{document}' >> failed.tex
+    timeout 5 \
+        lualatex -no-shell-escape -no-parse-first-line \
+            -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
+            failed.tex >> /dev/null
+    timeout 5 \
+        gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pngalpha -r1800 -dDownScaleFactor=3 \
+            -sOutputFile=$1.png failed.pdf >> /dev/null
+    if [ ! -f $1.png ]; then
+        cp "../../failed/1x2.png" $1.png
+        exit 1
+    fi
     exit 1
 fi
 
 # convert_start=$(date +%s.%N)
 
-# -density <geometry>: horizontal and vertical density of the image
-# -depth <value>: image depth
-# -quality <value>: JPEG/MIFF/PNG compression level
-# -repage <geometry>: size and location of an image canvas
-# -trim: trim image edges
-timeout 30 magick convert -density 600 -quality 100 -depth 16 -gamma 2 -fuzz 1% -trim +repage "$1.pdf" -colorspace RGB +profile "icc" PNG64:"$1.png" >> /dev/null;
+timeout 10 gs -q -r1800 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 # convert_end=$(date +%s.%N)
 # convert_time=$(echo "$convert_end - $convert_start" | bc)

@@ -21,11 +21,8 @@ Commands:
 __**Utility**__
 Some of the utility features available:
 ```
-{prefix}ask -- Query the Wolfram Alpha computational engine!
-{prefix}nlab -- Search the ncatlab
-{prefix}calc -- Basic calculator
+{prefix}about -- View the current software and hardware versions 
 {prefix}time -- Display your own time or that of another user (after setting your timezone)
-{prefix}notifyme -- Tells you when a message mentions you or matches other conditions
 ```
 
 Use `{prefix}list` to see all my commands and `{prefix}help cmd` to get detailed help for `cmd`.

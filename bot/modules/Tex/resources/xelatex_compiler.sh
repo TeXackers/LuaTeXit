@@ -2,6 +2,14 @@ cd "tex/staging/$1/" || exit 1
 
 # chmod --quiet -R o+rwx .
 
+# parse discord emotes as images
+if grep -o '<a\?:[a-zA-Z0-9_]\{2,\}:[0-9]\+>' $1.tex >$1.emotes; then
+    timeout 20 \
+        wget -q -nc -t 1 -- \
+            $(sed 's/^.*:\([0-9]\+\)>$/https:\/\/cdn.discordapp.com\/emojis\/\1.png/' $1.emotes)
+    sed -i 's/<a\?:\([a-zA-Z0-9_]\{2,\}\):\([0-9]\+\)>/{\\texitemote{\1}{}{\2.png}}/g' $1.tex
+fi
+
 # compile_start=$(date +%s.%N)
 # sudo -u $(whoami) timeout 1m pdflatex $1.tex > texput.log 2>&1
 timeout 3m latexmk -xelatex -shell-escape -halt-on-error -interaction=nonstopmode "$1.tex" > texput_xetex.log #2>&1

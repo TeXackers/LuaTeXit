@@ -4,7 +4,18 @@ cd "tex/staging/$1/" || exit 1
 
 # find . ! -name "$1.tex" -type f -exec rm -f {} +
 
-timeout 1m latexmk -pdf -interaction=nonstopmode -halt-on-error "$1.tex" > texput.log #2>&1
+# parse discord emotes as images
+if grep -o '<a\?:[a-zA-Z0-9_]\{2,\}:[0-9]\+>' $1.tex >$1.emotes; then
+    timeout 20 \
+        wget -q -nc -t 1 -- \
+            $(sed 's/^.*:\([0-9]\+\)>$/https:\/\/cdn.discordapp.com\/emojis\/\1.png/' $1.emotes)
+    sed -i 's/<a\?:\([a-zA-Z0-9_]\{2,\}\):\([0-9]\+\)>/{\\texitemote{\1}{}{\2.png}}/g' $1.tex
+fi
+
+timeout --kill-after=1m 15 pdflatex \
+    -interaction=nonstopmode -halt-on-error \
+    -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
+    -no-shell-escape "$1.tex" > "$1.log" #2>&1
 
 RET=$?
 if [ $RET -eq 0 ];

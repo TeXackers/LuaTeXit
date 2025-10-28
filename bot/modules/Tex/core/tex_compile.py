@@ -71,14 +71,34 @@ fi
 """
 
 # Header for every LaTeX source file
-header: str = """\\documentclass[varwidth, margin=20pt]{standalone}
-% \\IfFileExists{eggs.sty}{\\usepackage{eggs}}{}
-\\ifpdftex\\usepackage{hwemoji}\\fi
-\\RequirePackage{mleftright}
-\\let\\AMSleft\\left
-\\let\\AMSright\\right
-\\let\\left\\mleft
-\\let\\right\\mright
+header: str = r"""
+
+\protected\def\texitemote#1#2#3{%
+    \relax\ifmmode
+        \mathchoice
+            {\texitemoteA{#1}{#2}{#3}{\texitemoteB6\textfont}{.4\texitemoteB5\textfont}}%
+            {\texitemoteA{#1}{#2}{#3}{\texitemoteB6\textfont}{.4\texitemoteB5\textfont}}%
+            {\texitemoteA{#1}{#2}{#3}{.7\texitemoteB6\scriptfont}\z@}%
+            {\texitemoteA{#1}{#2}{#3}{.7\texitemoteB6\scriptscriptfont}{.1\texitemoteB5\scriptscriptfont}}%
+    \else
+        \leavevmode
+        \texitemoteA{#1}{#2}{#3}{1em}{.4ex}%
+    \fi
+}
+\def\texitemoteA#1#2#3#4#5{%
+    \IfFileExists{#3}{%
+        \lower#5\hbox{%
+            \pdfximage width#4 #2{#3}%
+            \pdfrefximage\pdflastximage
+        }%
+    }{%
+        \lower#5\hbox to#4{\vrule \vbox to#4{\hsize=\dimexpr#4-.8\p@
+            \hrule \vfil \centering \texit@debugfontbold #1\vfil \hrule
+        }\vrule}%
+    }%
+}
+\def\texitemoteB#1#2{\fontdimen#1#2\ifnum\fam=\m@ne \@ne\else \fam\fi}
+\def\texitemotepasted{2025-10-28}
 """
 
 # The format of the source to compile

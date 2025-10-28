@@ -11,4 +11,5 @@ from .Plugins import *
 
 # from .Starboard import *
 from .Tex import *
+from .Typst import *
 from .User_Utils import *

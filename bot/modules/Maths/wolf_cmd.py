@@ -355,7 +355,7 @@ async def cmd_query(ctx, flags):
                 "Wolfram Alpha doesn't understand your query!\n"
                 "Perhaps try rephrasing your question?"
             )
-        embed = discord.Embed(description=desc)
+        embed = discord.Embed(description=desc, colour=discord.Colour.dark_red())
         embed.set_footer(
             icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
         )
@@ -366,7 +366,7 @@ async def cmd_query(ctx, flags):
 
     if flags["text"]:
         fields = await pods_to_textdata(result["queryresult"]["pods"])
-        embed = discord.Embed(description="")
+        embed = discord.Embed(description="", colour=discord.Colour.dark_red())
         embed.set_footer(
             icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
         )
@@ -382,7 +382,7 @@ async def cmd_query(ctx, flags):
     data = (await pods_to_filedata(important))[0]
     output_data = [data]
 
-    embed = discord.Embed(description="")
+    embed = discord.Embed(description="", colour=discord.Colour.dark_red())
     embed.set_author(
         name="Results provided by WolframAlpha",
         icon_url=WOLF_SMALL_ICON,

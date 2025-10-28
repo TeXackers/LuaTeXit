@@ -4,7 +4,7 @@ cd "tex/staging/$1/" || exit 1
 
 # find . ! -name "$1.tex" -type f -exec rm -f {} +
 
-timeout 1m luatex -file-line-error -halt-on-error "$1.tex" > plaintex.log #2>&1
+timeout 1m luatex --file-line-error "$1.tex" > plaintex.log #2>&1
 
 RET=$?
 if [ $RET -eq 0 ];
@@ -28,11 +28,7 @@ then
   dvipdfmx "$1.dvi" > /dev/null
 fi
 
-# -density <geometry>: horizontal and vertical density of the image
-# -depth <value>: image depth
-# -quality <value>: JPEG/MIFF/PNG compression level
-# -repage <geometry>: size and location of an image canvas
-# -trim: trim image edges
+
 timeout 10 magick convert -density 600 -quality 90 -depth 8 -gamma 2 -fuzz 1% -trim +repage "$1.pdf" -colorspace RGB +profile "icc" PNG64:"$1.png" >> /dev/null;
 
 if [ $? -eq 124 ];

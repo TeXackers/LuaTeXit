@@ -1076,14 +1076,14 @@ class LatexContext:
                 case ParseMode.GATHER:
                     source = "\n".join(
                         [
-                            "\\begin{{gather*}}\n{}\n\\end{{gather*}}".format(block)
+                            "$\\begin{{gathered}}\n{}\n\\end{{gathered}}$".format(block)
                             for block in blocks
                         ]
                     )
                 case ParseMode.ALIGN:
                     source = "\n".join(
                         [
-                            "\\begin{{align*}}\n{}\n\\end{{align*}}".format(block)
+                            "$\\begin{{aligned}}\n{}\n\\end{{aligned}}$".format(block)
                             for block in blocks
                         ]
                     )

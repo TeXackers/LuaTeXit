@@ -274,10 +274,12 @@ class LatexContext:
 
     async def make(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using PDFLaTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -367,8 +369,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -391,10 +395,12 @@ class LatexContext:
 
     async def luatexmake(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using LuaLaTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -484,8 +490,11 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True,
+                    silent = True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -508,10 +517,12 @@ class LatexContext:
 
     async def xetexmake(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using XeLaTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+        
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -601,8 +612,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -626,10 +639,12 @@ class LatexContext:
 
     async def plain_luatex_make(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using Plain LuaTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+        
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -719,8 +734,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -745,10 +762,12 @@ class LatexContext:
 
     async def plain_pdftex_make(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using Plain PDFTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+        
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -838,8 +857,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -864,10 +885,12 @@ class LatexContext:
 
     async def pythontexmake(self):
         """
-        Make the latex message, handling ratelimits, compilation, and output.
+        Make the latex message, handling ratelimits, compilation using LuaLaTeX and PythonTEX, and output.
         """
         ctx = self.ctx
         luser = self.luser
+
+        await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:
@@ -957,8 +980,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file
+                self._output_message = await self._source_message.reply(
+                    content=self._header_collapsed,
+                    file=output_file,
+                    mention_author=True
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)

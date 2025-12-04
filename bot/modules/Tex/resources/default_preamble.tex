@@ -1,21 +1,12 @@
-\usepackage{iftex}
-\usepackage{xcolor}
-\usepackage{tikz}
-\usepackage{mathtools}
-\usepackage{siunitx}
-\usepackage{diffcoeff}
-\usepackage{esvect}
-\usepackage{array, booktabs, nicematrix}
-\usepackage{lipsum}
-
 % Engine-specific loadings
-\ifpdftex
+\iftutex
+	\usepackage{fontspec}
+	\setmainfont{CMU Serif}
+	\usepackage{unicode-math}
+\else
+	\setmathfont{New Computer Modern Math}
 	\usepackage[T1]{fontenc}
 	\usepackage{amssymb, amsthm}
 	\usepackage[cal=cm, scr=rsfs, frak=euler, bb=ams]{mathalpha}
 	\usepackage{lmodern}
-\else
-	\usepackage{fontspec}
-	\setmainfont{CMU Serif}
-	\usepackage{unicode-math}
 \fi

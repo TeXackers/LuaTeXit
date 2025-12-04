@@ -27,7 +27,7 @@ async def cmd_texas(ctx, flags):
         {prefix}pdfas -u <userid> <code>
 
     Description:
-        Similar to the `tex` command, but uses another user's LaTeX configuration, including their preamble.
+        Similar to the `tex` command, but uses another user's LaTeX configuration, including their preamble. Default compilation method is LuaLaTeX.
     Examples``:
         {prefix}texas -u 1421147725335891981 \\luatexbanner
     """

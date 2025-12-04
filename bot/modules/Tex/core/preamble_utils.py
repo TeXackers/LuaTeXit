@@ -15,7 +15,7 @@ from ..resources import default_preamble, failed_image_path
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
 preamble_test_code = r"""
-$98\%$ of $\mathbb{PEOPLE}$ can't solve \textbf{this} {\Huge 😂😂}
+$98\%$ of $\mathbb{PEOPLE}$ can't solve \textbf{this}
 
 \pdftexbanner
 """

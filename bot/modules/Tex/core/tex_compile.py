@@ -29,7 +29,7 @@ def gencolour(bgcolour: str, textcolour: str) -> str:
     """
     Build the colour definition commands for the provided colourscheme
     """
-    return rf"bgcolor={bgcolour}, textcolor={textcolour}"
+    return rf"pagecolor={bgcolour}, textcolor={textcolour}"
 
 
 # Dictionary of valid colours and the associated transformation commands
@@ -51,9 +51,7 @@ colourschemes: dict = {
 colourschemes.update(
     {
         "grey": colourschemes["ash"], # ash
-        # "gray": colourschemes["ash"], # ash
         "darkgrey": colourschemes["dark"], # dark
-        # "darkgray": colourschemes["dark"], # dark
         "black": colourschemes["onyx"], # onyx
     }
 )
@@ -100,46 +98,46 @@ to_compile: str = """\\documentclass[12pt, singlepage, {colour}, {alwayswide}]{{
 """
 
 
-to_compile_plaintex: str = """
-\\catcode`\\@=11
+to_compile_plaintex: str = r"""
+\catcode`\@=11
 
-\\voffset=-1in
-\\hoffset=-1in
+\voffset=-1in
+\hoffset=-1in
 
-\\hsize=300pt
-\\parindent=\\z@
+\hsize=300pt
+\parindent=\z@
 
-\\newdimen\\pagemargin \\pagemargin=10pt
-\\newdimen\\textwidth \\textwidth=\\hsize
-\\newdimen\\textheight \\textheight=\\vsize
-\\let\\pdfpagewidth\\textwidth
-\\let\\pageheight\\textheight
-\\let\\pdfpageheight\\textheight
-\\let\\pagewidth\\textwidth
-\\newskip\\smallskipamount \\smallskipamount=3.0pt plus 1.0pt minus 1.0pt
-\\newskip\\medskipamount \\medskipamount=6.0pt plus 2.0pt minus 2.0pt
-\\newskip\\bigskipamount \\bigskipamount=12.0pt plus 4.0pt minus 4.0pt
+\newdimen\pagemargin \pagemargin=10pt
+\newdimen\textwidth \textwidth=\hsize
+\newdimen\textheight \textheight=\vsize
+\let\pdfpagewidth\textwidth
+\let\pageheight\textheight
+\let\pdfpageheight\textheight
+\let\pagewidth\textwidth
+\newskip\smallskipamount \smallskipamount=3.0pt plus 1.0pt minus 1.0pt
+\newskip\medskipamount \medskipamount=6.0pt plus 2.0pt minus 2.0pt
+\newskip\bigskipamount \bigskipamount=12.0pt plus 4.0pt minus 4.0pt
 
-\\output={{\\texitoutput}}
-\\def\\texitoutput{{%
-    \\setbox\\z@\\vbox{{%
-        \\kern\\pagemargin
-        \\hbox{{\\kern\\pagemargin \\pagebody \\kern\\pagemargin}}
-        \\kern\\pagemargin
+\output={{\texitoutput}}
+\def\texitoutput{{%
+    \setbox\z@\vbox{{%
+        \kern\pagemargin
+        \hbox{{\kern\pagemargin \pagebody \kern\pagemargin}}
+        \kern\pagemargin
     }}
-    \\pageheight\\ht\\z@
-    \\pagewidth\\wd\\z@
-    \\shipout\\box\\z@
+    \pageheight\ht\z@
+    \pagewidth\wd\z@
+    \shipout\box\z@
 }}
-\\def\\pagebody{{\\vbox{{%
-    \\unvbox\\@cclv \\unskip
-    \\setbox\\z@=\\lastbox
-    \\nointerlineskip \\hbox{{\\unhbox\\z@ \\/}}%
+\def\pagebody{{\vbox{{%
+    \unvbox\@cclv \unskip
+    \setbox\z@=\lastbox
+    \nointerlineskip \hbox{{\unhbox\z@ \/}}%
 }}}}
 
-\\catcode`\\@=12
+\catcode`\@=12
 {source}
-\\bye"""
+\bye"""
 
 
 @Context.util
@@ -342,11 +340,11 @@ async def make_plain_luatex(
 
     with open(fn, "w") as work:
         work.write(
-            to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
+            to_compile_plaintex.format(
+                # colour = colourschemes[colour] or "",
+                # alwayswide = "minpagewidth=110pt" if pad else "",
+                # header = header,
+                # preamble = preamble,
                 source = source
             )
         )
@@ -398,11 +396,11 @@ async def make_plain_pdftex(
 
     with open(fn, "w") as work:
         work.write(
-            to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
+            to_compile_plaintex.format(
+                # colour = colourschemes[colour] or "",
+                # alwayswide = "minpagewidth=110pt" if pad else "",
+                # header = header,
+                # preamble = preamble,
                 source = source
             )
         )

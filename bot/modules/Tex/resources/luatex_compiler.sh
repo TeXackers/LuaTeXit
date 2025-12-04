@@ -29,7 +29,7 @@ then
 fi
 
 
-timeout 10 magick convert -density 600 -quality 90 -depth 8 -gamma 2 -fuzz 1% -trim +repage "$1.pdf" -colorspace RGB +profile "icc" PNG64:"$1.png" >> /dev/null;
+timeout 10 gs -q -r1800 -sDEVICE=png16m -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 if [ $? -eq 124 ];
 then

@@ -41,7 +41,7 @@ then
     head -n 2 $1.tex > failed.tex
     printf '%s\n' '\usepackage{fontspec}\setmainfont{DIN Condensed}' '\begin{document}' '\MakeUppercase{Compilation Failed}' '\end{document}' >> failed.tex
     timeout 5 \
-        lualatex -no-shell-escape -no-parse-first-line \
+        lualatex -no-shell-escape \
             -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
             failed.tex >> /dev/null
     timeout 5 \

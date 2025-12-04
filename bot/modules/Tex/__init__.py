@@ -8,5 +8,6 @@ from . import (
     preamble_cmd,
     guildpreamble_cmd,
     preambleadmin_cmds,
+    tex_superset,
     latexutil_cmds, # loaded last
 )

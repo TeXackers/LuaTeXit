@@ -110,6 +110,7 @@ class LatexContext:
         "_source_deletion_task",
         "_lifetime_task",
         "_last_reaction",
+        "_mask_id",
     )
 
     # Compiled regex for the `$` latex content checker
@@ -135,12 +136,13 @@ class LatexContext:
     emoji_delete_source = None
 
     def __init__(
-        self, ctx: Context, source, lguild=None, luser=None, wide=None, spoiler=False
+        self, ctx: Context, source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs
     ):
         self.ctx = ctx
         self.source = source
         self.lguild = lguild or LatexGuild.get(ctx.guild.id if ctx.guild else 0)
         self.luser = luser or LatexUser.get(ctx.author.id)
+        self._mask_id: str | None = kwargs.get("mask_id", None)
 
         # One-time forced compile flags
         self._force_wide = wide
@@ -183,23 +185,32 @@ class LatexContext:
         return self.luser.keepsourcefor
 
     def get_header_name(self):
-        if self.luser.namestyle == TexNameStyle.HIDDEN:
-            name = ""
-        elif self.luser.namestyle == TexNameStyle.MENTION:
-            name = "<@{}>\n".format(self.luser.id)
-        else:
-            if self.luser.namestyle == TexNameStyle.DISPLAYNAME:
+        match self.luser.namestyle:
+            case TexNameStyle.HIDDEN:
+                name = ""
+            case TexNameStyle.MENTION:
+                name = "<@{}>".format(self.luser.id)
+            case TexNameStyle.DISPLAYNAME:
                 raw_name = self.ctx.author.display_name
-            elif self.luser.namestyle == TexNameStyle.USERNAME:
+                name = "-# {}".format(
+                    discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))
+                )
+            case TexNameStyle.USERNAME:
                 raw_name = self.ctx.author.name
-            else:
+                name = "-# {}".format(
+                    discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))
+                )
+            case TexNameStyle.RUNNINGAS:
+                target_name: str = self._mask_id
+                sender_name: str = str(self.ctx.author.id)
+                name = "-# <@{}> running as <@{}>".format(
+                    discord.utils.escape_mentions(discord.utils.escape_markdown(sender_name)),
+                    discord.utils.escape_mentions(discord.utils.escape_markdown(target_name))
+                )
+            case _:
                 raise ValueError(
                     "Unknown LatexUser namestyle `{}`.".format(self.luser.namestyle)
                 )
-
-            name = "**{}**\n".format(
-                discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))
-            )
         return name
 
     def get_header(self):
@@ -337,17 +348,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -369,10 +380,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -458,17 +469,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -490,11 +501,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True,
-                    silent = True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -580,17 +590,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -612,10 +622,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -702,17 +712,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -734,10 +744,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -825,17 +835,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -857,10 +867,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -948,17 +958,17 @@ class LatexContext:
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}{}Compilation error:```{}```".format(
+                self._header_shown = "{}\n{}Compilation error:```{}```".format(
                     self._header_name, source_message, error
                 )
                 self._header_collapsed = (
-                    "{}Compile Error! "
-                    "Click the {} reaction for more information.\n"
-                    "(You may edit your message to recompile.)"
+                    "{}\n## Compile Error!\n"
+                    "Click the {} reaction to view the error message.\n"
+                    "-# (You may also edit your message to recompile.)"
                 ).format(self._header_name, self._show_emoji)
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}{}".format(self._header_name, source_message)
+                self._header_shown = "{}\n{}".format(self._header_name, source_message)
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
@@ -980,10 +990,10 @@ class LatexContext:
 
             # Finally, send the output and start the reaction handler
             try:
-                self._output_message = await self._source_message.reply(
+                self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    mention_author=True
+                    allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)

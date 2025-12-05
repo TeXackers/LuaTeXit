@@ -73,21 +73,26 @@ async def cmd_texas(ctx, flags):
     
     if not source:
         return await ctx.error_reply("Codeblock is there, but you ought to specify `tex` or `latex` as the language.")
+
+    # Since luser is the "as" user, force namestyle 4 (reaction-based)
+    # Also pass the ID of the real user as mask_id
+    luser.namestyle = 4
+    target_id = str(flags["u"])
     
     match ctx.alias.lower():
         case "luaas" | "luatexas" | "lualatexas":
-            lctx = LatexContext(ctx, source, lguild, luser)
+            lctx = LatexContext(ctx, source, lguild, luser, mask_id=target_id)
             await lctx.luatexmake()
             await lctx.lifetime()
         case "pdfas" | "pdftexas" | "pdflatexas":
-            lctx = LatexContext(ctx, source, lguild, luser)
+            lctx = LatexContext(ctx, source, lguild, luser, mask_id=target_id)
             await lctx.make()
             await lctx.lifetime()
         case "xetexas" | "xelatexas":
-            lctx = LatexContext(ctx, source, lguild, luser)
+            lctx = LatexContext(ctx, source, lguild, luser, mask_id=target_id)
             await lctx.xetexmake()
             await lctx.lifetime()
         case _:
-            lctx = LatexContext(ctx, source, lguild, luser)
+            lctx = LatexContext(ctx, source, lguild, luser, mask_id=target_id)
             await lctx.luatexmake()
             await lctx.lifetime()

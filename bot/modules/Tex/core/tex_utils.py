@@ -7,6 +7,7 @@ class TexNameStyle(IntEnum):
     DISPLAYNAME = 2
     NICKNAME = 2
     MENTION = 3
+    RUNNINGAS = 4
 
 
 class AutoTexLevel(IntEnum):

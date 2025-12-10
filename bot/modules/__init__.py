@@ -5,7 +5,7 @@ from .Guild_Logging import *
 from .Guild_Moderation import *
 from .Info import *
 
-# from .Maths import *
+from .Maths import *
 from .Meta import *
 from .Plugins import *
 

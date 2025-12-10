@@ -15,7 +15,7 @@ from .resources import font_path
 # Provides Wolf
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
-WOLFRAM_ID = ""
+WOLFRAM_ID = "2V9KQY-EYEH57A2RY"
 WEB = "https://www.wolframalpha.com/"
 # WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
 WOLF_ICON = (
@@ -23,12 +23,17 @@ WOLF_ICON = (
 )
 WOLF_SMALL_ICON = "https://media.discordapp.net/attachments/670154440413675540/703864724122632253/a.png"
 
+DEFAULT_SEMATIC_LOCATION: str = parse.quote_plus("Melbourne, Australia")
+DEFAULT_LONGLAT: str = "-37.840935,144.946457"
+DEFAULT_IP_ADDR: str = "127.0.0.1"
+DEFAULT_MAG_SIZE: float = 1.5
+
 # truetype/liberation2/LiberationSans-Bold.ttf
 # FONT = ImageFont.truetype(font_path, 15, encoding="unic")
-FONT = ImageFont.truetype(font_path, 15)
+FONT = ImageFont.truetype(font_path, int(14 * DEFAULT_MAG_SIZE))
 
 
-def build_web_url(query):
+def build_web_url(query: str) -> str:
     """
     Returns the url for Wolfram Alpha search for this query.
     """
@@ -36,7 +41,7 @@ def build_web_url(query):
     return "{}input/?i={}".format(WEB, parse.quote_plus(query, safe=""))
 
 
-async def get_query(query, appid, **kwargs):
+async def get_query(query: str, appid: str, **kwargs) -> dict | None:
     """
     Fetches the provided query from the Wolfram Alpha computation engine.
     Has a set of default arguments for the query.
@@ -49,24 +54,9 @@ async def get_query(query, appid, **kwargs):
     Returns:
         Dictionary containing results or None if an http error occured.
     """
-    # Default params
-    payload = {
-        "input": parse.quote(query),
-        "appid": appid,
-        "format": "image,plaintext",
-        "reinterpret": "true",
-        "units": "metric",
-        "output": "json",
-    }
-
-    # Allow kwargs to overwrite and add to the default params
-    # payload.update(kwargs)
-    # print(payload)
 
     # build the full url
-    query_url = "{}appid={}&input={}&output={}&units={}&mag={}&plotwidth={}".format(
-        ENDPOINT, appid, parse.quote_plus(query), "json", "metric", 1.5, 400
-    )
+    query_url: str = f"{ENDPOINT}appid={appid}&input={parse.quote_plus(query)}&output=json&units=metric&mag={str(DEFAULT_MAG_SIZE)}&width={str(780 / DEFAULT_MAG_SIZE)}&maxwidth=780&plotwidth=780&location={DEFAULT_SEMATIC_LOCATION}&longlat={DEFAULT_LONGLAT}&ip={DEFAULT_IP_ADDR}"
 
     # Get the query response
     async with aiohttp.ClientSession() as session:
@@ -81,7 +71,7 @@ async def get_query(query, appid, **kwargs):
                 return None
 
 
-async def assemble_pod_image(atoms, dimensions):
+async def assemble_pod_image(atoms: list[dict], dimensions: tuple[int, int]) -> Image.Image:
     """
     Draws the given atoms onto a canvas of the given dimensions.
     Arguments:
@@ -94,8 +84,8 @@ async def assemble_pod_image(atoms, dimensions):
         An image of the given dimensions with the given atoms drawn on.
     """
     # Make the canvas
-    im = Image.new("RGB", dimensions, color=(255, 255, 255))
-    draw = ImageDraw.Draw(im)
+    im: Image.Image = Image.new("RGB", dimensions, color=(255, 255, 255))
+    draw: ImageDraw.ImageDraw = ImageDraw.Draw(im)
 
     # Iterate through the atoms and paste or write each one on as appropriate
     for atom in atoms:
@@ -106,7 +96,7 @@ async def assemble_pod_image(atoms, dimensions):
     return im
 
 
-async def glue_pods(flat_pods):
+async def glue_pods(flat_pods: list[tuple[str | None, Image.Image | None, int]]) -> list[Image.Image]:
     """
     Turns a complete list of flattened pods into a list of images, split appropriately.
     Arguments:
@@ -114,21 +104,21 @@ async def glue_pods(flat_pods):
     Returns:
         A list of PIL images containing the given pods glued and split as required.
     """
-    indent_width = 10
-    image_border = 5
-    margin = 5
+    indent_width = 8
+    image_border = 4
+    margin = 4
 
-    split_height = 300
+    split_height = 482
 
     splits = []
     atoms = []
     y_coord = 5
-    max_width = 380
+    max_width = 780
 
     for pod in flat_pods:
         if y_coord > split_height:
             splits.append((atoms, (max_width, y_coord)))
-            max_width = 380
+            max_width = 780
             y_coord = 5
             atoms = []
 
@@ -155,7 +145,7 @@ async def glue_pods(flat_pods):
     return split_images
 
 
-async def flatten_pods(pod_data, level=0, text=False, text_field="plaintext"):
+async def flatten_pods(pod_data: list[dict], level: int = 0, text: bool = False, text_field: str = "plaintext") -> list[tuple[str | None, Image.Image | None, int]]:
     """
     Takes the list of pods formatted as in wolf ouptut.
     Returns a list of flattened pods as accepted by glue_pods.
@@ -211,7 +201,7 @@ async def pods_to_filedata(pod_data):
 
 async def pods_to_textdata(pod_data):
     flat_pods = await flatten_pods(pod_data, text=True)
-    tabchar = "​ "
+    tabchar = "​"
     tab = tabchar * 2
 
     fields = []
@@ -254,7 +244,7 @@ def triage_pods(pod_list):
     "query",
     desc="Query the [Wolfram Alpha computation engine]({}).".format(WEB),
     flags=["text"],
-    aliases=["ask", "wolf", "w", "?w"],
+    aliases=["ask", "wolf", "wa", "?w"],
 )
 async def cmd_query(ctx, flags):
     """
@@ -285,9 +275,10 @@ async def cmd_query(ctx, flags):
         )
 
     # Send the temporary loading message.
-    temp_msg = await ctx.reply(
-        "Sending query to Wolfram Alpha, please wait. {}".format(loading_emoji)
-    )
+    # temp_msg = await ctx.reply(
+    #     "Sending query to Wolfram Alpha, please wait. {}".format(loading_emoji)
+    # )
+    temp_msg = await ctx.ch.typing()
 
     appid = ctx.get_guild_setting.wolfram_id.value if ctx.guild else None
     if appid:
@@ -355,22 +346,29 @@ async def cmd_query(ctx, flags):
                 "Wolfram Alpha doesn't understand your query!\n"
                 "Perhaps try rephrasing your question?"
             )
-        embed = discord.Embed(description=desc, colour=discord.Colour.dark_red())
+        embed = discord.Embed(description=desc, colour=discord.Colour.from_str("#DD1100"))
         embed.set_footer(
-            icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
+            icon_url=ctx.author.avatar.url, text="{}".format(ctx.author)
         )
-        embed.set_thumbnail(url=WOLF_ICON)
         await ctx.safe_delete_msgs(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
     if flags["text"]:
         fields = await pods_to_textdata(result["queryresult"]["pods"])
-        embed = discord.Embed(description="", colour=discord.Colour.dark_red())
+
+        # might be good to wrap the results in codeblock to avoid funny rendering
+        for i in range(len(fields)):
+            fields[i] = (
+                fields[i][0],
+                "```mathematica\n{}\n```".format(fields[i][1]),
+                fields[i][2],
+            )
+        
+        embed = discord.Embed(description="", colour=discord.Colour.from_str("#DD1100"))
         embed.set_footer(
-            icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
+            icon_url=ctx.author.avatar.url, text="{}".format(ctx.author)
         )
-        embed.set_thumbnail(url=WOLF_ICON)
         emb_add_fields(embed, fields)
         await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
@@ -391,7 +389,7 @@ async def cmd_query(ctx, flags):
     embed.set_footer(
         icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
     )
-    embed.set_thumbnail(url=WOLF_ICON)
+    # embed.set_thumbnail(url=WOLF_ICON)
     embed.set_image(url="attachment://wolf.png")
     # embed.set_image(url="https://content.wolfram.com/uploads/sites/10/2016/12/WolframAlphaLogo_Web_sanstagline-med.jpg")
 
@@ -438,12 +436,14 @@ async def cmd_query(ctx, flags):
             except discord.NotFound:
                 pass
 
-            out_msgs = []
+            # prepare ctx.args (they might contain newlines etc) for markdown
+            ctx.args = discord.utils.escape_markdown(ctx.args).replace("\n", " ")
+            out_msgs = [await ctx.reply(content=f"\n-# {ctx.author} queried [{ctx.args}](<{WEB}/input?i={parse.quote_plus(ctx.args)}>)")]
             for file_data in output_data[:-1]:
                 dfile = discord.File(file_data, filename="wolf.png")
                 out_msgs.append(await ctx.reply(file=dfile))
             dfile = discord.File(output_data[-1], filename="wolf.png")
-            out_msgs.append(await ctx.reply(file=dfile, embed=embed))
+            out_msgs.append(await ctx.reply(file=dfile))
             out_msg = out_msgs[-1]
             asyncio.ensure_future(ctx.offer_delete(out_msg, *out_msgs))
 

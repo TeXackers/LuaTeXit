@@ -52,7 +52,7 @@ async def cmd_feedback(ctx: Context):
         description=response,
     )
     embed.set_author(
-        name="{} ({})".format(ctx.author, ctx.author.id), icon_url=ctx.author.avatar_url
+        name="{} ({})".format(ctx.author, ctx.author.id), icon_url=ctx.author.avatar.url
     )
     embed.set_footer(
         text=datetime.datetime.now(datetime.UTC).strftime(
@@ -74,7 +74,8 @@ async def cmd_feedback(ctx: Context):
     await ctx.mail(feedback_chid, embed=embed)
     await ctx.reply(
         "Thank you! Your feedback has been sent.\n"
-        "Consider joining our support guild below to discuss your feedback "
-        "with the developers and stay updated on the latest changes!\n"
-        "{}".format(ctx.client.app_info["support_guild"])
+        "-# LuaTeXit maintainer"
+        # "Consider joining our support guild below to discuss your feedback "
+        # "with the developers and stay updated on the latest changes!\n"
+        # "{}".format(ctx.client.app_info["support_guild"])
     )

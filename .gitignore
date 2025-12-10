@@ -2,6 +2,7 @@
 *.db
 data/**
 logs/**
+scripts/**
 **/__pycache__
 cmdClient
 
@@ -33,7 +34,7 @@ tex/staging/**
 notes/*
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+__pycache__/**
 *.py[cod]
 *$py.class
 

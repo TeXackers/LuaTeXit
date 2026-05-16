@@ -133,7 +133,9 @@ async def tex_pagination_diff(
     if text_old is None:
         # if text_old is None, that means it's the default preamble
         # default preamble is in paradox/bot/modules/Tex/resources/default_preamble.tex
-        default_preamble: str = os.path.join("bot", "modules", "Tex", "resources", "default_preamble.tex")
+        default_preamble: str = os.path.join(
+            "bot", "modules", "Tex", "resources", "default_preamble.tex"
+        )
         with open(default_preamble, "r") as f:
             text_old = f.read()
 
@@ -532,9 +534,11 @@ async def approve_submission(ctx, userid, manager, reason=None):
 
     # Ask for confirmation and potential new message
     # Create default approval message
-    default_msg = "Your recent request for a LaTeX preamble submission has been approved!\
+    default_msg = (
+        "Your recent request for a LaTeX preamble submission has been approved!\
         \nYour preamble has been modified and may be seen using the `preamble` command.\
         \nShould you wish to revert these changes, please use `preamble --revert`."
+    )
     embed = discord.Embed(title="Preamble request approval", description=default_msg)
     embed.timestamp = datetime.datetime.now(datetime.UTC)
 

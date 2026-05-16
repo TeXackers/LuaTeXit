@@ -166,7 +166,7 @@ async def multi_mod_action(
         strings["start"],
         strings=strings,
         reason=reason,
-        **kwargs
+        **kwargs,
     )
     if len(users) == 0:
         return

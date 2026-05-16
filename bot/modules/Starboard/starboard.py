@@ -209,10 +209,7 @@ class starboard_roles(ListData, RoleList, GuildSetting):
     name = "star_roles"
     desc = "The roles allowed to star a message."
 
-    long_desc = (
-        "A message must have at least one reaction from a member "
-        "with one of these roles to appear on the starboard."
-    )
+    long_desc = "A message must have at least one reaction from a member with one of these roles to appear on the starboard."
 
     _table_interface_name = "guild_starboard_roles"
     _data_column = "roleid"
@@ -279,9 +276,16 @@ async def starboard_listener(client, payload):
         # If there are star roles, check them now
         # Probably add these to the cache?
         if not unstar:
+            # Disregard stars if message is from the bot and in starboard channel
+            if message.channel == starboard and message.author.id == client.user.id:
+                return
             roles = client.guild_config.star_roles.get(client, payload.guild_id).value
             if roles:
-                users = await reaction.users().flatten()
+                # Request chunking so that reaction user roles can be fetched
+                if not message.guild.chunked:
+                    await chunk_guild(client, message.guild)
+
+                users = [user async for user in reaction.users()]
                 if not any(any(role in user.roles for role in roles) for user in users):
                     # None of the reacting users have a star role
                     unstar = True
@@ -313,16 +317,66 @@ async def starboard_listener(client, payload):
             timestamp=message.created_at,
         )
         embed.set_author(
-            name=message.author.display_name, icon_url=message.author.avatar_url
+            name=message.author.display_name, icon_url=message.author.display_avatar
         )
         embed.add_field(
             name="Message link",
             value="[Click to jump to message]({})".format(message.jump_url),
         )
-        if message.embeds and message.embeds[0].url:
-            embed.set_image(url=message.embeds[0].url)
-        elif message.attachments and message.attachments[0].height:
-            embed.set_image(url=message.attachments[0].proxy_url)
+
+        # Check whether the link is marked as a spoiler
+        def link_spoiler(text, link):
+            regex = r"\|\|(.+?)\|\|"
+            spoiler_list = re.findall(regex, text)
+            for spoiler in spoiler_list:
+                if link in spoiler:
+                    return True
+            return False
+
+        # If the starred embed has an image, embed it while respecting spoilers
+        if message.embeds:
+            data = message.embeds[0]
+
+            if data.type == "image" and not link_spoiler(message.content, data.url):
+                embed.set_image(url=data.url)
+
+            elif data.type == "image" and link_spoiler(message.content, data.url):
+                embed.add_field(
+                    name="Attachment",
+                    value=f"||[Image (spoiler)]({data.url})||",
+                    inline=False,
+                )
+
+            else:
+                pass
+
+        # If the message has an attachment and it can be displayed, embed it while respecting spoilers
+        elif message.attachments:
+            data = message.attachments[0]
+            filename = data.filename
+            spoiler = data.is_spoiler()
+
+            # Split junk from attachment URL
+            data_url = data.url.split("?")[0]
+
+            if not spoiler and data_url.lower().endswith(
+                ("png", "jpeg", "jpg", "gif", "webp")
+            ):
+                embed.set_image(url=data_url)
+
+            # Link the file if it has a spoiler as images can't be marked as spoilers in embeds
+            elif spoiler:
+                embed.add_field(
+                    name="Attachment",
+                    value=f"||[{discord.utils.escape_markdown(filename)}]({data.url})||",
+                    inline=False,
+                )
+
+            # Link any file that isn't an image
+            else:
+                embed.add_field(
+                    name="Attachment", value=f"[{filename}]({data.url})", inline=False
+                )
 
         # Send or update the starboard message
         sent = False

@@ -135,7 +135,7 @@ class ModAction:
                     self=self,
                     target=target,
                     state=self.state_response_map[result],
-                    **kwargs
+                    **kwargs,
                 )
             await self.ctx.reply(embed=discord.Embed(description=description))
         else:

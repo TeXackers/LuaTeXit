@@ -8,7 +8,25 @@ from .module import latex_module as module
 @module.cmd(
     "tex",
     desc="Render LaTeX code.",
-    aliases=["pdftex", "pdf", "tikz", "lua", "luatex", "lualatex", "xelatex", "xetex", "plainpdf", "plainlua", "gather", "align", "texsp", "texw", "mtex", "pytex", "python"],
+    aliases=[
+        "pdftex",
+        "pdf",
+        "tikz",
+        "lua",
+        "luatex",
+        "lualatex",
+        "xelatex",
+        "xetex",
+        "plainpdf",
+        "plainlua",
+        "gather",
+        "align",
+        "texsp",
+        "texw",
+        "mtex",
+        "pytex",
+        "python",
+    ],
     flags=[
         "config",
         "keepsourcefor",
@@ -126,7 +144,7 @@ async def cmd_tex(ctx, flags):
             flags["wide"] = True
         case _:
             pass
-    
+
     # alwaysmath
     if luser.alwaysmath and parse_mode == ParseMode.DOCUMENT:
         parse_mode = ParseMode.GATHER
@@ -163,7 +181,7 @@ async def cmd_tex(ctx, flags):
             await lctx.xetexmake()
             await lctx.lifetime()
 
-        case "plainlua" :
+        case "plainlua":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.plain_luatex_make()
             await lctx.lifetime()

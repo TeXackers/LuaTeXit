@@ -86,9 +86,7 @@ class TimedMuteGroup:
 
         # Build the groups
         group_counter = 0
-        cleanup = (
-            []
-        )  # List of ticketids that are "stale" (e.g. non-existent guild or role), and should be removed
+        cleanup = []  # List of ticketids that are "stale" (e.g. non-existent guild or role), and should be removed
         for ticket in tickets:
             guild = client.get_guild(ticket.guildid)
             if guild is not None:
@@ -200,7 +198,8 @@ class TimedMuteGroup:
         try:
             # Sleep for the required time
             await asyncio.sleep(
-                self.ticket.unmute_timestamp - datetime.datetime.now(datetime.UTC).timestamp()
+                self.ticket.unmute_timestamp
+                - datetime.datetime.now(datetime.UTC).timestamp()
             )
 
             # Execute the unmutes

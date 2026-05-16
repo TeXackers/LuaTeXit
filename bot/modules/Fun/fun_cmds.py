@@ -85,7 +85,9 @@ async def cmd_discrim(ctx: Context):
         paginate_list(
             user_strs,
             title="{} user{} found".format(
-                len(user_strs), "s" if len(user_strs) > 1 else "", ),
+                len(user_strs),
+                "s" if len(user_strs) > 1 else "",
+            ),
         )
     )
 

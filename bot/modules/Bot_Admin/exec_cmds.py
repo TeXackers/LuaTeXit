@@ -122,9 +122,7 @@ async def cmd_shell(ctx):
         "**Command:**\
                     \n```sh\n{}\n```\
                     \n**Output:** \
-                    \n```\n{}\n```".format(
-            ctx.arg_str, output
-        )
+                    \n```\n{}\n```".format(ctx.arg_str, output)
     )
 
 

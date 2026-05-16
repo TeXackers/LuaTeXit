@@ -1,6 +1,4 @@
-import discord
 from cmdClient import Context
-from utils.lib import paginate_list
 import random
 import asyncio
 
@@ -43,7 +41,15 @@ BALL: list[str] = [
 
 EMOJI: list[str] = ["🎱", "✨", "🔮", "🛐"]
 
-DIESHAPES: dict[int, str] = {4: "🔺", 6: "🎲", 8: "🔷", 10: "🔶", 12: "🌟", 20: "🔯", 100: "🌕"}
+DIESHAPES: dict[int, str] = {
+    4: "🔺",
+    6: "🎲",
+    8: "🔷",
+    10: "🔶",
+    12: "🌟",
+    20: "🔯",
+    100: "🌕",
+}
 
 
 def parse_die(die: str) -> tuple[int, int]:
@@ -51,7 +57,9 @@ def parse_die(die: str) -> tuple[int, int]:
     Parses a die string in the format [num]d[type], where num is optional and defaults to 1. Returns a tuple of (num, type) if successful, or None if the format is invalid.
     """
     if "d" not in die:
-        raise ValueError("Die must be in the format [num]d[type], where [num] is optional and defaults to 1.")
+        raise ValueError(
+            "Die must be in the format [num]d[type], where [num] is optional and defaults to 1."
+        )
     num_str, type_str = die.split("d", 1)
     if num_str == "":
         num = 1
@@ -96,9 +104,13 @@ async def cmd_8ball(ctx: Context):
         await asyncio.sleep(random.uniform(0.35, 1.5))
         await msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}")
         await asyncio.sleep(random.uniform(0.35, 1.5))
-        await msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}")
+        await msg.edit(
+            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
+        )
         await asyncio.sleep(random.uniform(0.35, 1.5))
-        await msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}")
+        await msg.edit(
+            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
+        )
         await asyncio.sleep(random.uniform(0.35, 1.5))
         ballsays = random.choice(BALL)
         if ballsays == "Purrhaps :catthink:":
@@ -145,7 +157,9 @@ async def cmd_roll(ctx: Context):
     random_shapes = list(DIESHAPES.values())
     msg = await ctx.reply(f"{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
-    await msg.edit(content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}")
+    await msg.edit(
+        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}"
+    )
     await asyncio.sleep(random.uniform(0.35, 1.15))
     await msg.edit(
         content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"

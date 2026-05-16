@@ -141,10 +141,10 @@ async def cmd_rolemod(ctx):
                             users[i]
                         )
                     else:
-                        user_lines[
-                            i
-                        ] = "\t🗑 User selection aborted for `{}`, skipping".format(
-                            users[i]
+                        user_lines[i] = (
+                            "\t🗑 User selection aborted for `{}`, skipping".format(
+                                users[i]
+                            )
                         )
                         ctx.cmd_err = (0, "")
                     await ctx.bot.edit_message(

@@ -136,7 +136,14 @@ class LatexContext:
     emoji_delete_source = None
 
     def __init__(
-        self, ctx: Context, source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs
+        self,
+        ctx: Context,
+        source,
+        lguild=None,
+        luser=None,
+        wide=None,
+        spoiler=False,
+        **kwargs,
     ):
         self.ctx = ctx
         self.source = source
@@ -193,19 +200,27 @@ class LatexContext:
             case TexNameStyle.DISPLAYNAME:
                 raw_name = self.ctx.author.display_name
                 name = "-# {}".format(
-                    discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))
+                    discord.utils.escape_mentions(
+                        discord.utils.escape_markdown(raw_name)
+                    )
                 )
             case TexNameStyle.USERNAME:
                 raw_name = self.ctx.author.name
                 name = "-# {}".format(
-                    discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))
+                    discord.utils.escape_mentions(
+                        discord.utils.escape_markdown(raw_name)
+                    )
                 )
             case TexNameStyle.RUNNINGAS:
                 target_name: str = self._mask_id
                 sender_name: str = str(self.ctx.author.id)
                 name = "-# <@{}> running as <@{}>".format(
-                    discord.utils.escape_mentions(discord.utils.escape_markdown(sender_name)),
-                    discord.utils.escape_mentions(discord.utils.escape_markdown(target_name))
+                    discord.utils.escape_mentions(
+                        discord.utils.escape_markdown(sender_name)
+                    ),
+                    discord.utils.escape_mentions(
+                        discord.utils.escape_markdown(target_name)
+                    ),
                 )
             case _:
                 raise ValueError(
@@ -228,7 +243,7 @@ class LatexContext:
         if self._errors:
             embed.add_field(
                 name="Compile Errors",
-                value="```{}```".format(self._errors),
+                value="```{}```".format(self._errors.replace("```", "")),
                 inline=False,
             )
 
@@ -344,12 +359,14 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = "```latex\n{}\n```".format(
+                    self.source.replace("```", "")
+                )
 
             if error:
                 self._show_emoji = self.emoji_show_errors
                 self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
+                    self._header_name, source_message, error.replace("```", "")
                 )
                 self._header_collapsed = (
                     "{}\n## Compile Error!\n"
@@ -383,7 +400,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -504,7 +521,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -531,7 +548,7 @@ class LatexContext:
         """
         ctx = self.ctx
         luser = self.luser
-        
+
         await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
@@ -625,7 +642,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -646,14 +663,13 @@ class LatexContext:
             pad=not self.wide,
         )
 
-
     async def plain_luatex_make(self):
         """
         Make the latex message, handling ratelimits, compilation using Plain LuaTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
-        
+
         await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
@@ -747,7 +763,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -755,7 +771,6 @@ class LatexContext:
                 pass
 
         return self._output_message
-
 
     async def plain_luatex_compile(self):
         """
@@ -769,14 +784,13 @@ class LatexContext:
             pad=not self.wide,
         )
 
-
     async def plain_pdftex_make(self):
         """
         Make the latex message, handling ratelimits, compilation using Plain PDFTeX, and output.
         """
         ctx = self.ctx
         luser = self.luser
-        
+
         await ctx.ch.typing()
 
         # Retrieve and request the user's bucket, creating if required
@@ -870,7 +884,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -878,7 +892,6 @@ class LatexContext:
                 pass
 
         return self._output_message
-
 
     async def plain_pdftex_compile(self):
         """
@@ -891,7 +904,6 @@ class LatexContext:
             self.luser.colour,
             pad=not self.wide,
         )
-
 
     async def pythontexmake(self):
         """
@@ -993,7 +1005,7 @@ class LatexContext:
                 self._output_message = await self.ctx.reply(
                     content=self._header_collapsed,
                     file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none()
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -1013,7 +1025,6 @@ class LatexContext:
             self.luser.colour,
             pad=not self.wide,
         )
-
 
     async def activate_reactions(self):
         """
@@ -1125,12 +1136,14 @@ class LatexContext:
                 case ParseMode.TIKZ:
                     source = "\n".join(
                         [
-                            "\\begin{{tikzpicture}}\n{}\n\\end{{tikzpicture}}".format(block)
+                            "\\begin{{tikzpicture}}\n{}\n\\end{{tikzpicture}}".format(
+                                block
+                            )
                             for block in blocks
                         ]
                     )
                 case _:
-                # This should be impossible
+                    # This should be impossible
                     raise ValueError("Unknown `mode` passed to LaTeX parser.")
         else:
             # No content
@@ -1171,8 +1184,8 @@ class LatexContext:
         # Check for `$$`
         # old code:
         # has_tex = has_tex or (content.count('$$') > 1
-                            #   and content.strip('$')
-                            #   and cls.double_dollars_pattern.search(content) is not None)
+        #   and content.strip('$')
+        #   and cls.double_dollars_pattern.search(content) is not None)
         has_tex = has_tex or (
             content.count("$$") > 1
             and content.strip("$")

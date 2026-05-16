@@ -207,7 +207,6 @@ class UnbanAction(HammerAction):
 
 @module.cmd("unban", desc="Unban a previously banned user.", flags=["r=="])
 async def cmd_unban(ctx, flags):
-
     """
     Usage``:
         {prefix}unban user1, user2, user3, ... [-r <reason>]

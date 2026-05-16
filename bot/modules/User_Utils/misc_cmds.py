@@ -113,17 +113,19 @@ async def cmd_quote(ctx, flags):
         {prefix}quote <messageid> [-a] [-r]
     Description:
         Searches for the given `messageid` amongst messages in channels (of the current guild) that you can see, \
-            and replies with the desired message in an embed.
+            and forwards the desired message to the current channel.
     Flags::
-        -a: (anonymous) Removes author information from the quote.
-        -r: (raw) Put the message content in a codeblock.
+        -a: (anonymous) Removes author information from the quote embed if `-r` is also used.
+        -r: (raw) The message content is instead displayed in a codeblock, to show any markdown.
     Examples``:
         {prefix}quote {ctx.msg.id}
     """
-    msgid = ctx.args
-    if not msgid or not msgid.isdigit():
-        await ctx.error_reply("Please provide a valid message ID.")
-        return
+    error_msg = "Please provide a valid message ID."
+    if not ctx.args:
+        return await ctx.error_reply(error_msg)
+    msgid = ctx.args.split()[0]
+    if not msgid.isdigit():
+        return await ctx.error_reply(error_msg)
     msgid = int(msgid)
 
     # Placeholder output
@@ -152,22 +154,48 @@ async def cmd_quote(ctx, flags):
         embed.description = "Couldn't find the message!"
         embed.colour = discord.Colour.red()
         try:
-            await out_msg.edit(embed=embed)
+            out_msg = await out_msg.edit(embed=embed)
         except discord.NotFound:
             await ctx.reply(embed=embed)
+
+    # Anonymous flag has no impact on the forwarding format, only allow use if raw is also being used.
+    if flags["a"] and not flags["r"]:
+        embed.description = "The `-a` (anonymous) flag cannot be used by itself.\nPlease use it alongside the `-r` (raw) flag."
+        embed.colour = discord.Colour.red()
+        try:
+            out_msg = await out_msg.edit(embed=embed)
+        except discord.NotFound:
+            await ctx.reply(embed=embed)
+
+    elif not flags["r"]:
+        embed.description = "Failed to forward the message. Please try again."
+        embed.colour = discord.Colour.red()
+
+        # Delete the output embed as forwarded messages can't go in there
+        try:
+            out_msg = await out_msg.delete()
+        except discord.NotFound:
+            pass
+
+        # Forward message to current channel
+        try:
+            await message.forward(ctx.ch)
+        except discord.HTTPException:
+            await out_msg.edit(embed=embed)
+
     else:
-        quote_content = (
-            message.content.replace("```", "[CODEBLOCK]")
-            if flags["r"]
-            else message.content
-        )
+        quote_content = message.content.replace("```", "[CODEBLOCK]")
 
         header = "[Click to jump to message]({})".format(message.jump_url)
         blocks = split_text(quote_content, 1000, code=flags["r"])
 
         embeds = []
         for block in blocks:
-            desc = header + "\n" + block
+            if message.content:
+                desc = header + "\n" + block
+            else:
+                desc = header + "\n"
+
             embed = discord.Embed(
                 colour=discord.Colour.light_grey(),
                 description=desc,
@@ -177,7 +205,7 @@ async def cmd_quote(ctx, flags):
             if not flags["a"]:
                 embed.set_author(
                     name="{user.name}".format(user=message.author),
-                    icon_url=message.author.avatar_url,
+                    icon_url=message.author.display_avatar,
                 )
             embed.set_footer(text="Sent in #{}".format(message.channel.name))
             if message.attachments:
@@ -186,9 +214,9 @@ async def cmd_quote(ctx, flags):
 
         try:
             if len(embeds) == 1:
-                await out_msg.edit(embed=embeds[0])
+                out_msg = await out_msg.edit(embed=embeds[0])
             else:
-                await out_msg.delete()
+                out_msg = await out_msg.delete()
                 await ctx.pager(embeds, locked=False)
         except discord.NotFound:
             await ctx.pager(embeds, locked=False)
@@ -241,7 +269,7 @@ async def cmd_invitebot(ctx):
         await ctx.reply("Maybe you could try asking them nicely?")
     else:
         await ctx.reply(
-            "Permissionless invitelink for `{}`:\n" "{}".format(userid, invite_link)
+            "Permissionless invitelink for `{}`:\n{}".format(userid, invite_link)
         )
 
 

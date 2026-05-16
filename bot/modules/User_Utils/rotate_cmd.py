@@ -20,11 +20,13 @@ async def cmd_rotate(ctx):
         {prefix}rccw [amount]
     Description:
         Rotates the last image (within the last `10` messages) by `amount` degrees, or `90` if not specified.
+        If an image is attached, the attachment will be used instead.
     Aliases::
         rcw: Rotate clockwise.
         rccw: Rotate counterclockwise.
         rotate: If `amount` is given, rotate clockwise, otherwise rotate counterclockwise.
     """
+
     amount = (
         -1 * int(ctx.args)
         if (
@@ -46,6 +48,7 @@ async def cmd_rotate(ctx):
         )
 
     image_url = None
+
     async for message in ctx.ch.history(limit=10):
         # Check for image uploaded with message
         if (
@@ -67,11 +70,41 @@ async def cmd_rotate(ctx):
             elif embed.type == "rich":
                 # Image set in a rich embed
                 if embed.image:
-                    image_url = embed.image.proxy_url
+                    image_url = embed.image.url
                     break
 
         if image_url is not None:
             break
+
+    # Consider reference message content if command is in reply to a message
+    if ctx.msg.reference:
+        if ctx.msg.reference.resolved:
+            ref = ctx.msg.reference.resolved
+            if ref.attachments:
+                if (
+                    ref.attachments[0].height
+                    and ref.attachments[0].filename
+                    and (
+                        mtypes.guess_type(ref.attachments[0].filename)[0] or ""
+                    ).startswith("image")
+                ):
+                    image_url = ref.attachments[0].proxy_url
+            if ref.embeds:
+                if ref.embeds[0].type == "image":
+                    image_url = ref.embeds[0].url
+                if ref.embeds[0].type == "rich":
+                    if ref.embeds[0].image:
+                        image_url = ref.embeds[0].image.url
+
+    if ctx.msg.attachments:
+        if (
+            ctx.msg.attachments[0].height
+            and ctx.msg.attachments[0].filename
+            and (
+                mtypes.guess_type(ctx.msg.attachments[0].filename)[0] or ""
+            ).startswith("image")
+        ):
+            image_url = ctx.msg.attachments[0].proxy_url
 
     if image_url is None:
         return await ctx.error_reply(
@@ -136,15 +169,16 @@ async def _rotate(ctx, im, amount, name):
                 except asyncio.TimeoutError:
                     try:
                         me = ctx.guild.me if ctx.guild else ctx.client.user
-                        await out_msg.remove_reaction(emoji_rotate_cw, me)
-                        await out_msg.remove_reaction(emoji_rotate_ccw, me)
+                        if out_msg:
+                            await out_msg.remove_reaction(emoji_rotate_cw, me)
+                            await out_msg.remove_reaction(emoji_rotate_ccw, me)
                     except discord.NotFound:
                         pass
                     except discord.HTTPException:
                         pass
                     return
                 try:
-                    await out_msg.delete()
+                    out_msg = await out_msg.delete()
                 except discord.NotFound:
                     return
 

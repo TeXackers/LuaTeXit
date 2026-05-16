@@ -50,9 +50,9 @@ colourschemes: dict = {
 # add alias names to colourschemes
 colourschemes.update(
     {
-        "grey": colourschemes["ash"], # ash
-        "darkgrey": colourschemes["dark"], # dark
-        "black": colourschemes["onyx"], # onyx
+        "grey": colourschemes["ash"],  # ash
+        "darkgrey": colourschemes["dark"],  # dark
+        "black": colourschemes["onyx"],  # onyx
     }
 )
 
@@ -173,24 +173,21 @@ async def maketex(
     with open(fn, "w") as work:
         work.write(
             to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
-                source = source
+                colour=colourschemes[colour] or "",
+                alwayswide="minpagewidth=110pt" if pad else "",
+                header=header,
+                preamble=preamble,
+                source=source,
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n"
-    ).format(
-        script=pdflatex_script_path,
-        id=targetid,
-        path=path
-    ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=pdflatex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -229,24 +226,21 @@ async def makeluatex(
     with open(fn, "w") as work:
         work.write(
             to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
-                source = source
+                colour=colourschemes[colour] or "",
+                alwayswide="minpagewidth=110pt" if pad else "",
+                header=header,
+                preamble=preamble,
+                source=source,
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n"
-    ).format(
-        script=lualatex_script_path,
-        id=targetid,
-        path=path
-    ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=lualatex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -285,24 +279,21 @@ async def makexetex(
     with open(fn, "w") as work:
         work.write(
             to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
-                source = source
+                colour=colourschemes[colour] or "",
+                alwayswide="minpagewidth=110pt" if pad else "",
+                header=header,
+                preamble=preamble,
+                source=source,
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n"
-        ).format(
-            script=xelatex_script_path,
-            id=targetid,
-            path=path
-        ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=xelatex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -345,20 +336,17 @@ async def make_plain_luatex(
                 # alwayswide = "minpagewidth=110pt" if pad else "",
                 # header = header,
                 # preamble = preamble,
-                source = source
+                source=source
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n"
-        ).format(
-            script=luatex_script_path,
-            id=targetid,
-            path=path
-        ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=luatex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -401,20 +389,17 @@ async def make_plain_pdftex(
                 # alwayswide = "minpagewidth=110pt" if pad else "",
                 # header = header,
                 # preamble = preamble,
-                source = source
+                source=source
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n"
-        ).format(
-            script=pdftex_script_path,
-            id=targetid,
-            path=path
-        ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=pdftex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -453,23 +438,21 @@ async def makepythontex(
     with open(fn, "w") as work:
         work.write(
             to_compile.format(
-                colour = colourschemes[colour] or "",
-                alwayswide = "minpagewidth=110pt" if pad else "",
-                header = header,
-                preamble = preamble,
-                source = source
+                colour=colourschemes[colour] or "",
+                alwayswide="minpagewidth=110pt" if pad else "",
+                header=header,
+                preamble=preamble,
+                source=source,
             )
         )
         work.close()
 
     # Build compile script
     script = (
-        "{script} {id} || exit;\n"
-        "cd {path}\n").format(
-            script=pythontex_script_path,
-            id=targetid,
-            path=path
-        ).format(image="{}.png".format(targetid))
+        ("{script} {id} || exit;\ncd {path}\n")
+        .format(script=pythontex_script_path, id=targetid, path=path)
+        .format(image="{}.png".format(targetid))
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)

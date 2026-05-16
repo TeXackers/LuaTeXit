@@ -73,8 +73,7 @@ async def cmd_feedback(ctx: Context):
     # Mail in the feedback and thank the user
     await ctx.mail(feedback_chid, embed=embed)
     await ctx.reply(
-        "Thank you! Your feedback has been sent.\n"
-        "-# LuaTeXit maintainer"
+        "Thank you! Your feedback has been sent.\n-# LuaTeXit maintainer"
         # "Consider joining our support guild below to discuss your feedback "
         # "with the developers and stay updated on the latest changes!\n"
         # "{}".format(ctx.client.app_info["support_guild"])

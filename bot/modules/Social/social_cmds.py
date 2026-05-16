@@ -54,9 +54,7 @@ async def cmd_profile(ctx):
         name="Reputation",
         value="{} Received | {} Given".format(rep, given_rep),
         inline=True,
-    ).add_field(
-        name="Premium", value="No", inline=True
-    )
+    ).add_field(name="Premium", value="No", inline=True)
     tz = await ctx.data.users.get(user.id, "tz")
     if tz:
         try:
@@ -108,7 +106,9 @@ async def cmd_rep(ctx):
         if ctx.arg_str == "":
             can_give_in = cooldown - given_ago
             if can_give_in > 0:
-                can_give_str = ctx.strfdelta(datetime.timedelta(seconds=can_give_in), sec=True)
+                can_give_str = ctx.strfdelta(
+                    datetime.timedelta(seconds=can_give_in), sec=True
+                )
                 msg = "You may give reputation in {}.".format(can_give_str)
             else:
                 msg = "You may now give reputation!"
@@ -139,7 +139,9 @@ async def cmd_rep(ctx):
             given_ago = now_timestamp - int(last_rep)
             if given_ago < cooldown:
                 msg = "Cool down! You may give reputation in {}.".format(
-                    ctx.strfdelta(datetime.timedelta(seconds=(cooldown - given_ago)), sec=True)
+                    ctx.strfdelta(
+                        datetime.timedelta(seconds=(cooldown - given_ago)), sec=True
+                    )
                 )
                 await ctx.reply(msg)
                 return

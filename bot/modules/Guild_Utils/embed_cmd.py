@@ -8,35 +8,35 @@ cmds = paraCH()
 
 
 discordColours = {
-    "blue": discord.Colour.dark_purple(), # #71368A
-    "blurple": discord.Colour.blurple(), # #5865F2
-    "brand green": discord.Colour.brand_green(), # #57F287
-    "brand red": discord.Colour.brand_red(), # #ED4245
-    "dark blue": discord.Colour.dark_blue(), # #206694
-    "dark embed": discord.Colour.dark_embed(), # #2B2D31
-    "dark gold": discord.Colour.dark_gold(), # #C27C0E
-    "dark green": discord.Colour.dark_green(), # #1F8B4C
-    "dark grey": discord.Colour.dark_grey(), # #607d8b
-    "dark magenta": discord.Colour.dark_magenta(), # #AD1457
-    "dark orange": discord.Colour.dark_orange(), # #A84300
-    "dark purple": discord.Colour.dark_purple(), # #71368A
-    "dark red": discord.Colour.dark_red(), # #992D22
-    "dark teal": discord.Colour.dark_teal(), # #11806A
-    "darker grey": discord.Colour.darker_grey(), # #546e7a
-    "fuchsia": discord.Colour.fuchsia(), # #EB459E
-    "gold": discord.Colour.gold(), # #F1C40F
-    "green": discord.Colour.green(), # #2ECC71
-    "light grey": discord.Colour.light_grey(), # #979C9F
-    "lighter grey": discord.Colour.lighter_grey(), # #95A5A6
-    "magenta": discord.Colour.magenta(), # #E91E63
-    "og blurple": discord.Colour.og_blurple(), # #7289DA
-    "orange": discord.Colour.orange(), # #E67E22
-    "pink": discord.Colour.pink(), # #EB459F
-    "purple": discord.Colour.purple(), # #9B59B6
+    "blue": discord.Colour.dark_purple(),  # #71368A
+    "blurple": discord.Colour.blurple(),  # #5865F2
+    "brand green": discord.Colour.brand_green(),  # #57F287
+    "brand red": discord.Colour.brand_red(),  # #ED4245
+    "dark blue": discord.Colour.dark_blue(),  # #206694
+    "dark embed": discord.Colour.dark_embed(),  # #2B2D31
+    "dark gold": discord.Colour.dark_gold(),  # #C27C0E
+    "dark green": discord.Colour.dark_green(),  # #1F8B4C
+    "dark grey": discord.Colour.dark_grey(),  # #607d8b
+    "dark magenta": discord.Colour.dark_magenta(),  # #AD1457
+    "dark orange": discord.Colour.dark_orange(),  # #A84300
+    "dark purple": discord.Colour.dark_purple(),  # #71368A
+    "dark red": discord.Colour.dark_red(),  # #992D22
+    "dark teal": discord.Colour.dark_teal(),  # #11806A
+    "darker grey": discord.Colour.darker_grey(),  # #546e7a
+    "fuchsia": discord.Colour.fuchsia(),  # #EB459E
+    "gold": discord.Colour.gold(),  # #F1C40F
+    "green": discord.Colour.green(),  # #2ECC71
+    "light grey": discord.Colour.light_grey(),  # #979C9F
+    "lighter grey": discord.Colour.lighter_grey(),  # #95A5A6
+    "magenta": discord.Colour.magenta(),  # #E91E63
+    "og blurple": discord.Colour.og_blurple(),  # #7289DA
+    "orange": discord.Colour.orange(),  # #E67E22
+    "pink": discord.Colour.pink(),  # #EB459F
+    "purple": discord.Colour.purple(),  # #9B59B6
     "random": discord.Colour.random(),
-    "red": discord.Colour.red(), # #E74C3C
-    "teal": discord.Colour.teal(), # #1ABC9C
-    "yellow": discord.Colour.yellow(), # #FEE75C
+    "red": discord.Colour.red(),  # #E74C3C
+    "teal": discord.Colour.teal(),  # #1ABC9C
+    "yellow": discord.Colour.yellow(),  # #FEE75C
 }
 
 

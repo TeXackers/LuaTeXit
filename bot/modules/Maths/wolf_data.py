@@ -9,6 +9,7 @@ from .module import maths_module as module
 @module.guild_setting
 class GuildWolfID(ColumnData, String, GuildSetting):
     """Permit the use of custom Wolfram AppID for `wolfram` command."""
+
     attr_name = "wolfram_id"
     category = "Misc"
 

@@ -231,7 +231,7 @@ async def cmd_rolemembers(ctx: Context):
     aliases=["uinfo", "ui", "user", "profile"],
 )
 @in_guild()
-async def cmd_userinfo(ctx: Context):
+async def cmd_userinfo(ctx):
     """
     Usage``:
         {prefix}userinfo [user]
@@ -244,6 +244,12 @@ async def cmd_userinfo(ctx: Context):
         user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             return
+    # Consider Message references for selecting a user
+    elif ctx.msg.reference:
+        if ctx.msg.reference.resolved:
+            user = await ctx.find_member(str(ctx.msg.reference.resolved.author.id))
+            if not user:
+                return
     colour = user.colour if user.colour.value else ParaCC["blue"]
 
     name = "{} {}".format(
@@ -284,22 +290,8 @@ async def cmd_userinfo(ctx: Context):
     )
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     shared = "{} guild{}".format(numshared, "s" if numshared > 1 else "")
-    joined_ago = "({} ago)".format(
-        strfdelta(
-            datetime.datetime.now(tz=datetime.timezone.utc)
-            - user.joined_at.replace(tzinfo=datetime.timezone.utc),
-            minutes=True,
-        )
-    )
-    joined = user.joined_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(
-        strfdelta(
-            datetime.datetime.now(tz=datetime.timezone.utc)
-            - user.created_at.replace(tzinfo=datetime.timezone.utc),
-            minutes=True,
-        )
-    )
-    created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
+    joined_ago = ctx.ts(user.joined_at)
+    created_ago = ctx.ts(user.created_at)
     prop_list = [
         "Full name",
         "Nickname",
@@ -308,9 +300,7 @@ async def cmd_userinfo(ctx: Context):
         "Device",
         "Seen in",
         "Joined at",
-        "",
         "Created at",
-        "",
     ]
     value_list = [
         name,
@@ -319,9 +309,7 @@ async def cmd_userinfo(ctx: Context):
         activity,
         device,
         shared,
-        joined,
         joined_ago,
-        created,
         created_ago,
     ]
     desc = prop_tabulate(prop_list, value_list)
@@ -374,7 +362,7 @@ async def cmd_userinfo(ctx: Context):
     flags=["icon"],
 )
 @in_guild()
-async def cmd_guildinfo(ctx: Context, flags):
+async def cmd_guildinfo(ctx, flags):
     """
     Usage``:
         {prefix}guildinfo [--icon]
@@ -450,13 +438,7 @@ async def cmd_guildinfo(ctx: Context, flags):
         "" if guild.premium_subscription_count == 1 else "s",
     )
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
-    created_ago = "({} ago)".format(
-        strfdelta(
-            datetime.datetime.now(tz=datetime.timezone.utc)
-            - guild.created_at.replace(tzinfo=datetime.timezone.utc),
-            minutes=True,
-        )
-    )
+    created_ago = ctx.ts(guild.created_at)
 
     prop_list = [
         "Owner",
@@ -507,7 +489,7 @@ async def cmd_guildinfo(ctx: Context, flags):
     flags=["topic"],
 )
 @in_guild()
-async def cmd_channelinfo(ctx: Context, flags):
+async def cmd_channelinfo(ctx, flags):
     """
     Usage``:
         {prefix}channelinfo [<channel-name> | <channel-mention> | <channel-id] [--topic]
@@ -564,7 +546,7 @@ async def cmd_channelinfo(ctx: Context, flags):
         else f"{ch.name}"
     )
     created = ch.created_at.strftime("%d/%m/%Y")
-    created_ago = f"({strfdelta(datetime.datetime.now(tz=datetime.timezone.utc) - ch.created_at.replace(tzinfo=datetime.timezone.utc), minutes=True)} ago)"
+    created_ago = ctx.ts(ch.created_at)
 
     category = "{0} ({0.id})".format(ch.category) if ch.category else "None"
 
@@ -623,7 +605,7 @@ async def cmd_channelinfo(ctx: Context, flags):
         origin = "{} [<#{}>]".format(ctx.guild.get_channel(ch.parent_id), ch.parent_id)
         dur = int(ch.auto_archive_duration / 60)
         auto_archive = "In {} hour{}".format(dur, "s" if dur > 1 else "")
-        last_modified = ch.archive_timestamp.strftime("%d/%m/%Y %H:%M:%S")
+        last_modified = ctx.ts(ch.archive_timestamp)
 
         prop_list = [
             "Name",

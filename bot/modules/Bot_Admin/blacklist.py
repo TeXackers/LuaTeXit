@@ -40,7 +40,7 @@ async def blacklist_cmd(ctx, flags):
         if flags["add"]:
             blacklist_interface.insert_many(
                 *((userid, ctx.author.id) for userid in userids),
-                insert_keys=("userid", "added_by")
+                insert_keys=("userid", "added_by"),
             )
             ctx.client.objects["user_blacklist"].update(userids)
             await ctx.reply("Users blacklisted.")

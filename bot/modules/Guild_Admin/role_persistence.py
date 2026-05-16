@@ -2,6 +2,8 @@ import datetime
 import logging
 from logging import log
 
+from aiohttp import payload
+
 from cmdClient.lib import UserCancelled
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import BoolData, Boolean, GuildSetting, ListData, RoleList
@@ -66,6 +68,7 @@ async def cmd_forgetrolesfor(ctx, flags):
 
 # Define configuration settings
 
+
 # Define configuration setting role_persistence (bool, enabled/disabled)
 @module.guild_setting
 class role_persistence(BoolData, Boolean, GuildSetting):
@@ -118,7 +121,10 @@ async def store_roles(client, member):
     role_list = [role.id for role in member.roles]
 
     # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
-    if datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp() < 10:
+    if (
+        datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp()
+        < 10
+    ):
         return
 
     # Delete the stored roles associated to this member
@@ -131,10 +137,13 @@ async def store_roles(client, member):
 
     # Insert the new roles if there are any
     if role_list:
-        client.data.member_stored_roles.insert_many(
-            *((member.guild.id, member.id, role) for role in role_list),
-            insert_keys=("guildid", "userid", "roleid")
-        )
+        try:
+            client.data.member_stored_roles.insert_many(
+                *((payload.guild_id, member.id, role) for role in role_list),
+                insert_keys=("guildid", "userid", "roleid"),
+            )
+        except Exception:
+            pass
 
 
 async def restore_roles(client, member):
@@ -197,8 +206,7 @@ async def restore_roles(client, member):
                 )
             except Exception as e:
                 log(
-                    "Failed to restore roles for new member '{}' (uid:{}) in guild '{} (gid:{})."
-                    " Exception: {}".format(
+                    "Failed to restore roles for new member '{}' (uid:{}) in guild '{} (gid:{}). Exception: {}".format(
                         member,
                         member.id,
                         member.guild.name,

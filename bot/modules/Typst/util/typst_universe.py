@@ -19,7 +19,7 @@ TYPST_UNIVERSE_SEARCH_DISCIPLINE = "https://typst.app/universe/search?discipline
 TYPST_UNIVERSE_SEARCH_CATEGORY = "https://typst.app/universe/search?category={}"
 
 
-async def typst_soup_site(url: str) -> BeautifulSoup:
+async def typst_soup_site(url: str) -> BeautifulSoup | None:
     async with aiohttp.ClientSession() as session:
         async with session.get(url, allow_redirects=False) as response:
             if response.status == 200:

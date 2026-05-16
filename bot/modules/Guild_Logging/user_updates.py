@@ -58,9 +58,9 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
     if before.name != after.name and UserLogEvent.USERNAME in userlog_events:
         # Handle name changes
         desc_lines.append(
-            "**Username updated!**\n"
-            "`Before:` {}\n"
-            "`After:` {}\n".format(before.name, after.name)
+            "**Username updated!**\n`Before:` {}\n`After:` {}\n".format(
+                before.name, after.name
+            )
         )
 
     if (
@@ -70,9 +70,9 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
     ):
         # Handle nickname changes
         desc_lines.append(
-            "**Nickname updated!**\n"
-            "`Before:` {}\n"
-            "`After:` {}\n".format(before.nick, after.nick)
+            "**Nickname updated!**\n`Before:` {}\n`After:` {}\n".format(
+                before.nick, after.nick
+            )
         )
 
     if before.avatar_url != after.avatar_url and UserLogEvent.AVATAR in userlog_events:

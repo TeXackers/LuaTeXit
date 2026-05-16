@@ -2,8 +2,9 @@ import asyncio
 import json
 from io import BytesIO
 from urllib import parse
-
+import logging
 import aiohttp
+from aiohttp import payload
 import discord
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from utils.lib import emb_add_fields
@@ -33,6 +34,20 @@ DEFAULT_MAG_SIZE: float = 1.5
 FONT = ImageFont.truetype(font_path, int(14 * DEFAULT_MAG_SIZE))
 
 
+# Detailed error handling when Wolfram's API breaks
+class WolframAPIError(Exception):
+    def __init__(self, desc, err_msg):
+        super().__init__(desc)
+        self.err_msg = err_msg
+
+
+APIErrorDesc = """
+               Failed to receive a valid response from Wolfram Alpha's API.
+               This service is most likely unavailable.
+               Please check Wolfram Alpha's website for status updates.
+               """
+
+
 def build_web_url(query: str) -> str:
     """
     Returns the url for Wolfram Alpha search for this query.
@@ -60,18 +75,26 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
 
     # Get the query response
     async with aiohttp.ClientSession() as session:
-        async with session.get(query_url) as r:
-            if r.status == 200:
-                # Read the response, interp as json, and return
-                data = await r.read()
-                return json.loads(data.decode("utf8"))
-            else:
-                # If some error occurs, unintelligently fail out
-                print(r.status, r)
-                return None
+        try:
+            async with session.get(ENDPOINT, params=payload) as r:
+                if r.status == 200:
+                    # Read the response, interp as json, and return
+                    data = await r.read()
+                    return json.loads(data.decode("utf8"))
+                else:
+                    # If some error occurs, unintelligently fail out
+                    print(r.status, r)
+                    return None
+        except Exception as e:
+            raise WolframAPIError(
+                f"Unable to establish connection with Wolfram Alpha's API at `get_query`",
+                e,
+            )
 
 
-async def assemble_pod_image(atoms: list[dict], dimensions: tuple[int, int]) -> Image.Image:
+async def assemble_pod_image(
+    atoms: list[dict], dimensions: tuple[int, int]
+) -> Image.Image:
     """
     Draws the given atoms onto a canvas of the given dimensions.
     Arguments:
@@ -96,7 +119,9 @@ async def assemble_pod_image(atoms: list[dict], dimensions: tuple[int, int]) -> 
     return im
 
 
-async def glue_pods(flat_pods: list[tuple[str | None, Image.Image | None, int]]) -> list[Image.Image]:
+async def glue_pods(
+    flat_pods: list[tuple[str | None, Image.Image | None, int]],
+) -> list[Image.Image]:
     """
     Turns a complete list of flattened pods into a list of images, split appropriately.
     Arguments:
@@ -145,7 +170,12 @@ async def glue_pods(flat_pods: list[tuple[str | None, Image.Image | None, int]])
     return split_images
 
 
-async def flatten_pods(pod_data: list[dict], level: int = 0, text: bool = False, text_field: str = "plaintext") -> list[tuple[str | None, Image.Image | None, int]]:
+async def flatten_pods(
+    pod_data: list[dict],
+    level: int = 0,
+    text: bool = False,
+    text_field: str = "plaintext",
+) -> list[tuple[str | None, Image.Image | None, int]]:
     """
     Takes the list of pods formatted as in wolf ouptut.
     Returns a list of flattened pods as accepted by glue_pods.
@@ -172,8 +202,13 @@ async def handle_image(image_data):
     """
     target = image_data["src"]
     async with aiohttp.ClientSession() as session:
-        async with session.get(target, allow_redirects=False) as resp:
-            response = await resp.read()
+        try:
+            async with session.get(target, allow_redirects=False) as resp:
+                response = await resp.read()
+        except Exception as e:
+            raise WolframAPIError(
+                f"Unable to establish API connection at `handle_image`", e
+            )
     image = Image.open(BytesIO(response))
     return image
     # return smart_trim(image, border=10)
@@ -290,13 +325,31 @@ async def cmd_query(ctx, flags):
     # Query the API, handle errors
     try:
         result = await get_query(ctx.args, appid)
-    except Exception as e:
-        print(e)
+    except WolframAPIError as e:
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
+        ctx.client.log(
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+            level=logging.ERROR,
+        )
+        embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
+        embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
+        return await ctx.reply(embed=embed)
+
+    except Exception:
         print("Trying with Wolfram Alpha Pro...")
         try:
             result = await get_query(ctx.args, WOLFRAM_ID)
-        except Exception as pro_e:
-            print(pro_e)
+        except WolframAPIError as e:
+            temp_msg = await ctx.safe_delete_msgs(temp_msg)
+            ctx.client.log(
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+                level=logging.ERROR,
+            )
+            embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
+            embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
+            return await ctx.reply(embed=embed)
+        except Exception:
+            temp_msg = await ctx.safe_delete_msgs(temp_msg)
             return await ctx.error_reply(
                 "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
                 "If the problem persists please contact support."
@@ -346,29 +399,36 @@ async def cmd_query(ctx, flags):
                 "Wolfram Alpha doesn't understand your query!\n"
                 "Perhaps try rephrasing your question?"
             )
-        embed = discord.Embed(description=desc, colour=discord.Colour.from_str("#DD1100"))
-        embed.set_footer(
-            icon_url=ctx.author.avatar.url, text="{}".format(ctx.author)
+        embed = discord.Embed(
+            description=desc, colour=discord.Colour.from_str("#DD1100")
         )
+        embed.set_footer(icon_url=ctx.author.avatar.url, text="{}".format(ctx.author))
         await ctx.safe_delete_msgs(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
         return
 
     if flags["text"]:
-        fields = await pods_to_textdata(result["queryresult"]["pods"])
-
-        # might be good to wrap the results in codeblock to avoid funny rendering
-        for i in range(len(fields)):
-            fields[i] = (
-                fields[i][0],
-                "```mathematica\n{}\n```".format(fields[i][1]),
-                fields[i][2],
+        try:
+            fields = await pods_to_textdata(result["queryresult"]["pods"])
+            # might be good to wrap the results in codeblock to avoid funny rendering
+            for i in range(len(fields)):
+                fields[i] = (
+                    fields[i][0],
+                    "```mathematica\n{}\n```".format(fields[i][1]),
+                    fields[i][2],
+                )
+        except WolframAPIError as e:
+            temp_msg = await ctx.safe_delete_msgs(temp_msg)
+            ctx.client.log(
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+                level=logging.ERROR,
             )
-        
+            embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
+            embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
+            return await ctx.reply(embed=embed)
+
         embed = discord.Embed(description="", colour=discord.Colour.from_str("#DD1100"))
-        embed.set_footer(
-            icon_url=ctx.author.avatar.url, text="{}".format(ctx.author)
-        )
+        embed.set_footer(icon_url=ctx.author.avatar.url, text="{}".format(ctx.author))
         emb_add_fields(embed, fields)
         await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
@@ -377,8 +437,18 @@ async def cmd_query(ctx, flags):
 
     important, extra = triage_pods(result["queryresult"]["pods"])
 
-    data = (await pods_to_filedata(important))[0]
-    output_data = [data]
+    try:
+        data = (await pods_to_filedata(important))[0]
+        output_data = [data]
+    except WolframAPIError as e:
+        temp_msg = await ctx.safe_delete_msgs(temp_msg)
+        ctx.client.log(
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+            level=logging.ERROR,
+        )
+        embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
+        embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
+        return await ctx.reply(embed=embed)
 
     embed = discord.Embed(description="", colour=discord.Colour.dark_red())
     embed.set_author(
@@ -438,7 +508,11 @@ async def cmd_query(ctx, flags):
 
             # prepare ctx.args (they might contain newlines etc) for markdown
             ctx.args = discord.utils.escape_markdown(ctx.args).replace("\n", " ")
-            out_msgs = [await ctx.reply(content=f"\n-# {ctx.author} queried [{ctx.args}](<{WEB}/input?i={parse.quote_plus(ctx.args)}>)")]
+            out_msgs = [
+                await ctx.reply(
+                    content=f"\n-# {ctx.author} queried [{ctx.args}](<{WEB}/input?i={parse.quote_plus(ctx.args)}>)"
+                )
+            ]
             for file_data in output_data[:-1]:
                 dfile = discord.File(file_data, filename="wolf.png")
                 out_msgs.append(await ctx.reply(file=dfile))

@@ -83,9 +83,9 @@ async def snippet_cmd(ctx, flags):
 
         output, error = await _snip_async(ctx, snip, snipargs)
         await ctx.reply(
-            "Ran snippet **{}**\n"
-            "Output {}:\n"
-            "```py\n{}\n```".format(name, "error" if error else "", output)
+            "Ran snippet **{}**\nOutput {}:\n```py\n{}\n```".format(
+                name, "error" if error else "", output
+            )
         )
     else:
         # View snippets

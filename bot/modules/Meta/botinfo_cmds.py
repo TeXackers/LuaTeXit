@@ -64,11 +64,7 @@ async def cmd_curr_load(ctx: Context) -> None:
         # Architecture for linux
         table_fields.append(("Arch", platform.machine()))
         # CPU Name
-        table_fields.append((
-            "CPU",
-            "Intel Core i5-8350U"
-        ))
-
+        table_fields.append(("CPU", "Intel Core i5-8350U"))
 
     # Memory
     mem_total: int = psutil.virtual_memory().total >> 20
@@ -111,7 +107,7 @@ async def cmd_curr_load(ctx: Context) -> None:
             subprocess.check_output(["xetex", "--version"])
             .decode()
             .split("\n")[0]
-            .split(" ")[1]
+            .split(" ")[1],
         )
     )
     table_fields.append(("Compiler", compiler))
@@ -207,7 +203,7 @@ async def cmd_about(ctx: Context):
         ctx.client.app_info["support_guild"],
         ctx.client.app_info["invite_link"],
         # ctx.client.app_info["donate_link"],
-        ctx.client.app_info["github"]
+        ctx.client.app_info["github"],
     )
 
     # Build embed
@@ -231,7 +227,7 @@ async def cmd_ping(ctx: Context):
     """
     # Edit a message and see how long it takes
     msg = await ctx.reply("Beep")
-    maketime:datetime.datetime = datetime.datetime.now()
+    maketime: datetime.datetime = datetime.datetime.now()
     await msg.edit(content="Boop")
     edittime: datetime.datetime = datetime.datetime.now()
     latency = (edittime - maketime).microseconds // 1000

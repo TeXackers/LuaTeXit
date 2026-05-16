@@ -1,6 +1,7 @@
 """
 ABC and data definitions for manual moderation tickets.
 """
+
 import datetime
 from typing import Any, List, Mapping, Optional, Type, TypeVar
 
@@ -173,13 +174,9 @@ class Ticket:
     @classmethod
     def setup(cls, client):
         cls._client = client
-        cls._ticket_data: tableInterface = (
-            client.data.guild_mod_tickets
-        )  # type: tableInterface
+        cls._ticket_data: tableInterface = client.data.guild_mod_tickets  # type: tableInterface
         cls._member_data = client.data.guild_mod_ticket_members  # type: tableInterface
-        cls._combined_ticket_data = (
-            client.data.guild_mod_tickets_combined
-        )  # type: tableInterface
+        cls._combined_ticket_data = client.data.guild_mod_tickets_combined  # type: tableInterface
 
     @classmethod
     def create(
@@ -190,7 +187,7 @@ class Ticket:
         memberids: List[int],
         auditid: Optional[int] = None,
         reason: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> T:
         """
         Create a new ticket with the given parameters.
@@ -218,7 +215,7 @@ class Ticket:
         # Save the member data
         cls._member_data.insert_many(
             *((ticketid, memberid) for memberid in memberids),
-            insert_keys=("ticketid", "memberid")
+            insert_keys=("ticketid", "memberid"),
         )
 
         return cls._create_ticket(ticketid, memberids, **kwargs)
@@ -303,7 +300,7 @@ class Ticket:
             self._member_data.delete_where(ticketid=self.ticketid)
             self._member_data.insertmany(
                 ("ticketid", "memberid"),
-                *((self.ticketid, memberid) for memberid in new_memberids)
+                *((self.ticketid, memberid) for memberid in new_memberids),
             )
 
         return self

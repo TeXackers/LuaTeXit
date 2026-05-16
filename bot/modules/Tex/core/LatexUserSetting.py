@@ -200,11 +200,12 @@ class colour(LatexUserSetting, String):
         "darkgrey",
         "darkgray",
         "black",
-        "default"
+        "default",
     ]
     _parsing_failed_response = (
-        "Unknown colourscheme `{{userstr}}`. "
-        "Valid colourschemes:\n{}".format(tabled_colourschemes)
+        "Unknown colourscheme `{{userstr}}`. Valid colourschemes:\n{}".format(
+            tabled_colourschemes
+        )
     )
 
     _data_column = "colour"
@@ -338,8 +339,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
     default = AutoTexLevel.WEAK
     _enum = AutoTexLevel
     _parsing_failed_response = (
-        "Unknown autotex level `{{userstr}}`. "
-        "Valid levels:\n{}".format(tabled_levels)
+        "Unknown autotex level `{{userstr}}`. Valid levels:\n{}".format(tabled_levels)
     )
 
     _data_column = "autotex_level"

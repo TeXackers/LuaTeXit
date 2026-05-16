@@ -214,9 +214,12 @@ def search_n_parse(soup: BeautifulSoup):
             for link in links:
                 if tds[0].text == "Documentation":
                     link.insert_after(", ")
-                md_link = "[{}]({})".format(
-                    link.text, urllib.parse.urljoin(ctan_url, link.attrs["href"])
-                )
+                if link.text == urllib.parse.urljoin(ctan_url, link.attrs["href"]):
+                    md_link = link.text
+                else:
+                    md_link = "[{}]({})".format(
+                        link.text, urllib.parse.urljoin(ctan_url, link.attrs["href"])
+                    )
                 tds[1].a.replace_with(md_link)
 
         prop_list.append(tds[0].text)
@@ -318,9 +321,12 @@ async def cmd_ctan(ctx):
         urls = soup.find_all("a", attrs={"class": "hit-type-pkg"})
         md_links = []
         for url in urls:
-            md_link = "[{}]({})".format(
-                url.text, urllib.parse.urljoin(ctan_url, url.attrs["href"])
-            )
+            if url.text == urllib.parse.urljoin(ctan_url, url.attrs["href"]):
+                md_link = url.text
+            else:
+                md_link = "[{}]({})".format(
+                    url.text, urllib.parse.urljoin(ctan_url, url.attrs["href"])
+                )
             md_links.append(md_link)
         field_value = "\n".join(md_links)
         embed.add_field(name=stats, value=field_value)
@@ -368,7 +374,7 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
     Remove any U+ as fontconfig doesn't need it.
     """
     assert arg is not None, "No argument given."
-    
+
     # if space or comma in arg, split it
     if "," in arg:
         argstack: list[str] = arg.split(",")
@@ -411,7 +417,7 @@ async def fc_pagination(
     header=None,
     time=None,
     colour=discord.Colour.from_str("#EFEA4F"),
-    flags: dict | None = None
+    flags: dict | None = None,
 ):
     if text:
         blocks: list[str] = split_text(text, 1000, code=True, syntax="sh")
@@ -422,67 +428,51 @@ async def fc_pagination(
         time = datetime.datetime.now(datetime.UTC)
     else:
         time = datetime.datetime.fromtimestamp(time)
-    
+
     blocknum = len(blocks)
 
     if blocknum == 1:
         block = blocks[0] if blocks[0] else None
         if header:
-            desc = (f"{header}\n{block or ''}")
+            desc = f"{header}\n{block or ''}"
         else:
-            desc = (block if block else None)
+            desc = block if block else None
 
         embed = discord.Embed(
-            title = basetitle,
-            color = colour,
-            timestamp = time,
-            description = desc
+            title=basetitle, color=colour, timestamp=time, description=desc
         )
-        
+
         if flags:
             for key, value in flags.items():
                 embed.add_field(name=key, value=value, inline=False)
         return [embed]
-    
+
     embeds = []
     for i, block in enumerate(blocks):
         if header:
-            desc = (f"{header}\n{block}")
+            desc = f"{header}\n{block}"
         else:
             desc = block
 
         embed = discord.Embed(
-            title = basetitle,
-            color = colour,
-            timestamp = time,
-            description = desc
+            title=basetitle, color=colour, timestamp=time, description=desc
         )
-        
-        embed.set_footer(text = f"Page {i+1}/{blocknum}")
-        
+
+        embed.set_footer(text=f"Page {i + 1}/{blocknum}")
+
         if flags:
             for key, value in flags.items():
                 embed.add_field(name=key, value=value, inline=False)
         embeds.append(embed)
-    
+
     return embeds
 
 
-async def view_embeds(
-    ctx,
-    text,
-    title,
-    start_page = 0,
-    **pagination_args
-):
-    pages = await fc_pagination(
-        text,
-        basetitle=title,
-        **pagination_args
-    )
-    
+async def view_embeds(ctx, text, title, start_page=0, **pagination_args):
+    pages = await fc_pagination(text, basetitle=title, **pagination_args)
+
     msg = await ctx.pager(pages, start_page=start_page, locked=False)
-    
+
     return msg
 
 
@@ -490,7 +480,7 @@ async def view_embeds(
     "findfont",
     desc="Looks for fonts supporting a given argument",
     aliases=["fc"],
-    flags=["char==", "lang==", "name=="]
+    flags=["char==", "lang==", "name=="],
 )
 async def cmd_findfont(ctx, flags):
     """
@@ -506,7 +496,7 @@ async def cmd_findfont(ctx, flags):
     fclist_chars: str = ""
     fclist_lang: str = ""
     params_dict: dict = {}
-    
+
     if flags["char"]:
         requested_chars = glyph_or_unicode(flags["char"])
         if not requested_chars:
@@ -529,22 +519,16 @@ async def cmd_findfont(ctx, flags):
                 requested_language = iso639.Language.match(flags["lang"])
             except iso639.LanguageNotFoundError:
                 return await ctx.error_reply("Invalid language code.")
-        
+
         params_dict["Languages"] = requested_language.name
 
         if requested_language.part1:
             fclist_lang = ":lang=" + requested_language.part1
         else:
             fclist_lang = ":lang=" + requested_language.part2t
-    
-    fclist_params = "".join([fclist_chars, fclist_lang])
-    findfont_cmd = [
-        "fc-list",
-        fclist_params,
-        ":",
-        "family"
-    ]
 
+    fclist_params = "".join([fclist_chars, fclist_lang])
+    findfont_cmd = ["fc-list", fclist_params, ":", "family"]
 
     fc = sh.Popen(findfont_cmd, stdout=sh.PIPE, stderr=sh.PIPE)
     fc_out, fc_err = fc.communicate()
@@ -559,14 +543,19 @@ async def cmd_findfont(ctx, flags):
         return await ctx.error_reply("No fonts found.")
 
     # Remove fonts that start with `.`
-    fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
+    fc_out_preprocessed = [
+        line.replace("\\", "") for line in fc_out if not line.startswith(".")
+    ]
     # Split by `,` and only grab the first element
     fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
 
-
     if flags["name"]:
         params_dict["Name Query"] = flags["name"]
-        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if flags["name"].lower() in f]
+        fc_out = [
+            f.title()
+            for f in [f.lower() for f in fc_out_preprocessed]
+            if flags["name"].lower() in f
+        ]
         fc_out = sorted(list(set(fc_out)))
     else:
         fc_out = sorted(list(set(fc_out_preprocessed)))
@@ -577,5 +566,5 @@ async def cmd_findfont(ctx, flags):
         ctx,
         "\n".join(fc_out),
         f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
-        flags=params_dict
+        flags=params_dict,
     )

@@ -2,14 +2,10 @@
 Layout construction specific to the Github module.
 """
 
+import re
+
 import discord
-from discord.ui import Separator
-from discord.ui import MediaGallery
-from discord.ui import LayoutView
-from discord.ui import TextDisplay
-from discord.ui import Container
-from discord.ui import Section
-from discord.ui import Thumbnail
+from discord.ui import Container, LayoutView, MediaGallery, Section, Separator, TextDisplay, Thumbnail
 
 
 class Header(TextDisplay):
@@ -58,7 +54,7 @@ class GithubEmbed(LayoutView):
         colour: discord.Color,
         author: dict[str, str],
         footer_text: str,
-        images: list[str] | None = None,
+        images: list[str],
     ) -> None:
         """
         title: The title of the embed, shown in bold at the top of the embed. Can be empty string.
@@ -94,14 +90,40 @@ class GithubEmbed(LayoutView):
         container = Container(
             HeaderWithThumbnail(header_text, author["icon_url"]),
             Separator(),
-            Body(description),
-            Separator(),
-            Footer(footer_text),
             accent_colour=colour,
         )
+
+        # description is already sanitised so we just need to look for a URL that ends with a common image extension, then replace it with the actual image as a media gallery item, and split the description into blocks accordingly. We can assume that the image URLs are on their own line, as is the case for Github markdown.
+        description_blocks = re.split(
+            r"\n(?=\s*(?:https?:\/\/\S+\.(?:jpg|jpeg|png|gif|bmp|webp|svg|JPG|JPEG|PNG|GIF|BMP|WEBP|SVG)(?:\?\S*)?))",
+            description,
+        )
+
+        if len(description_blocks) == 1:
+            # format double \n as single \n
+            description = description.replace("\n\n", "\n")
+            container.add_item(Body(description))
+        else:
+            for i, block in enumerate(description_blocks):
+                if block.strip():  # only add non-empty blocks
+                    # remove the image URL from the block if it exists, as it will be shown in the media gallery
+                    block = re.sub(
+                        r"https?:\/\/\S+\.(?:jpg|jpeg|png|gif|bmp|webp|svg|JPG|JPEG|PNG|GIF|BMP|WEBP|SVG)(?:\?\S*)?",
+                        "",
+                        block,
+                    )
+                    if block:
+                        # at this stage, there's some text to render
+                        block = block.replace("\n\n", "\n")
+                        # remove leading and trailing whitespace/newlines
+                        block = block.strip()
+                        container.add_item(Body(block))
+
+                if i < len(images):  # add image after the block, if it exists
+                    container.add_item(MediaGallery(discord.MediaGalleryItem(images[i])))
+
+        # add the rest
+        container.add_item(Separator())
+        container.add_item(Footer(footer_text))
+
         self.add_item(container)
-        if images and len(images) == 1:
-            self.add_item(MediaGallery(discord.MediaGalleryItem(images[0])))
-        elif images and len(images) > 1:
-            for img_link in images:
-                self.add_item(MediaGallery(discord.MediaGalleryItem(img_link)))

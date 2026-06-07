@@ -1,11 +1,11 @@
-import discord
 import github
 from github import Auth, Github
 from github.ContentFile import ContentFile
 
 from .module import github_module as module
-from .util import gh_pagination, sanitise_image, syntax_selection, grab_image
+from .util import sanitise_image, grab_image
 from .GithubLayouts import GithubEmbed
+from .GithubColours import GithubColour
 
 """
 Provides a quick and easy way to display github issues and pull requests for `tabularray` from Github.
@@ -79,19 +79,19 @@ async def cmd_tabularray(ctx, flags):
             # change embed colour based on the state of the issue/PR
             match _issue.state, _issue.state_reason:
                 case "open", _:
-                    _embed_colour = discord.Color.from_str("#0FBF3E")
+                    _embed_colour = GithubColour.github_green
                     _state_msg = "Open"
                 case "closed", "completed":
-                    _embed_colour = discord.Color.from_str("#8534F3")
+                    _embed_colour = GithubColour.copilot_purple
                     _state_msg = "Completed"
                 case "closed", "not_planned":
-                    _embed_colour = discord.Color.from_str("#909692")
+                    _embed_colour = GithubColour.primary.grey4
                     _state_msg = "Not Planned"
                 case "open", "reopened":
-                    _embed_colour = discord.Color.from_str("#5FED83")
+                    _embed_colour = GithubColour.primary.green4
                     _state_msg = "Reopened"
                 case _, _:
-                    _embed_colour = discord.Color.from_str("#C53211")
+                    _embed_colour = GithubColour.security_blue
                     _state_msg = "Unknown State"
 
             # do image-sanitisation and thumbnail grabbing concurrently

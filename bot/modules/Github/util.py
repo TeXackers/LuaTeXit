@@ -123,3 +123,22 @@ async def grab_image(text: str) -> list[str] | None:
     images.extend(re.findall(markdown_img_pattern, text))
 
     return images if images else None
+
+def _grab_image(text: str) -> list[str] | None:
+    """
+    Grab image URLs from a Github issue/PR-context text.
+
+    Args:
+        text (str): Text from which the URLs are to be extracted.
+
+    Returns:
+        list[str] | None: A list of image URLs found in the text, or None if no URLs are found.
+    """
+    images: list[str] = []
+
+    html_img_pattern = r'<img.*?src=["\'](.*?)["\'].*?>'
+    images.extend(re.findall(html_img_pattern, text))
+    markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
+    images.extend(re.findall(markdown_img_pattern, text))
+
+    return images if images else None

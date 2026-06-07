@@ -1,8 +1,9 @@
 import discord
+import re
 from utils.lib import split_text
 
 
-async def _gh_pagination(
+async def gh_pagination(
     text,
     basetitle="",
     header=None,
@@ -41,7 +42,7 @@ async def _gh_pagination(
     return embeds
 
 
-async def _gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
+async def gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
     pages = await _gh_pagination(text, basetitle=title, **pagination_args)
 
     msg = await ctx.pager(pages, start_page=start_page, locked=False)
@@ -49,7 +50,7 @@ async def _gh_view_pagination(ctx, text, title, start_page=0, **pagination_args)
     return msg
 
 
-def _syntax_selection(filename) -> str:
+async def syntax_selection(filename) -> str:
     filetype = filename.split(".")[-1]
     match filetype:
         case "cfg" | "lua":
@@ -74,3 +75,51 @@ def _syntax_selection(filename) -> str:
             return "rst"
         case _:
             return ""
+
+
+async def sanitise_image(text: str) -> str:
+    """
+    Sanitise the image formatting embedded within a Github issue/PR-context test.
+
+    Github Issues generally contain two types of images in the raw markdown
+    ```
+    <img width ... src="[URL]" or ![image](URL)
+    ```
+
+    We use regex to replace these with just the url, as the former is not supported by discord embeds and the latter is not supported in raw markdown
+
+    Args:
+        text (str): The text to be sanitised
+
+    Returns:
+        str: The sanitised text, with the image formatting removed and replaced with just the image URL
+    """
+    # pattern for <img width ... src=[URL]>
+    html_img_pattern = r'<img.*?src=["\'](.*?)["\'].*?>'
+    text = re.sub(html_img_pattern, r"\1", text)
+
+    # pattern for ![image](URL)
+    markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
+    text = re.sub(markdown_img_pattern, r"\1", text)
+
+    return text
+
+
+async def grab_image(text: str) -> list[str] | None:
+    """
+    Grab image URLs from a Github issue/PR-context text.
+
+    Args:
+        text (str): Text from which the URLs are to be extracted.
+
+    Returns:
+        list[str] | None: A list of image URLs found in the text, or None if no URLs are found.
+    """
+    images: list[str] = []
+
+    html_img_pattern = r'<img.*?src=["\'](.*?)["\'].*?>'
+    images.extend(re.findall(html_img_pattern, text))
+    markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
+    images.extend(re.findall(markdown_img_pattern, text))
+
+    return images if images else None

@@ -4,10 +4,8 @@ from github import Auth, Github
 from github.ContentFile import ContentFile
 
 from .module import github_module as module
-from .util import _gh_pagination, _gh_view_pagination, _syntax_selection
-
-
-import re
+from .util import gh_pagination, sanitise_image, syntax_selection, grab_image
+from .GithubLayouts import GithubEmbed
 
 """
 Provides a quick and easy way to display github issues and pull requests for `tabularray` from Github.
@@ -19,14 +17,11 @@ Provides a quick and easy way to display github issues and pull requests for `ta
 # ;tblr issue <text>: List issues containing the given text.
 
 
-
-
-
 @module.cmd(
     name="tabularray",
     desc="Displays Github-related information about `tabularray` repository.",
     aliases=["tblr"],
-    flags=["file", "list"]
+    flags=["file", "list"],
 )
 async def cmd_tabularray(ctx, flags):
     """
@@ -46,9 +41,7 @@ async def cmd_tabularray(ctx, flags):
     __texackers = __github_api.get_organization("TeXackers")
     __tabularray = __texackers.get_repo("tabularray")
 
-    out_msg = await ctx.reply(
-        "Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading"))
-    )
+    out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
     # no flags provided, treat the argument as either an issue/PR number or a search query
     if not flags["file"] and not flags["list"]:
         query = ctx.args.strip()
@@ -81,45 +74,69 @@ async def cmd_tabularray(ctx, flags):
                             e.status
                         )
                 await out_msg.delete()
-                return await ctx.error_reply(f"Could not find issue/PR #{_gh_issue_num}. Because {reason}")
+                return await ctx.error_reply(f"Could not find issue/PR #{_gh_issue_num}, because {reason}")
 
             # change embed colour based on the state of the issue/PR
             match _issue.state, _issue.state_reason:
                 case "open", _:
                     _embed_colour = discord.Color.from_str("#0FBF3E")
+                    _state_msg = "Open"
                 case "closed", "completed":
                     _embed_colour = discord.Color.from_str("#8534F3")
+                    _state_msg = "Completed"
                 case "closed", "not_planned":
                     _embed_colour = discord.Color.from_str("#909692")
+                    _state_msg = "Not Planned"
                 case "open", "reopened":
                     _embed_colour = discord.Color.from_str("#5FED83")
+                    _state_msg = "Reopened"
                 case _, _:
                     _embed_colour = discord.Color.from_str("#C53211")
+                    _state_msg = "Unknown State"
 
-            gh_embed = discord.Embed(
-                title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
-                url=_issue.html_url,
-                description=_issue.body[:2000],
-                color=_embed_colour,
+            # do image-sanitisation and thumbnail grabbing concurrently
+            _sanitised_body = await sanitise_image(_issue.body) if _issue.body else "No description provided."
+            _thumbnail_url = await grab_image(_issue.body) if _issue.body else None
+
+            await out_msg.delete()
+            return await ctx.reply(
+                view=GithubEmbed(
+                    title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
+                    url=_issue.html_url,
+                    description=_sanitised_body[:2000],
+                    colour=_embed_colour,
+                    author={
+                        "name": _issue.user.login,
+                        "url": _issue.user.html_url,
+                        "icon_url": f"https://avatars.githubusercontent.com/u/{_issue.user.id}?v=4",
+                    },
+                    footer_text=f"Status: {_state_msg}",
+                    images=_thumbnail_url if _thumbnail_url else None,
+                )
             )
-            gh_embed.set_author(
-                name=_issue.user.login,
-                url=_issue.user.html_url,
-                icon_url="https://avatars.githubusercontent.com/u/{}?v=4".format(_issue.user.id),
-            )
-            gh_embed.set_footer(
-                text=f"Status: {'Open' if _issue.state == 'open' else 'Closed'}",
-            )
-            return await out_msg.edit(content="", embed=gh_embed)
+            # gh_embed = discord.Embed(
+            #     title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
+            #     url=_issue.html_url,
+            #     description=_issue.body[:2000],
+            #     color=_embed_colour,
+            # )
+            # gh_embed.set_author(
+            #     name=_issue.user.login,
+            #     url=_issue.user.html_url,
+            #     icon_url="https://avatars.githubusercontent.com/u/{}?v=4".format(_issue.user.id),
+            # )
+            # gh_embed.set_footer(
+            #     text=f"Status: {_state_msg}",
+            # )
+            # return await out_msg.edit(content="", embed=gh_embed)
         except github.UnknownObjectException:
             await out_msg.delete()
             return await ctx.error_reply(
                 f"Something went wrong while fetching the issue/PR #{_gh_issue_num}. Please try again later."
             )
 
-    
     elif flags["file"]:
-        query = ctx.args.strip()    
+        query = ctx.args.strip()
         # if query is empty, display the tabularray-dev.sty file in dev-version branch
         if query == "":
             try:
@@ -140,15 +157,15 @@ async def cmd_tabularray(ctx, flags):
                             e.status
                         )
                 await out_msg.delete()
-                return await ctx.error_reply(f"Could not find the requested file. Because {reason}")
+                return await ctx.error_reply(f"Could not find the requested file, because {reason}")
 
             embeds = await _gh_pagination(
                 __file_content,
                 "tabularray-dev.sty",
                 "Content of the `tabularray-dev.sty` file in the `dev-version` branch.",
-                syntax=_syntax_selection("tabularray-dev.sty")
+                syntax=_syntax_selection("tabularray-dev.sty"),
             )
-        
+
         # hopefully here query isn't empty
         else:
             print(query)
@@ -178,11 +195,11 @@ async def cmd_tabularray(ctx, flags):
                 "Content View",
                 query,
                 "Content of the `{}` file in the `dev-version` branch.".format(query),
-                syntax=_syntax_selection(query)
+                syntax=_syntax_selection(query),
             )
         await out_msg.delete()
-        return await ctx.pager(embeds, locked = False)
-    
+        return await ctx.pager(embeds, locked=False)
+
     elif flags["list"]:
         # list all directories and files in the root of the repository
         query = ctx.args.strip()
@@ -199,9 +216,11 @@ async def cmd_tabularray(ctx, flags):
                     listing += "📄 `{}`\n".format(content.path)
                 else:
                     listing += "❓ `{}`\n".format(content.path)
-            
-            return await out_msg.edit(content=f"Listing of the root directory of the `dev-version` branch:\n\n{listing}")
-        
+
+            return await out_msg.edit(
+                content=f"Listing of the root directory of the `dev-version` branch:\n\n{listing}"
+            )
+
         else:
             try:
                 __contents: list[ContentFile] = __tabularray.get_contents(query, ref="dev-version")
@@ -216,12 +235,10 @@ async def cmd_tabularray(ctx, flags):
                     case 404:
                         reason = "it does not exist [404]."
                     case _:
-                        reason = "of an undocumented (by GitHub) error [Unknown Status Code: {}].".format(
-                            e.status
-                        )
+                        reason = "of an undocumented (by GitHub) error [Unknown Status Code: {}].".format(e.status)
                 await out_msg.delete()
-                return await ctx.error_reply(f"Could not find the requested file/directory. Because {reason}")
-        
+                return await ctx.error_reply(f"Could not find the requested file/directory, because {reason}")
+
             # make a `ls -laH` style listing
             listing = ""
             for content in __contents:
@@ -231,5 +248,7 @@ async def cmd_tabularray(ctx, flags):
                     listing += "📄 `{}`\n".format(content.path)
                 else:
                     listing += "❓ `{}`\n".format(content.path)
-            
-            return await out_msg.edit(content=f"Listing of the {query} directory of the `dev-version` branch:\n\n{listing}")
+
+            return await out_msg.edit(
+                content=f"Listing of the {query} directory of the `dev-version` branch:\n\n{listing}"
+            )

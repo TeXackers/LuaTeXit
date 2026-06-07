@@ -208,8 +208,8 @@ class GithubColour(Colour):
             class draft:
                 emphasis: Colour = Colour.from_str("#59636e")
                 """#59636e"""
-                muted: Colour = Colour.from_str("#818b981f")
-                """#818b981f"""
+                muted: Colour = Colour.from_str("#818b98")
+                """Note: Discord doesn't support true transparency in embed colours, so this is just #818b98 in lieu of #818b981f"""
             
             emphasis: Colour = Colour.from_str("#25292e")
             """#25292e"""
@@ -218,8 +218,8 @@ class GithubColour(Colour):
             class neutral:
                 emphasis: Colour = Colour.from_str("#59636a")
                 """#59636a"""
-                muted: Colour = Colour.from_str("##818b981f")
-                """#818b981f"""
+                muted: Colour = Colour.from_str("#818b98")
+                """Note: Discord doesn't support true transparency in embed colours, so this is just #818b98 in lieu of #818b981f"""
             
             class open:
                 emphasis: Colour = Colour.from_str("#1a7f37")
@@ -245,7 +245,8 @@ class GithubColour(Colour):
                 muted: Colour = Colour.from_str("#dafbe1")
                 """#dafbe1"""
             
-            transparent: Colour = Colour.from_str("#ffffff00")
+            transparent: Colour = Colour.from_str("#ffffff")
+            """Note: Discord doesn't support true transparency in embed colours, so this is just white. #ffffff"""
 
             class upsell:
                 emphasis: Colour = Colour.from_str("#8250df")

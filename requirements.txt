@@ -6,7 +6,7 @@ cachetools
 certifi
 charset-normalizer
 concurrent-log-handler
-discord.py==2.4.0
+discord.py
 frozenlist
 idna
 iso8601
@@ -14,9 +14,11 @@ multidict
 pillow
 portalocker
 psutil
+pygithub
 pyparsing
 pytz
 requests
 soupsieve
 urllib3
 yarl
+zombie-imp

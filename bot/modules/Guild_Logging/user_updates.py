@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime
 from enum import Enum
 
 import discord
@@ -111,7 +110,7 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
     colour = after.colour if after.colour.value else discord.Colour.light_grey()
 
     embed = discord.Embed(
-        color=colour, description=description, timestamp=datetime.now()
+        color=colour, description=description, timestamp=discord.utils.utcnow()
     )
     embed.set_author(name="{} ({})".format(after, after.id))
     if image is not None:

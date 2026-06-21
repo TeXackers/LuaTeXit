@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import logging
 
 import discord
@@ -46,7 +45,7 @@ async def join_logger(client, member):
         client.conf.emojis.getemoji(member.status.name), statusnames[member.status]
     )
     created_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(datetime.UTC) - member.created_at, minutes=True)
+        strfdelta(discord.utils.utcnow() - member.created_at, minutes=True)
     )
     created = member.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
@@ -87,7 +86,7 @@ async def join_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.datetime.now(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(
         name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"),
@@ -125,7 +124,7 @@ async def departure_logger(client, member):
     avatar = member.avatar_url
 
     joined_ago = "({} ago)".format(
-        strfdelta(datetime.datetime.now(datetime.UTC) - member.joined_at, minutes=True)
+        strfdelta(discord.utils.utcnow() - member.joined_at, minutes=True)
     )
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
 
@@ -147,7 +146,7 @@ async def departure_logger(client, member):
         color=colour,
         title="{user} ({user.id})".format(user=member),
         description=desc,
-        timestamp=datetime.now(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(
         name="{usertype} left!".format(usertype="Bot" if member.bot else "User"),

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import discord
 from cmdClient import cmdClient
 from utils.lib import mail
@@ -22,7 +20,7 @@ async def log_left_guild(client: cmdClient, guild: discord.Guild):
     embed = discord.Embed(
         title="`{0.name} (ID: {0.id})`".format(guild),
         colour=discord.Colour.red(),
-        timestamp=datetime.now(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="Left guild!")
     embed.set_thumbnail(url=guild.icon_url)
@@ -81,7 +79,7 @@ async def log_joined_guild(client, guild):
     embed = discord.Embed(
         title="`{0.name} (ID: {0.id})`".format(guild),
         colour=discord.Colour.green(),
-        timestamp=datetime.now(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="Joined guild!")
     embed.set_thumbnail(url=icon)

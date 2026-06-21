@@ -126,7 +126,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
                 title="Custom emojis in this guild",
                 description=block,
                 colour=discord.Colour.light_grey(),
-                timestamp=datetime.now(),
+                timestamp=discord.utils.utcnow(),
             )
             for block in blocks
         ]

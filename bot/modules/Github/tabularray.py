@@ -168,12 +168,10 @@ async def cmd_tabularray(ctx, flags):
 
         # hopefully here query isn't empty
         else:
-            print(query)
             __file_cf: ContentFile = __tabularray.get_contents(query, ref="dev-version")
 
             try:
                 __file_content: str = __file_cf.decoded_content.decode("utf-8")
-                print(__file_content)
             except github.UnknownObjectException as e:
                 match e.status:
                     case 302:

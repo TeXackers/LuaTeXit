@@ -16,6 +16,7 @@ portalocker
 psutil
 pygithub
 pyparsing
+python-iso639
 pytz
 requests
 soupsieve

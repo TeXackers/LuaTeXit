@@ -343,7 +343,7 @@ def usage_embed(ctx: Context, custom_usage=None):
 
 
 @Context.util
-def ts(ctx: Context, timestamp, mode="F"):
+def ts(ctx: Context, timestamp, mode="F") -> str:
     """
     Converts datetime timestamps for use in Discord's timestamp format.
     Intended to be used to display "created at" dates.

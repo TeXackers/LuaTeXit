@@ -4,66 +4,182 @@ Provides a quick and easy way to display github issues and pull requests for LaT
 """
 
 import discord
-
 import github
+from cmdClient import Context
 from github import Auth, Github
 
+from .GithubColours import GithubColour
+from .GithubLayouts import GithubEmbed
 from .module import github_module as module
-from .util import gh_pagination, gh_view_pagination, syntax_selection
+from .util import grab_image, sanitise_image
 
 
-ALLOWED_ORGANISATIONS = ("latex3", "texackers")
+def is_alnum_with_hyphen(s: str) -> bool:
+    # allowed: - and .
+    return all(c.isalnum() or c == "-" or c == "." for c in s if c != "/")
 
 
-@module.cmd(name="github", desc="Looks up information about LaTeX-related repositories on GitHub.", aliases=["gh"])
-async def cmd_github_latex_lookup(ctx):
+@module.cmd(name="github", desc="Look up issues from repositories on GitHub.", aliases=["gh"], flags=["issue"])
+async def cmd_github_lookup(ctx: Context, flags):
     """
     Usage``:
         {prefix}gh <repository>
     Description:
-        Looks up information about a LaTeX-related repository on GitHub. Currently queries the following organisations: `latex3`, `texackers`.
-    Examples:
-        {prefix}gh tagging-project
-        {prefix}gh latex3 --issue 123
+        Looks up information about any public repository on GitHub.
+    Example:
+        {prefix}gh typst/typst --issue 6767
+        {prefix}gh typst --issue 13 (understood as typst/typst)
     """
-    GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
-    __github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
-    __repo: github.Repository.Repository | None = None
-    __orgs_scan = [__github_api.get_organization(org) for org in ALLOWED_ORGANISATIONS]
+
+    # parse args (args is just space, so split)
+    # first arg should be <username>/<repository>
+    # in case it's not, we can try <arg>/<arg> and see if that works
+    # otherwise exit with an error message
+    query_issue = flags["issue"]
+    if query_issue:
+        query = ctx.args.strip().split()
+        if len(query) != 2:
+            return await ctx.error_reply(
+                "Please provide a repository and an issue number to look up. For example, `typst/typst 123`."
+            )
+        else:
+            orgrepo = query[0]
+            issue_num = query[1]
+
+            if not issue_num.isdigit():
+                return await ctx.error_reply(
+                    f"{issue_num} is not a valid issue number. Please provide a valid issue number."
+                )
+    else:
+        query = ctx.args.strip()
+        if not query:
+            return await ctx.error_reply(
+                "Please provide a repository to look up. For example, `typst/typst` or `latex3`."
+            )
+        else:
+            orgrepo = query
+            issue_num = None
+
+    # validate org/repo formatting
+    match is_alnum_with_hyphen(orgrepo), "/" in orgrepo:
+        case True, True:
+            # Valid format: <org>/<repo>
+            org, reponame = orgrepo.split("/")
+        case True, False:
+            # if no hyphen then we double up (like typst/typst)
+            org = reponame = orgrepo
+        case False, True:
+            return await ctx.error_reply(
+                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`."
+            )
+        case False, False:
+            return await ctx.error_reply(
+                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`."
+            )
+
+    # return await ctx.reply(f"Given {org}/{reponame} \#{issue_num}, I would look up the issue and display its information here. This is a placeholder response for now.")
 
     out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
+    GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
+    github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
+    repo = None
 
-    for org in __orgs_scan:
-        try:
-            __repo = org.get_repo(ctx.args.strip())
-            __repo.get_contents("README.md")
-            break
-        except Exception:
-            pass
-
-    # check
     try:
-        __repo.get_contents("README.md")
-    except github.UnknownObjectException as e:
-        match e.status:
-            case 302:
-                (__reason := "it has been moved permanently [302].")
-            case 304:
-                (__reason := "it has not been modified since the last request [304].")
-            case 403:
-                (__reason := "access to the file is forbidden [403].")
-            case 404:
-                (__reason := "it does not exist [404].")
-            case _:
-                (__reason := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(e.status))
+        repo = github_api.get_repo(f"{org}/{reponame}")
+        repo.get_contents("README.md")
+    except Exception:
+        pass
+
+    if not query_issue:
+        try:
+            repo.get_contents("README.md")
+        except github.UnknownObjectException as e:
+            match e.status:
+                case 302:
+                    (reason := "it has been moved permanently [302].")
+                case 304:
+                    (reason := "it has not been modified since the last request [304].")
+                case 403:
+                    (reason := "access to the file is forbidden [403].")
+                case 404:
+                    (reason := "it does not exist [404].")
+                case _:
+                    (reason := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(e.status))
+
+            await out_msg.delete()
+            return await ctx.error_reply(f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n")
 
         await out_msg.delete()
-        return await ctx.error_reply(
-            f"\n Could not find `{ctx.args.strip()}` in {', '.join(ALLOWED_ORGANISATIONS)}\n\nThis may be because {__reason}\n"
+        return await ctx.reply(
+            f"Found repository `{repo.full_name}`. It has {repo.open_issues_count} open issues and {repo.get_pulls(state='open').totalCount} open pull requests."
         )
+    else:
+        try:
+            issue = repo.get_issue(int(issue_num))
+        except github.UnknownObjectException as e:
+            reason: str = ""
+            match e.status:
+                case 301:
+                    reason = "it has been moved permanently [304]."
+                case 403:
+                    reason = "access to the issue/PR is forbidden [403]."
+                case 404:
+                    reason = "it does not exist [404]."
+                case 410:
+                    reason = "it has been deleted [410]."
+                case 422:
+                    reason = "validation failed, or the endpoint has been spammed [422]."
+                case 503:
+                    reason = "GitHub is currently unavailable [503]."
+                case _:
+                    reason = "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(e.status)
+            await out_msg.delete()
+            return await ctx.error_reply(f"Could not find issue/PR #{issue_num} in {org}/{reponame}, because {reason}")
 
-    # if we got here, __repo should be a valid repository object
-    await out_msg.delete()
-    return await ctx.reply(
-        f"Found repository `{__repo.full_name}`. It has {__repo.open_issues_count} open issues and {__repo.get_pulls(state='open').totalCount} open pull requests."
-    )
+        match issue.state, issue.state_reason:
+            case "open", _:
+                _embed_colour = GithubColour.github_green
+                _state_msg = "Last updated"
+                _last_update = issue.updated_at
+            case "closed", "completed":
+                _embed_colour = GithubColour.copilot_purple
+                _state_msg = "Closed (completed)"
+                _last_update = issue.closed_at
+            case "closed", "not_planned":
+                _embed_colour = GithubColour.primary.grey4
+                _state_msg = "Closed (not planned)"
+                _last_update = issue.closed_at
+            case "closed", None:
+                _embed_colour = GithubColour.copilot_purple
+                _state_msg = "Merged" if issue.pull_request else "Closed"
+                _last_update = issue.closed_at
+            case "open", "reopened":
+                _embed_colour = GithubColour.primary.green4
+                _state_msg = "Reopened"
+                _last_update = issue.updated_at
+            case _, _:
+                _embed_colour = GithubColour.security_blue
+                _state_msg = "Unknown"
+                _last_update = issue.updated_at
+
+        sanitised_body = await sanitise_image(issue.body) if issue.body else "No description provided."
+        thumbnail_url = await grab_image(issue.body) if issue.body else None
+
+        await out_msg.delete()
+        return await ctx.reply(
+            reference=ctx.msg,
+            view=GithubEmbed(
+                title=f"{'Issue' if not issue.pull_request else 'Pull Request'} #{issue.number}: {issue.title}",
+                url=issue.html_url,
+                description=sanitised_body[:2000] + "..." if len(sanitised_body) > 2000 else sanitised_body,
+                colour=_embed_colour,
+                author={
+                    "name": issue.user.login,
+                    "url": issue.user.html_url,
+                    "icon_url": f"https://avatars.githubusercontent.com/u/{issue.user.id}?v=4",
+                },
+                created_at=issue.created_at,
+                footer_text=f"{_state_msg} {discord.utils.format_dt(_last_update, 'R')} | Requested by: {ctx.author.display_name}",
+                images=thumbnail_url if thumbnail_url else None,
+            ),
+        )

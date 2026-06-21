@@ -1,4 +1,3 @@
-import discord
 from discord import Colour
 
 
@@ -204,13 +203,13 @@ class GithubColour(Colour):
                 """#8250df"""
                 muted: Colour = Colour.from_str("#fbe5ff")
                 """#fbe5ff"""
-            
+
             class draft:
                 emphasis: Colour = Colour.from_str("#59636e")
                 """#59636e"""
                 muted: Colour = Colour.from_str("#818b98")
                 """Note: Discord doesn't support true transparency in embed colours, so this is just #818b98 in lieu of #818b981f"""
-            
+
             emphasis: Colour = Colour.from_str("#25292e")
             """#25292e"""
             inset: Colour = Colour.from_str("#f6f8fa")
@@ -220,13 +219,13 @@ class GithubColour(Colour):
                 """#59636a"""
                 muted: Colour = Colour.from_str("#818b98")
                 """Note: Discord doesn't support true transparency in embed colours, so this is just #818b98 in lieu of #818b981f"""
-            
+
             class open:
                 emphasis: Colour = Colour.from_str("#1a7f37")
                 """#1a7f37"""
                 muted: Colour = Colour.from_str("#dafbe1")
                 """#dafbe1"""
-            
+
             class severe:
                 emphasis: Colour = Colour.from_str("#bc4c00")
                 """#bc4c00"""
@@ -238,13 +237,13 @@ class GithubColour(Colour):
                 """#bf3989"""
                 muted: Colour = Colour.from_str("#ffeff7")
                 """#ffeff7"""
-            
+
             class success:
                 emphasis: Colour = Colour.from_str("#1f883d")
                 """#1f883d"""
                 muted: Colour = Colour.from_str("#dafbe1")
                 """#dafbe1"""
-            
+
             transparent: Colour = Colour.from_str("#ffffff")
             """Note: Discord doesn't support true transparency in embed colours, so this is just white. #ffffff"""
 
@@ -253,10 +252,10 @@ class GithubColour(Colour):
                 """#8250df"""
                 muted: Colour = Colour.from_str("#fbefff")
                 """#fbefff"""
-            
+
             white: Colour = Colour.from_str("#ffffff")
             """#ffffff"""
-    
+
     class data:
         """
         Colours used in Github data visualisation, such as charts and graphs.
@@ -270,98 +269,98 @@ class GithubColour(Colour):
             """#9d615c"""
             muted: Colour = Colour.from_str("#f2e9e9")
             """#f2e9e9"""
-        
+
         class blue:
             emphasis: Colour = Colour.from_str("#006edb")
             """#006edb"""
             muted: Colour = Colour.from_str("#d1f0ff")
             """#d1f0ff"""
-        
+
         class brown:
             emphasis: Colour = Colour.from_str("#856d4c")
             """#856d4c"""
             muted: Colour = Colour.from_str("#eeeae2")
             """#eeeae2"""
-        
+
         class coral:
             emphasis: Colour = Colour.from_str("#d43511")
             """#d43511"""
             muted: Colour = Colour.from_str("#ffe5db")
             """#ffe5db"""
-        
-        class grey: # 808fa3, e8ecf2
+
+        class grey:  # 808fa3, e8ecf2
             emphasis: Colour = Colour.from_str("#808fa3")
             """#808fa3"""
             muted: Colour = Colour.from_str("#e8ecf2")
             """#e8ecf2"""
-        
-        class green: # 30a147 caf7ca
+
+        class green:  # 30a147 caf7ca
             emphasis: Colour = Colour.from_str("#30a147")
             """#30a147"""
             muted: Colour = Colour.from_str("#caf7ca")
             """#caf7ca"""
-        
-        class lemon: # 866e04 f7eea1
+
+        class lemon:  # 866e04 f7eea1
             emphasis: Colour = Colour.from_str("#866e04")
             """#866e04"""
             muted: Colour = Colour.from_str("#f7eea1")
             """#f7eea1"""
-        
-        class lime: # 527a29 e3f2b5
+
+        class lime:  # 527a29 e3f2b5
             emphasis: Colour = Colour.from_str("#527a29")
             """#527a29"""
             muted: Colour = Colour.from_str("#e3f2b5")
             """#e3f2b5"""
 
-        class olive: # 64762d f0f0ad
+        class olive:  # 64762d f0f0ad
             emphasis: Colour = Colour.from_str("#64762d")
             """#64762d"""
             muted: Colour = Colour.from_str("#f0f0ad")
             """#f0f0ad"""
-        
-        class orange: # eb670f ffe7d1
+
+        class orange:  # eb670f ffe7d1
             emphasis: Colour = Colour.from_str("#eb670f")
             """#eb670f"""
             muted: Colour = Colour.from_str("#ffe7d1")
             """#ffe7d1"""
-        
-        class pine: # 167e53 bff8db
+
+        class pine:  # 167e53 bff8db
             emphasis: Colour = Colour.from_str("#167e53")
             """#167e53"""
             muted: Colour = Colour.from_str("#bff8db")
             """#bff8db"""
 
-        class pink: # ce2c85 ffe5f1
+        class pink:  # ce2c85 ffe5f1
             emphasis: Colour = Colour.from_str("#ce2c85")
             """#ce2c85"""
             muted: Colour = Colour.from_str("#ffe5f1")
             """#ffe5f1"""
-        
-        class plum: # a830e8 f8e5ff
+
+        class plum:  # a830e8 f8e5ff
             emphasis: Colour = Colour.from_str("#a830e8")
             """#a830e8"""
             muted: Colour = Colour.from_str("#f8e5ff")
             """#f8e5ff"""
-        
-        class purple: # 894ceb f1e5ff
+
+        class purple:  # 894ceb f1e5ff
             emphasis: Colour = Colour.from_str("#894ceb")
             """#894ceb"""
             muted: Colour = Colour.from_str("#f1e5ff")
             """#f1e5ff"""
-        
-        class red: # df0c24 ffe2e0
+
+        class red:  # df0c24 ffe2e0
             emphasis: Colour = Colour.from_str("#df0c24")
             """#df0c24"""
             muted: Colour = Colour.from_str("#ffe2e0")
             """#ffe2e0"""
-        
-        class teal: # 179b9b c7f5ef
+
+        class teal:  # 179b9b c7f5ef
             emphasis: Colour = Colour.from_str("#179b9b")
             """#179b9b"""
             muted: Colour = Colour.from_str("#c7f5ef")
             """#c7f5ef"""
-        
-        class yellow: # b88700 ffec9e
+
+        class yellow:  # b88700 ffec9e
             emphasis: Colour = Colour.from_str("#b88700")
             """#b88700"""
             muted: Colour = Colour.from_str("#ffec9e")

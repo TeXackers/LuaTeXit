@@ -53,8 +53,9 @@ class GithubEmbed(LayoutView):
         description: str,
         colour: discord.Color,
         author: dict[str, str],
+        created_at,
         footer_text: str,
-        images: list[str],
+        images: list[str] | None,
     ) -> None:
         """
         title: The title of the embed, shown in bold at the top of the embed. Can be empty string.
@@ -76,16 +77,24 @@ class GithubEmbed(LayoutView):
         if not all(k in author for k in ("name", "url", "icon_url")):
             raise ValueError("Author dict must have 'name', 'url' and 'icon_url' keys")
 
+        # check that created_at can be parsed by discord.utils.format_dt
+        try:
+            discord.utils.format_dt(created_at, "R")
+        except Exception as e:
+            raise ValueError("created_at must be a datetime object or a string in ISO format") from e
+
+        created = discord.utils.format_dt(created_at, "R")
+
         # Header
         match url, author["url"]:
             case (None, None):
-                header_text = f"{title}\n{author['name']}"
+                header_text = f"{title} ({created})\n{author['name']}"
             case (None, _):
-                header_text = f"{title}\n[{author['name']}]({author['url']})"
+                header_text = f"{title} ({created})\n[{author['name']}]({author['url']})"
             case (_, None):
-                header_text = f"[{title}]({url})\n{author['name']}"
+                header_text = f"[{title}]({url}) ({created})\n{author['name']}"
             case (_, _):
-                header_text = f"[{title}]({url})\n[{author['name']}]({author['url']})"
+                header_text = f"[{title}]({url}) ({created})\n[{author['name']}]({author['url']})"
 
         container = Container(
             HeaderWithThumbnail(header_text, author["icon_url"]),
@@ -94,10 +103,17 @@ class GithubEmbed(LayoutView):
         )
 
         # description is already sanitised so we just need to look for a URL that ends with a common image extension, then replace it with the actual image as a media gallery item, and split the description into blocks accordingly. We can assume that the image URLs are on their own line, as is the case for Github markdown.
+        # Exception is: https://github.com/user-attachments/assets/ followed by hash hex (with no image extension) - these are used by Github for images uploaded directly to the issue/PR and still need to be rendered as images.
+        github_image_patterns = re.compile(
+            r"(https?://\S+\.(?:jpg|jpeg|png|gif|bmp|webp|svg)(?:\?\S*)?|https?://github\.com/user-attachments/assets/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+            re.IGNORECASE,
+        )
+
         description_blocks = re.split(
-            r"\n(?=\s*(?:https?:\/\/\S+\.(?:jpg|jpeg|png|gif|bmp|webp|svg|JPG|JPEG|PNG|GIF|BMP|WEBP|SVG)(?:\?\S*)?))",
+            github_image_patterns,
             description,
         )
+        # r"\n(?=\s*(?:https?:\/\/user-attachments\.githubusercontent\.com\/assets\/[a-f0-9]+))",
 
         if len(description_blocks) == 1:
             # format double \n as single \n
@@ -108,7 +124,7 @@ class GithubEmbed(LayoutView):
                 if block.strip():  # only add non-empty blocks
                     # remove the image URL from the block if it exists, as it will be shown in the media gallery
                     block = re.sub(
-                        r"https?:\/\/\S+\.(?:jpg|jpeg|png|gif|bmp|webp|svg|JPG|JPEG|PNG|GIF|BMP|WEBP|SVG)(?:\?\S*)?",
+                        github_image_patterns,
                         "",
                         block,
                     )
@@ -119,7 +135,7 @@ class GithubEmbed(LayoutView):
                         block = block.strip()
                         container.add_item(Body(block))
 
-                if i < len(images):  # add image after the block, if it exists
+                if images and i < len(images):  # add image after the block, if it exists
                     container.add_item(MediaGallery(discord.MediaGalleryItem(images[i])))
 
         # add the rest

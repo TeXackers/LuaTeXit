@@ -1,9 +1,11 @@
-from cmdClient import Context
-import random
 import asyncio
+import datetime
+import random
+
+from cmdClient import Context, Layouts
+from discord import Colour
 
 from .module import fun_module as module
-
 
 """
 Fun commands.
@@ -15,29 +17,38 @@ Commands provided:
         Roll a DND die.
 """
 
+BALL_GIF: str = "https://1b-f.s3.eu-west-1.amazonaws.com/a/66430-C5FEC1C6-5F69-4576-A1F1-097BE9258E3E-0-1482505335.gif"
+
 BALL: list[str] = [
-    "As I see it, yes",
-    "It is certain",
-    "It is decidedly so",
-    "Most likely",
-    "Outlook good",
-    "Signs point to yes",
-    "Without a doubt",
-    "Yes",
-    "Yes – definitely",
-    "You may rely on it",
-    "Reply hazy, try again",
-    "Ask again later",
-    "Better not tell you now",
-    "Cannot predict now",
-    "Concentrate and ask again",
-    "Don't count on it",
-    "My reply is no",
-    "My sources say no",
-    "Outlook not so good",
-    "Very doubtful",
-    "Purrhaps :catthink:",
+    "It is certain",  # b
+    "It is decidedly so",  # b
+    "Without a doubt",  # b
+    "Yes – definitely",  # b
+    "You may rely on it",  # b
+    "As I see it, yes",  # g
+    "Most likely",  # g
+    "Outlook good",  # g
+    "Signs point to yes",  # g
+    "Yes",  # g
+    "Reply hazy, try again",  # y
+    "Ask again later",  # y
+    "Better not tell you now",  # y
+    "Cannot predict now",  # y
+    "Concentrate and ask again",  # y
+    "Purrhaps :catthink:",  # y
+    "Don't count on it",  # r
+    "My reply is no",  # r
+    "My sources say no",  # r
+    "Outlook not so good",  # r
+    "Very doubtful",  # r
 ]
+
+_col_megapositive: Colour = Colour.from_rgb(0, 0, 150)
+_col_positive: Colour = Colour.from_rgb(0, 150, 0)
+_col_uncertain: Colour = Colour.from_str("0xFFA107")
+_col_negative: Colour = Colour.from_rgb(150, 0, 0)
+
+BALL_COLOURS: list[Colour] = 5 * [_col_megapositive] + 5 * [_col_positive] + 6 * [_col_uncertain] + 5 * [_col_negative]
 
 EMOJI: list[str] = ["🎱", "✨", "🔮", "🛐"]
 
@@ -57,9 +68,7 @@ def parse_die(die: str) -> tuple[int, int]:
     Parses a die string in the format [num]d[type], where num is optional and defaults to 1. Returns a tuple of (num, type) if successful, or None if the format is invalid.
     """
     if "d" not in die:
-        raise ValueError(
-            "Die must be in the format [num]d[type], where [num] is optional and defaults to 1."
-        )
+        raise ValueError("Die must be in the format [num]d[type], where [num] is optional and defaults to 1.")
     num_str, type_str = die.split("d", 1)
     if num_str == "":
         num = 1
@@ -89,7 +98,7 @@ def generate_die_stats(rolls: list[int]):
     desc="Ask the magic 8ball a question.",
     aliases=["8"],
 )
-async def cmd_8ball(ctx: Context):
+async def cmd_8ball(ctx):
     """
     Usage``:
         {prefix}8ball <question>
@@ -100,25 +109,34 @@ async def cmd_8ball(ctx: Context):
         # reply with random emojis with random sleep time first
         # emoji selection: 🎱, ✨, 🔮, 🛐
         # then edit the message with the 8ball response
-        msg = await ctx.reply(f"{random.choice(EMOJI)}")
-        await asyncio.sleep(random.uniform(0.35, 1.5))
-        await msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}")
-        await asyncio.sleep(random.uniform(0.35, 1.5))
-        await msg.edit(
-            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
-        )
-        await asyncio.sleep(random.uniform(0.35, 1.5))
-        await msg.edit(
+
+        # animation
+        anim_msg = await ctx.reply(f"{random.choice(EMOJI)}")
+        await asyncio.sleep(random.uniform(0.35, 0.95))
+        await anim_msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}")
+        await asyncio.sleep(random.uniform(0.35, 0.95))
+        await anim_msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}")
+        await asyncio.sleep(random.uniform(0.35, 0.95))
+        await anim_msg.edit(
             content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
         )
-        await asyncio.sleep(random.uniform(0.35, 1.5))
+        await asyncio.sleep(random.uniform(0.35, 0.95))
         ballsays = random.choice(BALL)
-        if ballsays == "Purrhaps :catthink:":
-            await msg.edit(content=f"{ballsays}")
-        else:
-            await msg.edit(content=f"`{ballsays}`")
+
+        await anim_msg.delete()
+        return await ctx.reply(
+            # reference = ctx.msg,
+            # allowed_mentions=discord.AllowedMentions.none(),
+            view=Layouts.GenericFullEmbed(
+                f"{ctx.arg_str}",
+                ballsays,
+                f"{ctx.ts(datetime.datetime.now(datetime.UTC))}",
+                BALL_GIF,
+                BALL_COLOURS[BALL.index(ballsays)],
+            )
+        )
     else:
-        await ctx.reply("That doesn't look like a question.")
+        return await ctx.error_reply("That doesn't look like a question.")
 
 
 @module.cmd(
@@ -157,9 +175,7 @@ async def cmd_roll(ctx: Context):
     random_shapes = list(DIESHAPES.values())
     msg = await ctx.reply(f"{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
-    await msg.edit(
-        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}"
-    )
+    await msg.edit(content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
     await msg.edit(
         content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"

@@ -4,7 +4,6 @@ data/**
 logs/**
 scripts/**
 **/__pycache__
-cmdClient
 
 # Conf files
 *.conf
@@ -14,9 +13,6 @@ cmdClient
 *.swp
 RCS
 tags
-
-# Nanny
-Nanny
 
 # ContextBot contents
 contextBot/*

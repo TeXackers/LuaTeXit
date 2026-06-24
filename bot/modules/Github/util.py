@@ -1,9 +1,10 @@
-import discord
 import re
+
+import discord
 from utils.lib import split_text
 
 
-async def gh_pagination(
+async def _gh_pagination(
     text,
     basetitle="",
     header=None,
@@ -50,7 +51,7 @@ async def gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
     return msg
 
 
-async def syntax_selection(filename) -> str:
+async def _syntax_selection(filename) -> str:
     filetype = filename.split(".")[-1]
     match filetype:
         case "cfg" | "lua":
@@ -123,6 +124,7 @@ async def grab_image(text: str) -> list[str] | None:
     images.extend(re.findall(markdown_img_pattern, text))
 
     return images if images else None
+
 
 def _grab_image(text: str) -> list[str] | None:
     """

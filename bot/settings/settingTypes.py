@@ -1,10 +1,9 @@
-from typing import Any, Optional, List
 from enum import Enum
+from typing import Any, List, Optional
 
 import discord
-from cmdClient import cmdClient, Context
+from cmdClient import Context, cmdClient
 from cmdClient.lib import SafeCancellation
-
 from utils import seekers  # noqa
 
 from .errors import BadUserInput
@@ -246,7 +245,7 @@ class String(SettingType):
                     cls._maxlen
                 )
             )
-        elif cls._options is not None and not userstr.lower() in cls._options:
+        elif cls._options is not None and userstr.lower() not in cls._options:
             raise BadUserInput(
                 "Invalid option! Valid options are `{}`".format(
                     "`, `".join(cls._options)
@@ -513,7 +512,7 @@ class Channel(SettingType):
         client: cmdClient,
         guildid: int,
         value: Optional[discord.abc.GuildChannel],
-        **kwargs
+        **kwargs,
     ):
         """
         Returns the channel id.
@@ -593,7 +592,7 @@ class Emoji(SettingType):
         client: cmdClient,
         guildid: int,
         value: Optional[discord.PartialEmoji],
-        **kwargs
+        **kwargs,
     ):
         """
         Both data and value are of type Optional[discord.PartialEmoji].
@@ -607,7 +606,7 @@ class Emoji(SettingType):
         client: cmdClient,
         guildid: int,
         data: Optional[discord.PartialEmoji],
-        **kwargs
+        **kwargs,
     ):
         """
         Both data and value are of type Optional[discord.PartialEmoji].
@@ -632,7 +631,7 @@ class Emoji(SettingType):
         client: cmdClient,
         guildid: int,
         data: Optional[discord.PartialEmoji],
-        **kwargs
+        **kwargs,
     ):
         """
         Return a string form of the partial emoji, which generally displays the emoji.

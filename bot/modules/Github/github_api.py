@@ -19,7 +19,12 @@ def is_alnum_with_hyphen(s: str) -> bool:
     return all(c.isalnum() or c == "-" or c == "." for c in s if c != "/")
 
 
-@module.cmd(name="github", desc="Look up issues from repositories on GitHub.", aliases=["gh"], flags=["issue"])
+@module.cmd(
+    name="github",
+    desc="Look up issues from repositories on GitHub.",
+    aliases=["gh"],
+    flags=["issue"],
+)
 async def cmd_github_lookup(ctx: Context, flags):
     """
     Usage``:
@@ -79,7 +84,11 @@ async def cmd_github_lookup(ctx: Context, flags):
 
     # return await ctx.reply(f"Given {org}/{reponame} \#{issue_num}, I would look up the issue and display its information here. This is a placeholder response for now.")
 
-    out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
+    out_msg = await ctx.reply(
+        "Querying Github, please wait... {}".format(
+            ctx.client.conf.emojis.getemoji("loading")
+        )
+    )
     GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
     github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
     repo = None
@@ -104,10 +113,17 @@ async def cmd_github_lookup(ctx: Context, flags):
                 case 404:
                     (reason := "it does not exist [404].")
                 case _:
-                    (reason := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(e.status))
+                    (
+                        reason
+                        := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
+                            e.status
+                        )
+                    )
 
             await out_msg.delete()
-            return await ctx.error_reply(f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n")
+            return await ctx.error_reply(
+                f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n"
+            )
 
         await out_msg.delete()
         return await ctx.reply(
@@ -128,13 +144,19 @@ async def cmd_github_lookup(ctx: Context, flags):
                 case 410:
                     reason = "it has been deleted [410]."
                 case 422:
-                    reason = "validation failed, or the endpoint has been spammed [422]."
+                    reason = (
+                        "validation failed, or the endpoint has been spammed [422]."
+                    )
                 case 503:
                     reason = "GitHub is currently unavailable [503]."
                 case _:
-                    reason = "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(e.status)
+                    reason = "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
+                        e.status
+                    )
             await out_msg.delete()
-            return await ctx.error_reply(f"Could not find issue/PR #{issue_num} in {org}/{reponame}, because {reason}")
+            return await ctx.error_reply(
+                f"Could not find issue/PR #{issue_num} in {org}/{reponame}, because {reason}"
+            )
 
         match issue.state, issue.state_reason:
             case "open", _:
@@ -162,7 +184,11 @@ async def cmd_github_lookup(ctx: Context, flags):
                 _state_msg = "Unknown"
                 _last_update = issue.updated_at
 
-        sanitised_body = await sanitise_image(issue.body) if issue.body else "No description provided."
+        sanitised_body = (
+            await sanitise_image(issue.body)
+            if issue.body
+            else "No description provided."
+        )
         thumbnail_url = await grab_image(issue.body) if issue.body else None
 
         await out_msg.delete()
@@ -171,7 +197,9 @@ async def cmd_github_lookup(ctx: Context, flags):
             view=GithubEmbed(
                 title=f"{'Issue' if not issue.pull_request else 'Pull Request'} #{issue.number}: {issue.title}",
                 url=issue.html_url,
-                description=sanitised_body[:2000] + "..." if len(sanitised_body) > 2000 else sanitised_body,
+                description=sanitised_body[:2000] + "..."
+                if len(sanitised_body) > 2000
+                else sanitised_body,
                 colour=_embed_colour,
                 author={
                     "name": issue.user.login,

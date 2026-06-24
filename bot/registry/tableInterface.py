@@ -53,7 +53,7 @@ class tableInterface(Interface):
             schema.interface_columns,
             mysql_schema=schema.for_mysql,
             sqlite_schema=schema.for_sqlite,
-            **kwargs
+            **kwargs,
         )
 
     @property

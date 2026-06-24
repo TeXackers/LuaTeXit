@@ -1,0 +1,7 @@
+﻿repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.15.18
+  hooks:
+    - id: ruff-check
+      args: [ "--ignore=F401,F403" ]
+    - id: ruff-format

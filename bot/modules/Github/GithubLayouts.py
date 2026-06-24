@@ -5,7 +5,15 @@ Layout construction specific to the Github module.
 import re
 
 import discord
-from discord.ui import Container, LayoutView, MediaGallery, Section, Separator, TextDisplay, Thumbnail
+from discord.ui import (
+    Container,
+    LayoutView,
+    MediaGallery,
+    Section,
+    Separator,
+    TextDisplay,
+    Thumbnail,
+)
 
 
 class Header(TextDisplay):
@@ -81,7 +89,9 @@ class GithubEmbed(LayoutView):
         try:
             discord.utils.format_dt(created_at, "R")
         except Exception as e:
-            raise ValueError("created_at must be a datetime object or a string in ISO format") from e
+            raise ValueError(
+                "created_at must be a datetime object or a string in ISO format"
+            ) from e
 
         created = discord.utils.format_dt(created_at, "R")
 
@@ -90,11 +100,15 @@ class GithubEmbed(LayoutView):
             case (None, None):
                 header_text = f"{title} ({created})\n{author['name']}"
             case (None, _):
-                header_text = f"{title} ({created})\n[{author['name']}]({author['url']})"
+                header_text = (
+                    f"{title} ({created})\n[{author['name']}]({author['url']})"
+                )
             case (_, None):
                 header_text = f"[{title}]({url}) ({created})\n{author['name']}"
             case (_, _):
-                header_text = f"[{title}]({url}) ({created})\n[{author['name']}]({author['url']})"
+                header_text = (
+                    f"[{title}]({url}) ({created})\n[{author['name']}]({author['url']})"
+                )
 
         container = Container(
             HeaderWithThumbnail(header_text, author["icon_url"]),
@@ -135,8 +149,12 @@ class GithubEmbed(LayoutView):
                         block = block.strip()
                         container.add_item(Body(block))
 
-                if images and i < len(images):  # add image after the block, if it exists
-                    container.add_item(MediaGallery(discord.MediaGalleryItem(images[i])))
+                if images and i < len(
+                    images
+                ):  # add image after the block, if it exists
+                    container.add_item(
+                        MediaGallery(discord.MediaGalleryItem(images[i]))
+                    )
 
         # add the rest
         container.add_item(Separator())

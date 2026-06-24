@@ -113,9 +113,7 @@ def load_into(bot):
         # Split across whitespace, keeping the whitespace
         params = re.split(r"(\S+)", args)
 
-        final_params = (
-            []
-        )  # Final list of command parameters, excluding flags and flag arguments
+        final_params = []  # Final list of command parameters, excluding flags and flag arguments
         final_flags = {}  # Dictionary of flags and flag values
         indexes = []  # Indices in the params list where the flags appear
         end_params = []  # The tail of the parameter list, after -- appears
@@ -151,7 +149,7 @@ def load_into(bot):
             final_params = params
 
         # Build the parameters and flag arguments
-        for (i, (index, flag)) in enumerate(indexes):
+        for i, (index, flag) in enumerate(indexes):
             # Get the parameters between this flag and the next, or the end
             if len(params) > index + 1:
                 if len(indexes) > i + 1:

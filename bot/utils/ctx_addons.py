@@ -67,6 +67,7 @@ async def _message_counter(client, channel, max_count):
     """
     Helper for live_reply
     """
+
     # Build check function
     def _check(message):
         return message.channel == channel

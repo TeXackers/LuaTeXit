@@ -1,11 +1,12 @@
 import asyncio
 import json
+import logging
 from io import BytesIO
 from urllib import parse
-import logging
+
 import aiohttp
-from aiohttp import payload
 import discord
+from aiohttp import payload
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from utils.lib import emb_add_fields
 
@@ -87,7 +88,7 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
                     return None
         except Exception as e:
             raise WolframAPIError(
-                f"Unable to establish connection with Wolfram Alpha's API at `get_query`",
+                "Unable to establish connection with Wolfram Alpha's API at `get_query`",
                 e,
             )
 
@@ -207,7 +208,7 @@ async def handle_image(image_data):
                 response = await resp.read()
         except Exception as e:
             raise WolframAPIError(
-                f"Unable to establish API connection at `handle_image`", e
+                "Unable to establish API connection at `handle_image`", e
             )
     image = Image.open(BytesIO(response))
     return image

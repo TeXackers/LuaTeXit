@@ -2,6 +2,8 @@ import re
 
 import discord
 from utils.lib import split_text
+from github.Repository import Repository
+from .GithubColours import GITHUB_LANG2COLOUR
 
 
 async def _gh_pagination(
@@ -11,12 +13,11 @@ async def _gh_pagination(
     colour=discord.Color.from_str("#0FBF3E"),
     syntax="latex",
 ):
-    blocks: list[str | None] = []
+    blocks: list[str] = []
     if text:
         blocks = split_text(text, 1000, code=True, syntax=syntax)
     else:
-        blocks = [None]
-
+        blocks = [""]
     embeds = []
 
     if len(blocks) == 1:
@@ -77,6 +78,19 @@ async def _syntax_selection(filename) -> str:
         case _:
             return ""
 
+
+
+def lang2colour(repo: Repository) -> discord.Colour:
+    """Outputs a colour to be rendered for the layout view depending on the language field in the returned JSON of github API object
+
+    Args:
+        repo (Repository): The GitHub repository object
+
+    Returns:
+        discord.Colour: The colour to be used for the layout view
+    """
+    language: str = repo.language
+    return GITHUB_LANG2COLOUR.get(language, discord.Color.from_str("#0FBF3E"))
 
 async def sanitise_image(text: str) -> str:
     """

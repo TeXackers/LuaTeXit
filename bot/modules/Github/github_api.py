@@ -5,13 +5,14 @@ Provides a quick and easy way to display github issues and pull requests for LaT
 
 import discord
 import github
+from github.Repository import Repository
 from cmdClient import Context
 from github import Auth, Github
 
 from .GithubColours import GithubColour
 from .GithubLayouts import GithubEmbed
 from .module import github_module as module
-from .util import grab_image, sanitise_image
+from .util import grab_image, sanitise_image, lang2colour
 
 
 def is_alnum_with_hyphen(s: str) -> bool:
@@ -91,43 +92,70 @@ async def cmd_github_lookup(ctx: Context, flags):
     )
     GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
     github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
-    repo = None
+    repo: Repository = github_api.get_repo(f"{org}/{reponame}")
 
     try:
-        repo = github_api.get_repo(f"{org}/{reponame}")
-        repo.get_contents("README.md")
-    except Exception:
-        pass
+        _ = repo.full_name
+    except github.UnknownObjectException as e:
+        match e.status:
+            case 302:
+                (reason := "it has been moved permanently [302].")
+            case 304:
+                (reason := "it has not been modified since the last request [304].")
+            case 403:
+                (reason := "access to the repository is forbidden [403].")
+            case 404:
+                (reason := "it does not exist [404].")
+            case _:
+                (
+                    reason
+                    := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
+                        e.status
+                    )
+                )
+
+        await out_msg.delete()
+        return await ctx.error_reply(
+            f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n"
+        )
 
     if not query_issue:
         try:
             repo.get_contents("README.md")
-        except github.UnknownObjectException as e:
-            match e.status:
-                case 302:
-                    (reason := "it has been moved permanently [302].")
-                case 304:
-                    (reason := "it has not been modified since the last request [304].")
-                case 403:
-                    (reason := "access to the file is forbidden [403].")
-                case 404:
-                    (reason := "it does not exist [404].")
-                case _:
-                    (
-                        reason
-                        := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
-                            e.status
-                        )
-                    )
-
-            await out_msg.delete()
-            return await ctx.error_reply(
-                f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n"
-            )
+        except github.UnknownObjectException:
+            pass
 
         await out_msg.delete()
+
+        desc_text = f"{repo.description if repo.description else 'No description provided.'}\n\n\n"
+        # add fields
+        desc_fields: dict[str, str | int] = {
+            "licence": repo.license.spdx_id if repo.license else "None",
+            "stars": repo.stargazers_count,
+            "forks": repo.forks,
+            "watches": repo.subscribers_count,
+            "issues": repo.open_issues_count,
+        }
+
+        # format
+        desc_text += "\n".join(f"`{key:>8}:` {value:<}" for key, value in desc_fields.items())
+
         return await ctx.reply(
-            f"Found repository `{repo.full_name}`. It has {repo.open_issues_count} open issues and {repo.get_pulls(state='open').totalCount} open pull requests."
+            content="",
+            view = GithubEmbed(
+                title=f"{repo.name}",
+                url=repo.html_url,
+                description=desc_text,
+                colour=lang2colour(repo),
+                author={
+                    "name": repo.owner.login,
+                    "url": repo.owner.html_url,
+                    "icon_url": f"https://avatars.githubusercontent.com/u/{repo.owner.id}?v=4",
+                },
+                created_at=repo.created_at,
+                footer_text=f"Last updated: {discord.utils.format_dt(repo.updated_at, 'R')} | Requested by: {ctx.author.display_name}",
+                images=None,
+            )
         )
     else:
         try:

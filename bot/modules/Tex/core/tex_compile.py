@@ -1,13 +1,12 @@
 import logging
-import os
 import shutil
+from pathlib import Path
 
 from cmdClient import Context
 from logger import log
-from utils import ctx_addons  # noqa
 
-from ..module import latex_module as module
-from ..resources import (
+from modules.Tex.module import latex_module as module
+from modules.Tex.resources import (
     default_preamble,
     failed_image_path,
     lualatex_script_path,
@@ -22,7 +21,7 @@ from ..resources import (
 Provides a single context utility to compile LaTeX code from a user and return any error message
 """
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__location__ = str(Path(__file__).resolve().parent)
 
 
 def gencolour(bgcolour: str, textcolour: str) -> str:
@@ -141,36 +140,27 @@ to_compile_plaintex: str = r"""
 
 
 @Context.util
-async def maketex(
-    ctx,
-    source,
-    targetid,
-    preamble=default_preamble,
-    colour="default",
-    header=header,
-    pad=True,
-):
+async def maketex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning LaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"{path}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile.format(
                 colour=colourschemes[colour] or "",
@@ -183,47 +173,34 @@ async def maketex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=pdflatex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{pdflatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
 
 
 @Context.util
-async def makeluatex(
-    ctx,
-    source,
-    targetid,
-    preamble=default_preamble,
-    colour="default",
-    header=header,
-    pad=True,
-):
+async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning LuaLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True)
 
     fn = f"tex/staging/{targetid}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile.format(
                 colour=colourschemes[colour] or "",
@@ -236,47 +213,34 @@ async def makeluatex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=lualatex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{lualatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
 
 
 @Context.util
-async def makexetex(
-    ctx,
-    source,
-    targetid,
-    preamble=default_preamble,
-    colour="default",
-    header=header,
-    pad=True,
-):
+async def makexetex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning XeLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"{path}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile.format(
                 colour=colourschemes[colour] or "",
@@ -289,11 +253,7 @@ async def makexetex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=xelatex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{xelatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -311,25 +271,24 @@ async def make_plain_luatex(
 ):
     log(
         "Beginning plain LuaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"{path}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile_plaintex.format(
                 # colour = colourschemes[colour] or "",
@@ -342,11 +301,7 @@ async def make_plain_luatex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=luatex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{luatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -364,25 +319,24 @@ async def make_plain_pdftex(
 ):
     log(
         "Beginning plain pdfTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"{path}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile_plaintex.format(
                 # colour = colourschemes[colour] or "",
@@ -395,11 +349,7 @@ async def make_plain_pdftex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=pdftex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{pdftex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -417,25 +367,24 @@ async def makepythontex(
 ):
     log(
         "Beginning pythonTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join(("\t" + line for line in source.splitlines())),
+            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
         ),
         level=logging.DEBUG,
-        context="mid:{}".format(ctx.msg.id) if ctx.msg else "tid:{}".format(targetid),
+        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory
-    path = "tex/staging/{}".format(targetid)
+    path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    os.makedirs(path, exist_ok=True)
+    Path.mkdir(parents=True, exist_ok=True)
 
-    fn = "{}/{}.tex".format(path, targetid)
+    fn = f"{path}/{targetid}.tex"
 
-    with open(fn, "w") as work:
+    with Path.open(fn, "w") as work:
         work.write(
             to_compile.format(
                 colour=colourschemes[colour] or "",
@@ -448,11 +397,7 @@ async def makepythontex(
         work.close()
 
     # Build compile script
-    script = (
-        ("{script} {id} || exit;\ncd {path}\n")
-        .format(script=pythontex_script_path, id=targetid, path=path)
-        .format(image="{}.png".format(targetid))
-    )
+    script = (f"{pythontex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -466,5 +411,5 @@ def setup_structure(client):
     """
     # Delete and recreate the staging directory, if it exists
     shutil.rmtree("tex/staging", ignore_errors=True)
-    os.makedirs("tex/staging", exist_ok=True)
+    Path.mkdir("tex/staging", parents=True, exist_ok=True)
     shutil.copy(failed_image_path, "tex")

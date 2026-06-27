@@ -1,6 +1,6 @@
 import discord
 
-region_map = {
+region_map: dict[str, str] = {
     "brazil": "Brazil",
     "eu-central": "Central Europe",
     "hongkong": "Hong Kong",
@@ -24,7 +24,7 @@ region_map = {
     "amsterdam": "Amsterdam",
 }
 
-sorted_cats = [
+sorted_cats: list[str] = [
     "Bot Admin",
     "LaTeX",
     "Guild Admin",
@@ -38,13 +38,17 @@ sorted_cats = [
     "Misc",
 ]
 
-sorted_conf_pages = [
+sorted_conf_pages: list[tuple[str, list[str]]] = [
     ("General", ["Guild settings", "Starboard", "LaTeX"]),
     ("Manual Moderation", ["Moderation", "Logging"]),
     ("Join/Leave Messages", ["Join message", "Leave message"]),
 ]
 
-ParaCC = {
+ParaCC: dict[str, discord.Colour] = {
     "purple": discord.Colour(int("7927eb", 16)),
     "blue": discord.Colour(int("00a7fe", 16)),
+}
+LuaTeXitCC: dict[str, discord.Colour] = {
+    "yellow": discord.Colour.from_str("#FFC107"),
+    "purple": discord.Colour.from_str("#C073E5"),
 }

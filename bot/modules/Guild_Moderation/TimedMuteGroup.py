@@ -2,18 +2,10 @@ import asyncio
 import datetime
 import logging
 import traceback
-from typing import List
 
-import discord
-from cmdClient.cmdClient import cmdClient
-from registry import (
-    Column,
-    ColumnType,
-    ForeignKey,
-    ReferenceAction,
-    tableInterface,
-    tableSchema,
-)
+from cmdClient.cmdClient import Context, cmdClient  # noqa
+from discord import Guild, Role  # noqa
+from registry import Column, ColumnType, ForeignKey, ReferenceAction, tableInterface, tableSchema
 from utils.lib import strfdelta
 
 from .module import guild_moderation_module as module
@@ -23,16 +15,14 @@ from .tickets import TicketType
 
 class TimedMuteGroup:
     __slots__ = ("ticket", "memberids", "_task", "_cancelled")
-    _client: cmdClient = None  # Attached during initialisation
+    _client: type[cmdClient] = None  # Attached during initialisation
 
-    _member_data: tableInterface = None  # Attached during initialisation
+    _member_data: type[tableInterface] = None  # Attached during initialisation
 
     # Cache associating muted members to timed mute groups
-    _member_map = {}  # type: Dict[int, Dict[int, TimedMuteGroup]]
+    _member_map = {}
 
-    def __init__(
-        self, timed_mute_ticket: TicketType.TEMPMUTE.Ticket, memberids: List[int]
-    ):
+    def __init__(self, timed_mute_ticket: TicketType.TEMPMUTE.Ticket, memberids: list[int]):
         self.ticket = timed_mute_ticket
         self.memberids = memberids
 
@@ -77,9 +67,7 @@ class TimedMuteGroup:
 
         # Build the tickets
         tickets = (
-            TicketType.TEMPMUTE.Ticket.fetch_tickets_where(
-                app=client.app, ticketid=list(group_members.keys())
-            )
+            TicketType.TEMPMUTE.Ticket.fetch_tickets_where(app=client.app, ticketid=list(group_members.keys()))
             if group_members
             else []
         )
@@ -100,23 +88,13 @@ class TimedMuteGroup:
                 cleanup.append(ticket.ticketid)
 
         # Log the loaded mute groups
-        client.log(
-            "Loaded and scheduled {} timed mute groups.".format(group_counter),
-            context="LAUNCH_TIMED_MUTES",
-        )
+        client.log(f"Loaded and scheduled {group_counter} timed mute groups.", context="LAUNCH_TIMED_MUTES")
 
         # Handle cleanup if required
         if cleanup:
-            client.log(
-                "Cleaning up stale timed mute groups.", context="LAUNCH_TIMED_MUTES"
-            )
+            client.log("Cleaning up stale timed mute groups.", context="LAUNCH_TIMED_MUTES")
             cls._member_data.delete_where(ticketid=cleanup)
-            client.log(
-                "Successfully cleaned up {} stale timed mute groups.".format(
-                    len(cleanup)
-                ),
-                context="LAUNCH_TIMED_MUTES",
-            )
+            client.log(f"Successfully cleaned up {len(cleanup)} stale timed mute groups.", context="LAUNCH_TIMED_MUTES")
 
     # Activation and deactivation of the TimedMuteGroup
     def load(self):
@@ -158,17 +136,13 @@ class TimedMuteGroup:
         If there are no users left, unloads the group and cancels the unmute task.
         """
         # Remove from internal mute group list
-        self.memberids = [
-            memberid for memberid in self.memberids if memberid not in memberids
-        ]
+        self.memberids = [memberid for memberid in self.memberids if memberid not in memberids]
 
         # Remove from guild cache
         [self.guild_mutes.pop(memberid, None) for memberid in memberids]
 
         # Remove from data
-        self._member_data.delete_where(
-            ticketid=self.ticket.ticketid, memberid=memberids
-        )
+        self._member_data.delete_where(ticketid=self.ticket.ticketid, memberid=memberids)
 
         # Close and cancel if there are no users left
         if not self.memberids:
@@ -197,10 +171,7 @@ class TimedMuteGroup:
         """
         try:
             # Sleep for the required time
-            await asyncio.sleep(
-                self.ticket.unmute_timestamp
-                - datetime.datetime.now(datetime.UTC).timestamp()
-            )
+            await asyncio.sleep(self.ticket.unmute_timestamp - datetime.datetime.now(datetime.UTC).timestamp())
 
             # Execute the unmutes
             await self._unmute_members()
@@ -214,16 +185,11 @@ class TimedMuteGroup:
             full_traceback = traceback.format_exc()
 
             self._client.log(
-                (
-                    "Caught an unknown exception during schedule unmute with groupid {groupid}."
-                    "{traceback}"
-                ).format(
+                ("Caught an unknown exception during schedule unmute with groupid {groupid}.{traceback}").format(
                     groupid=self.ticket.ticketid,
-                    traceback="\n".join(
-                        "\t" + line for line in full_traceback.splitlines()
-                    ),
+                    traceback="\n".join("\t" + line for line in full_traceback.splitlines()),
                 ),
-                context="tid:{}".format(self.ticket.ticketid),
+                context=f"tid:{self.ticket.ticketid}",
                 level=logging.ERROR,
             )
 
@@ -235,35 +201,19 @@ class TimedMuteGroup:
         Posts to the modlog with a summary if possible.
         Closes the TimedUnmute if there are no users left in the group.
         """
-        guild: discord.Guild = self._client.get_guild(self.ticket.guildid)
+        guild: Guild = self._client.get_guild(self.ticket.guildid)
         if guild is not None:
-            role: discord.Role = guild.get_role(self.ticket.roleid)
+            role: Role = guild.get_role(self.ticket.roleid)
             if role is not None:
                 await asyncio.gather(
                     *(
-                        unmute_memberid(
-                            memberid,
-                            role,
-                            audit_reason="Automatic unmute (#{}).".format(
-                                self.ticket.ticketgid
-                            ),
-                        )
+                        unmute_memberid(memberid, role, audit_reason=f"Automatic unmute (#{self.ticket.ticketgid}).")
                         for memberid in self.memberids
                     )
                 )
-                reason = (
-                    "Automatic unmute after {}.\n"
-                    "[Click here for the original mute ticket]({})"
-                ).format(
-                    strfdelta(datetime.timedelta(seconds=self.ticket.duration)),
-                    self.ticket.jumpto,
-                )
+                reason = f"Automatic unmute after {strfdelta(datetime.timedelta(seconds=self.ticket.duration))}.\n[Click here for the original mute ticket]({self.ticket.jumpto})"
                 await TicketType.UNMUTE.Ticket.create(
-                    self.ticket.guildid,
-                    self.ticket.modid,
-                    self._client.user.id,
-                    self.memberids,
-                    reason=reason,
+                    self.ticket.guildid, self.ticket.modid, self._client.user.id, self.memberids, reason=reason
                 ).post()
 
         # Delete the group
@@ -277,18 +227,12 @@ member_schema = tableSchema(
     "guild_timed_mute_members",
     Column("ticketid", ColumnType.INT, primary=True, required=True),
     Column("memberid", ColumnType.SNOWFLAKE, primary=True, required=True),
-    ForeignKey(
-        "ticketid",
-        "guild_moderation_tickets",
-        "ticketid",
-        on_delete=ReferenceAction.CASCADE,
-    ),
+    ForeignKey("ticketid", "guild_moderation_tickets", "ticketid", on_delete=ReferenceAction.CASCADE),
 )
 
 
 @module.data_init_task
 def attach_timed_mute_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_schema, shared=True),
-        "guild_timed_mute_members",
+        tableInterface.from_schema(client.data, client.app, member_schema, shared=True), "guild_timed_mute_members"
     )

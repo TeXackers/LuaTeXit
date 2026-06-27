@@ -1,3 +1,5 @@
+from cmdClient import Context  # noqa
+
 from .core.LatexContext import LatexContext
 from .core.LatexGuild import LatexGuild
 from .core.LatexUser import LatexUser
@@ -27,17 +29,9 @@ from .module import latex_module as module
         "pytex",
         "python",
     ],
-    flags=[
-        "config",
-        "keepsourcefor",
-        "color",
-        "colour",
-        "alwaysmath",
-        "allowother",
-        "name",
-    ],
+    flags=["config", "keepsourcefor", "color", "colour", "alwaysmath", "allowother", "name"],
 )
-async def cmd_tex(ctx, flags):
+async def cmd_tex(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}luatex <code>
@@ -84,18 +78,16 @@ async def cmd_tex(ctx, flags):
     if any(flags.values()):
         return await ctx.error_reply(
             "LaTeX configuration has moved to the `texconfig` command.\n"
-            "Please see `{}help texconfig` for usage.".format(ctx.best_prefix())
+            f"Please see `{ctx.best_prefix()}help texconfig` for usage."
         )
 
     # Handle empty and erroneous input
-    if ctx.alias == ",":
-        if not ctx.args.strip(","):
-            # We shouldn't respond to any number of ',' characters on their own.
-            return
-    elif not ctx.args:
-        if ctx.alias == ",":
-            # `,,` on its own might easily not be referring to us.
-            return
+    if ctx.alias == "," and not ctx.args.strip(","):
+        # We shouldn't respond to any number of ',' characters on their own.
+        return None
+    if not ctx.args and ctx.alias == ",":
+        # `,,` on its own might easily not be referring to us.
+        return None
         # else:
         #     return await ctx.error_reply(
         #         "Please give me something to compile, for example "
@@ -107,9 +99,7 @@ async def cmd_tex(ctx, flags):
 
     # Handle `tex help`
     if ctx.args.lower() in ["help", "--help"]:
-        return await ctx.error_reply(
-            "Please use `{}help tex` for command help.".format(ctx.best_prefix())
-        )
+        return await ctx.error_reply(f"Please use `{ctx.best_prefix()}help tex` for command help.")
 
     # WARNING FOR BEGIN DOCUMET - REMOVED
     # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
@@ -127,7 +117,7 @@ async def cmd_tex(ctx, flags):
     luser = LatexUser.get(ctx.author.id)
 
     # Determine parse mode and flags
-    flags = dict()
+    flags: dict[str, bool] = {}
     parse_mode = ParseMode.DOCUMENT
 
     # convert above if elif to match case
@@ -200,3 +190,4 @@ async def cmd_tex(ctx, flags):
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.luatexmake()
             await lctx.lifetime()
+    return None

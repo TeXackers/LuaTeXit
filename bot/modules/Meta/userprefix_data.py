@@ -15,20 +15,14 @@ schema = tableSchema(
 @module.data_init_task
 def attach_prefix_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False),
-        "user_prefixes",
+        tableInterface.from_schema(client.data, client.app, schema, shared=False), "user_prefixes"
     )
 
 
 # Cache user prefixes
 @module.init_task
 def load_userprefix_cache(client):
-    user_prefixes = {
-        row["userid"]: row["prefix"] for row in client.data.user_prefixes.select_where()
-    }
+    user_prefixes = {row["userid"]: row["prefix"] for row in client.data.user_prefixes.select_where()}
     client.objects["user_prefix_cache"] = user_prefixes
 
-    client.log(
-        f"r     |--custom user prefix: {len(user_prefixes)}",
-        context="Meta",
-    )
+    client.log(f"r     |--custom user prefix: {len(user_prefixes)}", context="Meta")

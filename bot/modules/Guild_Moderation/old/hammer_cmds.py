@@ -1,8 +1,6 @@
 import discord
-
+from mod_utils import ban_finder, mod_parse, multi_mod_action, test_action, user_finder
 from paraCH import paraCH
-
-from mod_utils import mod_parse, test_action, multi_mod_action, user_finder, ban_finder
 
 cmds = paraCH()
 
@@ -93,11 +91,7 @@ async def cmd_hackban(ctx):
     }
     strings["results"] = {
         0: "✅ Successfully hackbanned `{user.name}` (id: `{user.id}`)"
-        + (
-            " and purged `{}` days of messages.".format(purge_days)
-            if int(purge_days) > 0
-            else "!"
-        ),
+        + (f" and purged `{purge_days}` days of messages." if int(purge_days) > 0 else "!"),
         1: "🚨 Failed to hackban `{user.name}` (id: `{user.id}`), insufficient permissions.",
     }
     await multi_mod_action(
@@ -108,7 +102,7 @@ async def cmd_hackban(ctx):
         reason,
         finder=user_finder,
         days=int(purge_days),
-        ban_reason="{}: {}".format(ctx.author, reason),
+        ban_reason=f"{ctx.author}: {reason}",
     )
 
 
@@ -146,22 +140,11 @@ async def cmd_unban(ctx):
         1: "🚨 Failed to unban `{user.name}` (id: `{user.id}`), insufficient permissions.",
     }
     await multi_mod_action(
-        ctx,
-        users,
-        action_func,
-        strings,
-        reason,
-        finder=ban_finder,
-        ban_reason="{}: {}".format(ctx.author, reason),
+        ctx, users, action_func, strings, reason, finder=ban_finder, ban_reason=f"{ctx.author}: {reason}"
     )
 
 
-@cmds.cmd(
-    "ban",
-    category="Moderation",
-    short_help="Bans users",
-    aliases=["b", "banne", "bean"],
-)
+@cmds.cmd("ban", category="Moderation", short_help="Bans users", aliases=["b", "banne", "bean"])
 @cmds.execute("flags", flags=["r==", "p=", "f", "m"])
 @cmds.require("in_server")
 @cmds.require("in_server_can_ban")
@@ -194,21 +177,11 @@ async def cmd_ban(ctx):
     }
     strings["results"] = {
         0: "✅ Successfully banned `{user.name}`"
-        + (
-            " and purged `{}` days of messages.".format(purge_days)
-            if int(purge_days) > 0
-            else "!"
-        ),
+        + (f" and purged `{purge_days}` days of messages." if int(purge_days) > 0 else "!"),
         1: "🚨 Failed to ban `{user.name}`, insufficient permissions.",
     }
     await multi_mod_action(
-        ctx,
-        users,
-        action_func,
-        strings,
-        reason,
-        days=int(purge_days),
-        ban_reason="{}: {}".format(ctx.author, reason),
+        ctx, users, action_func, strings, reason, days=int(purge_days), ban_reason=f"{ctx.author}: {reason}"
     )
 
 
@@ -244,18 +217,11 @@ async def cmd_softban(ctx):
         "fail_unknown": "🚨 Encountered an unexpected fatal error softbanning `{user.name}`! Aborting softban sequence...",
     }
     strings["results"] = {
-        0: "✅ Softbanned `{user.name}`"
-        + " and purged `{}` days of messages.".format(purge_days),
+        0: "✅ Softbanned `{user.name}`" + f" and purged `{purge_days}` days of messages.",
         1: "🚨 Failed to softban `{user.name}`, insufficient permissions.",
     }
     await multi_mod_action(
-        ctx,
-        users,
-        action_func,
-        strings,
-        reason,
-        days=int(purge_days),
-        ban_reason="{}: {}".format(ctx.author, reason),
+        ctx, users, action_func, strings, reason, days=int(purge_days), ban_reason=f"{ctx.author}: {reason}"
     )
 
 

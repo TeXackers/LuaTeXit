@@ -5,15 +5,7 @@ Layout construction specific to the Github module.
 import re
 
 import discord
-from discord.ui import (
-    Container,
-    LayoutView,
-    MediaGallery,
-    Section,
-    Separator,
-    TextDisplay,
-    Thumbnail,
-)
+from discord.ui import Container, LayoutView, MediaGallery, Section, Separator, TextDisplay, Thumbnail
 
 
 class Header(TextDisplay):
@@ -23,10 +15,7 @@ class Header(TextDisplay):
 
 class HeaderWithThumbnail(Section):
     def __init__(self, text: str, thumbnail_url: str) -> None:
-        super().__init__(
-            Header(text),
-            accessory=Thumbnail(thumbnail_url),
-        )
+        super().__init__(Header(text), accessory=Thumbnail(thumbnail_url))
 
 
 class Body(TextDisplay):
@@ -41,10 +30,7 @@ class Footer(TextDisplay):
 
 class SectionWithThumbnail(Section):
     def __init__(self, text: str, thumbnail_url: str) -> None:
-        super().__init__(
-            Body(text),
-            accessory=Thumbnail(thumbnail_url),
-        )
+        super().__init__(Body(text), accessory=Thumbnail(thumbnail_url))
 
 
 class GithubEmbed(LayoutView):
@@ -89,9 +75,7 @@ class GithubEmbed(LayoutView):
         try:
             discord.utils.format_dt(created_at, "R")
         except Exception as e:
-            raise ValueError(
-                "created_at must be a datetime object or a string in ISO format"
-            ) from e
+            raise ValueError("created_at must be a datetime object or a string in ISO format") from e
 
         created = discord.utils.format_dt(created_at, "R")
 
@@ -100,21 +84,13 @@ class GithubEmbed(LayoutView):
             case (None, None):
                 header_text = f"{title} ({created})\n{author['name']}"
             case (None, _):
-                header_text = (
-                    f"{title} ({created})\n[{author['name']}]({author['url']})"
-                )
+                header_text = f"{title} ({created})\n[{author['name']}]({author['url']})"
             case (_, None):
                 header_text = f"[{title}]({url}) ({created})\n{author['name']}"
             case (_, _):
-                header_text = (
-                    f"[{title}]({url}) ({created})\n[{author['name']}]({author['url']})"
-                )
+                header_text = f"[{title}]({url}) ({created})\n[{author['name']}]({author['url']})"
 
-        container = Container(
-            HeaderWithThumbnail(header_text, author["icon_url"]),
-            Separator(),
-            accent_colour=colour,
-        )
+        container = Container(HeaderWithThumbnail(header_text, author["icon_url"]), Separator(), accent_colour=colour)
 
         # description is already sanitised so we just need to look for a URL that ends with a common image extension, then replace it with the actual image as a media gallery item, and split the description into blocks accordingly. We can assume that the image URLs are on their own line, as is the case for Github markdown.
         # Exception is: https://github.com/user-attachments/assets/ followed by hash hex (with no image extension) - these are used by Github for images uploaded directly to the issue/PR and still need to be rendered as images.
@@ -123,10 +99,7 @@ class GithubEmbed(LayoutView):
             re.IGNORECASE,
         )
 
-        description_blocks = re.split(
-            github_image_patterns,
-            description,
-        )
+        description_blocks = re.split(github_image_patterns, description)
         # r"\n(?=\s*(?:https?:\/\/user-attachments\.githubusercontent\.com\/assets\/[a-f0-9]+))",
 
         if len(description_blocks) == 1:
@@ -137,11 +110,7 @@ class GithubEmbed(LayoutView):
             for i, block in enumerate(description_blocks):
                 if block.strip():  # only add non-empty blocks
                     # remove the image URL from the block if it exists, as it will be shown in the media gallery
-                    block = re.sub(
-                        github_image_patterns,
-                        "",
-                        block,
-                    )
+                    block = re.sub(github_image_patterns, "", block)
                     if block:
                         # at this stage, there's some text to render
                         block = block.replace("\n\n", "\n")
@@ -149,12 +118,8 @@ class GithubEmbed(LayoutView):
                         block = block.strip()
                         container.add_item(Body(block))
 
-                if images and i < len(
-                    images
-                ):  # add image after the block, if it exists
-                    container.add_item(
-                        MediaGallery(discord.MediaGalleryItem(images[i]))
-                    )
+                if images and i < len(images):  # add image after the block, if it exists
+                    container.add_item(MediaGallery(discord.MediaGalleryItem(images[i])))
 
         # add the rest
         container.add_item(Separator())

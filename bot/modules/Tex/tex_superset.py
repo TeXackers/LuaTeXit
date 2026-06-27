@@ -1,5 +1,6 @@
 import re
 
+from cmdClient import Context  # noqa
 from wards import is_reviewer
 
 from .core.LatexContext import LatexContext
@@ -16,7 +17,7 @@ from .module import latex_module as module
     flags=["u="],
 )
 @is_reviewer()
-async def cmd_texas(ctx, flags):
+async def cmd_texas(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}texas -u <userid> <code>
@@ -37,15 +38,11 @@ async def cmd_texas(ctx, flags):
     try:
         int(flags["u"])
     except ValueError:
-        return await ctx.error_reply(
-            "The user ID provided is not valid. It must be set by a numeric Discord user ID."
-        )
+        return await ctx.error_reply("The user ID provided is not valid. It must be set by a numeric Discord user ID.")
 
     # `texas help`
     if ctx.args.lower() in ("help", "--help"):
-        return await ctx.error_reply(
-            f"Please use `{ctx.best_prefix()}help texas` for detailed help on this command."
-        )
+        return await ctx.error_reply(f"Please use `{ctx.best_prefix()}help texas` for detailed help on this command.")
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)
@@ -69,9 +66,7 @@ async def cmd_texas(ctx, flags):
     source = LatexContext.parse_content(content, parse_mode)
 
     if not source:
-        return await ctx.error_reply(
-            "Codeblock is there, but you ought to specify `tex` or `latex` as the language."
-        )
+        return await ctx.error_reply("Codeblock is there, but you ought to specify `tex` or `latex` as the language.")
 
     # Since luser is the "as" user, force namestyle 4 (reaction-based)
     # Also pass the ID of the real user as mask_id
@@ -95,3 +90,4 @@ async def cmd_texas(ctx, flags):
             lctx = LatexContext(ctx, source, lguild, luser, mask_id=target_id)
             await lctx.luatexmake()
             await lctx.lifetime()
+    return None

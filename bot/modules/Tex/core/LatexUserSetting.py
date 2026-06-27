@@ -1,5 +1,6 @@
 import discord
-from constants import ParaCC
+from cmdClient import Context, cmdClient  # noqa
+from constants import LuaTeXitCC
 from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
 from utils.lib import prop_tabulate
 
@@ -47,9 +48,7 @@ class LatexUserSetting(SettingType):
         """
         params = {"userid": userid, cls._data_column: data}
 
-        client.data.user_latex_config.upsert(
-            constraint=cls._upsert_constraint, **params
-        )
+        client.data.user_latex_config.upsert(constraint=cls._upsert_constraint, **params)
 
     @classmethod
     def response(cls, ctx, new_data):
@@ -64,10 +63,7 @@ class LatexUserSetting(SettingType):
         A detailed embed for the setting.
         Must be provided the current data value.
         """
-        embed = discord.Embed(
-            title="Configuration options for `{}`".format(cls.name),
-            color=ParaCC["purple"],
-        )
+        embed = discord.Embed(title=f"Configuration options for `{cls.name}`", color=LuaTeXitCC["purple"])
         fields = ("Current value", "Default value", "Accepted input")
         values = (
             cls._format_data(ctx.client, ctx.author.id, current_data),
@@ -75,7 +71,7 @@ class LatexUserSetting(SettingType):
             cls.accepts,
         )
         table = prop_tabulate(fields, values)
-        embed.description = "{}\n{}".format(cls.desc, table)
+        embed.description = f"{cls.desc}\n{table}"
         return embed
 
     @classmethod
@@ -89,19 +85,11 @@ class LatexUserSetting(SettingType):
         except BadUserInput as e:
             response = cls._parsing_failed_response or "{error.msg}\n"
 
-            desc = response.format(
-                ctx=ctx, userstr=userstr, prefix=ctx.best_prefix(), cls=cls, error=e
-            )
+            desc = response.format(ctx=ctx, userstr=userstr, prefix=ctx.best_prefix(), cls=cls, error=e)
 
-            embed = discord.Embed(
-                title="Couldn't parse your input!",
-                description=desc,
-                color=discord.Color.red(),
-            )
+            embed = discord.Embed(title="Couldn't parse your input!", description=desc, color=discord.Color.red())
             embed.set_footer(
-                text="Use `{}texconfig {}` to see more detailed information about this setting.".format(
-                    ctx.best_prefix(), cls.name
-                )
+                text=f"Use `{ctx.best_prefix()}texconfig {cls.name}` to see more detailed information about this setting."
             )
 
             return await ctx.reply(embed=embed)
@@ -125,21 +113,22 @@ class autotex(LatexUserSetting, Boolean):
     _data_column = "autotex"
 
     @classmethod
-    def response(cls, ctx, data):
-        if data is None:
-            return "Unset `autotex`!"
-        elif data is True:
-            return (
-                "I will now listen for and compile LaTeX in your messages! "
-                "Be aware that automatic compilation may be "
-                "restricted by other guild and personal settings."
-            )
-        elif data is False:
-            return (
-                "You have disabled personal automatic compilation! "
-                "Messages will still be automatically compiled "
-                "in guilds with the `latex` setting enabled."
-            )
+    def response(cls, ctx: type[Context], data):
+        match data:
+            case True:
+                return (
+                    "I will now listen for and compile LaTeX in your messages! "
+                    "Be aware that automatic compilation may be "
+                    "restricted by other guild and personal settings."
+                )
+            case False:
+                return (
+                    "You have disabled personal automatic compilation! "
+                    "Messages will still be automatically compiled "
+                    "in guilds with the `latex` setting enabled."
+                )
+            case None:
+                return "Unset `autotex`!"
 
 
 class keepsourcefor(LatexUserSetting, Integer):
@@ -160,18 +149,13 @@ class keepsourcefor(LatexUserSetting, Integer):
         """
         if data is None:
             return "Don't delete source (may be overriden by the guild)"
-        else:
-            return "`{}` seconds".format(data)
+        return f"`{data}` seconds"
 
     @classmethod
     def response(cls, ctx, data):
         if data is None:
             return "No longer automatically deleting your LaTeX source."
-        else:
-            return (
-                "Your source will be deleted {} seconds "
-                "after a succesful compilation (if not edited)."
-            ).format(data)
+        return f"Your source will be deleted {data} seconds after a succesful compilation (if not edited)."
 
 
 class colour(LatexUserSetting, String):
@@ -188,25 +172,11 @@ class colour(LatexUserSetting, String):
         "transparent": "Transparent background, with white text.",
         "trans_black": "Transparent background, with black text.",
     }
-    tabled_colourschemes = prop_tabulate(
-        list(colourschemes.keys()), list(colourschemes.values())
-    )
+    tabled_colourschemes = prop_tabulate(list(colourschemes.keys()), list(colourschemes.values()))
 
     default = "white"
-    _options = list(colourschemes.keys()) + [
-        "grey",
-        "gray",
-        "trans_white",
-        "darkgrey",
-        "darkgray",
-        "black",
-        "default",
-    ]
-    _parsing_failed_response = (
-        "Unknown colourscheme `{{userstr}}`. Valid colourschemes:\n{}".format(
-            tabled_colourschemes
-        )
-    )
+    _options = list(colourschemes.keys()) + ["grey", "gray", "trans_white", "darkgrey", "darkgray", "black", "default"]
+    _parsing_failed_response = f"Unknown colourscheme `{{userstr}}`. Valid colourschemes:\n{tabled_colourschemes}"
 
     _data_column = "colour"
 
@@ -217,8 +187,7 @@ class colour(LatexUserSetting, String):
         """
         if data is None:
             return "Using the default colourscheme"
-        else:
-            return "Using the `{}` colourscheme".format(data)
+        return f"Using the `{data}` colourscheme"
 
     @classmethod
     def info_embed(cls, ctx, data):
@@ -230,8 +199,7 @@ class colour(LatexUserSetting, String):
     def response(cls, ctx, data):
         if data is None:
             return "You are now using the default colourscheme."
-        else:
-            return "You have switched to the `{}` colourscheme.".format(data)
+        return f"You have switched to the `{data}` colourscheme."
 
 
 class alwaysmath(LatexUserSetting, Boolean):
@@ -248,8 +216,7 @@ class alwaysmath(LatexUserSetting, Boolean):
     def response(cls, ctx, data):
         if not data:
             return "The `tex` command will now render in text mode. (default)"
-        else:
-            return "The `tex` command will now render in maths mode, i.e., in a `gather*` environment."
+        return "The `tex` command will now render in maths mode, i.e., in a `gather*` environment."
 
 
 class alwayswide(LatexUserSetting, Boolean):
@@ -269,11 +236,10 @@ class alwayswide(LatexUserSetting, Boolean):
                 "Transparent pixels will be added to your rendered LaTeX to improve previews.\n"
                 "Use the `texw` command to disable this for a single compile."
             )
-        else:
-            return (
-                "Transparent pixels will no longer be added to your rendered LaTeX.\n"
-                ":warning: If your input is short, Discord will make the rendered image huge!"
-            )
+        return (
+            "Transparent pixels will no longer be added to your rendered LaTeX.\n"
+            ":warning: If your input is short, Discord will make the rendered image huge!"
+        )
 
 
 class namestyle(LatexUserSetting, IntegerEnum):
@@ -289,34 +255,29 @@ class namestyle(LatexUserSetting, IntegerEnum):
 
     default = TexNameStyle.NICKNAME.value
     _enum = TexNameStyle
-    _parsing_failed_response = (
-        "Unknown namestyle `{{userstr}}`. Valid namestyles:\n{}".format(
-            prop_tabulate(list(namestyles.keys()), list(namestyles.values()))
-        )
-    )
+    _parsing_failed_response = f"Unknown namestyle `{{userstr}}`. Valid namestyles:\n{prop_tabulate(list(namestyles.keys()), list(namestyles.values()))}"
 
     _data_column = "namestyle"
 
     @classmethod
-    def response(cls, ctx, data):
-        if data is None:
-            return "Your namestyle has been returned to the default."
-        elif data == TexNameStyle.USERNAME.value:
-            return "Your username will now be shown on your LaTeX output."
-        elif data == TexNameStyle.NICKNAME.value:
-            return (
-                "Your guild nickname, if set, will now be shown on your LaTeX output."
-            )
-        elif data == TexNameStyle.MENTION.value:
-            return "You will now be mentioned with your LaTeX output."
-        elif data == TexNameStyle.HIDDEN.value:
-            return (
-                "Your name will no longer be shown on LaTeX output.\n"
-                "Note that the name of the output image is your userid, so you are still identifiable."
-            )
+    def response(cls, ctx: type[Context], data) -> str:
+        match data:
+            case None:
+                return "Your namestyle has been returned to the default."
+            case TexNameStyle.USERNAME.value:
+                return "Your username will now be shown on your LaTeX output."
+            case TexNameStyle.NICKNAME.value:
+                return "Your guild nickname, if set, will now be shown on your LaTeX output."
+            case TexNameStyle.MENTION.value:
+                return "You will now be mentioned with your LaTeX output."
+            case TexNameStyle.HIDDEN.value:
+                return (
+                    "Your name will no longer be shown on LaTeX output.\n"
+                    "Note that the name of the output image is your userid, so you are still identifiable."
+                )
 
     @classmethod
-    def info_embed(cls, ctx, data):
+    def info_embed(cls, ctx: type[Context], data):
         embed = super().info_embed(ctx, data)
         props = cls.namestyles.keys()
         values = [val.format(ctx=ctx) for val in cls.namestyles.values()]
@@ -338,33 +299,30 @@ class autotex_level(LatexUserSetting, IntegerEnum):
 
     default = AutoTexLevel.WEAK
     _enum = AutoTexLevel
-    _parsing_failed_response = (
-        "Unknown autotex level `{{userstr}}`. Valid levels:\n{}".format(tabled_levels)
-    )
+    _parsing_failed_response = f"Unknown autotex level `{{userstr}}`. Valid levels:\n{tabled_levels}"
 
     _data_column = "autotex_level"
 
     @classmethod
-    def response(cls, ctx, data):
-        if data is None:
-            return "Reset your autotex level to default."
-        elif data == AutoTexLevel.CODEBLOCK:
-            return (
-                "I will now only render your messages with `tex` or `latex` codeblocks."
-            )
-        elif data == AutoTexLevel.STRICT:
-            return (
-                "I will now require explicit mathmode macros, environments or codeblocks to render your messages.\n"
-                "Guild configuration (`latex_level`) may locally upgrade this to `CODEBLOCK`."
-            )
-        elif data == AutoTexLevel.WEAK:
-            return (
-                "I will now do my best to detect all LaTeX in your messages.\n"
-                "Guild configuration (`latex_level`) may locally upgrade this to `STRICT` or `CODEBLOCK`."
-            )
+    def response(cls, ctx: type[Context], data) -> str:
+        match data:
+            case None:
+                return "Your autotex level has been returned to the default."
+            case AutoTexLevel.CODEBLOCK:
+                return "I will now only render your messages with `tex` or `latex` codeblocks."
+            case AutoTexLevel.STRICT:
+                return (
+                    "I will now require explicit mathmode macros, environments or codeblocks to render your messages.\n"
+                    "Guild configuration (`latex_level`) may locally upgrade this to `CODEBLOCK`."
+                )
+            case AutoTexLevel.WEAK:
+                return (
+                    "I will now do my best to detect all LaTeX in your messages.\n"
+                    "Guild configuration (`latex_level`) may locally upgrade this to `STRICT` or `CODEBLOCK`."
+                )
 
     @classmethod
-    def info_embed(cls, ctx, data):
+    def info_embed(cls, ctx: type[Context], data) -> type[discord.Embed]:
         embed = super().info_embed(ctx, data)
         embed.add_field(name="LaTeX Levels", value=cls.tabled_levels)
         return embed

@@ -30,7 +30,7 @@ class ModEvent:
         self.action = action
         self.mod = mod
         self.users = users
-        self.user_strs = ["`{}`: {}".format(user.id, user.__str__()) for user in users]
+        self.user_strs = [f"`{user.id}`: {user.__str__()}" for user in users]
         self.timeout = timeout
         self.reason = reason
         self.init_time = datetime.datetime.now(datetime.UTC)
@@ -41,23 +41,15 @@ class ModEvent:
         TODO: timeout in sensible form
         """
         embed = discord.Embed(
-            title=self.actions[self.action][0],
-            color=self.actions[self.action][1],
-            timestamp=self.init_time,
+            title=self.actions[self.action][0], color=self.actions[self.action][1], timestamp=self.init_time
         )
         embed.add_field(
-            name="User{}".format("s" if len(self.users) > 1 else ""),
-            value="\n".join(self.user_strs),
-            inline=False,
+            name="User{}".format("s" if len(self.users) > 1 else ""), value="\n".join(self.user_strs), inline=False
         )
         if self.timeout is not None:
-            embed.add_field(
-                name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False
-            )
+            embed.add_field(name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False)
         embed.add_field(name="Reason", value=self.reason, inline=False)
-        embed.set_footer(
-            icon_url=self.mod.avatar_url, text="Acting Moderator: {}".format(self.mod)
-        )
+        embed.set_footer(icon_url=self.mod.avatar_url, text=f"Acting Moderator: {self.mod}")
         self.embed = embed
         return embed
 

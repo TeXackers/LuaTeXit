@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from cmdClient import cmdClient
+from cmdClient import cmdClient  # noqa
 from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting, String
@@ -55,12 +55,11 @@ class greeting_message(ColumnData, String, GuildSetting):
     def format_greeting_for(self, member):
         if self.data is None:
             return None
-        else:
-            resp = self.data
-            resp = resp.replace("{name}", discord.utils.escape_mentions(member.name))
-            resp = resp.replace("{guildname}", member.guild.name)
-            resp = resp.replace("{mention}", member.mention)
-            return resp
+        return (
+            self.data.replace("{name}", discord.utils.escape_mentions(member.name))
+            .replace("{guildname}", member.guild.name)
+            .replace("{mention}", member.mention)
+        )
 
 
 @module.guild_setting
@@ -107,12 +106,11 @@ class farewell_message(ColumnData, String, GuildSetting):
     def format_farewell_for(self, member):
         if self.data is None:
             return None
-        else:
-            resp = self.data
-            resp = resp.replace("{name}", discord.utils.escape_mentions(member.name))
-            resp = resp.replace("{guildname}", member.guild.name)
-            resp = resp.replace("{nickname}", member.display_name)
-            return resp
+        return (
+            self.data.replace("{name}", discord.utils.escape_mentions(member.name))
+            .replace("{guildname}", member.guild.name)
+            .replace("{nickname}", member.display_name)
+        )
 
 
 # Define event handlers
@@ -120,15 +118,11 @@ async def send_greeting(client, member):
     if member.bot:
         return
 
-    greeting_ch = client.guild_config.greeting_channel.get(
-        client, member.guild.id
-    ).value
+    greeting_ch = client.guild_config.greeting_channel.get(client, member.guild.id).value
     if not greeting_ch:
         return
 
-    greeting_msg = client.guild_config.greeting_message.get(
-        client, member.guild.id
-    ).format_greeting_for(member)
+    greeting_msg = client.guild_config.greeting_message.get(client, member.guild.id).format_greeting_for(member)
     if not greeting_msg:
         return
 
@@ -138,10 +132,7 @@ async def send_greeting(client, member):
         pass
     except Exception as e:
         log(
-            "Failed to greet member '{}' (uid:{}) in guild '{} (gid:{})."
-            " Exception: {}".format(
-                member, member.id, member.guild.name, member.guild.id, e.__repr__()
-            ),
+            f"Failed to greet member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
             context="SEND_GREETING",
             level=logging.WARNING,
         )
@@ -151,15 +142,11 @@ async def send_farewell(client, member):
     if member.bot:
         return
 
-    farewell_ch = client.guild_config.farewell_channel.get(
-        client, member.guild.id
-    ).value
+    farewell_ch = client.guild_config.farewell_channel.get(client, member.guild.id).value
     if not farewell_ch:
         return
 
-    farewell_msg = client.guild_config.farewell_message.get(
-        client, member.guild.id
-    ).format_farewell_for(member)
+    farewell_msg = client.guild_config.farewell_message.get(client, member.guild.id).format_farewell_for(member)
     if not farewell_msg:
         return
 
@@ -169,10 +156,7 @@ async def send_farewell(client, member):
         pass
     except Exception as e:
         log(
-            "Failed to farewell member '{}' (uid:{}) in guild '{} (gid:{})."
-            " Exception: {}".format(
-                member, member.id, member.guild.name, member.guild.id, e.__repr__()
-            ),
+            f"Failed to farewell member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
             context="SEND_FAREWELL",
             level=logging.WARNING,
         )
@@ -206,15 +190,9 @@ farewell_schema = tableSchema(
 @module.data_init_task
 def attach_reception_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, greeting_schema, shared=False
-        ),
-        "guild_greetings",
+        tableInterface.from_schema(client.data, client.app, greeting_schema, shared=False), "guild_greetings"
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, farewell_schema, shared=False
-        ),
-        "guild_farewells",
+        tableInterface.from_schema(client.data, client.app, farewell_schema, shared=False), "guild_farewells"
     )

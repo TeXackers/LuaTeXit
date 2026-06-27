@@ -1,20 +1,18 @@
 import asyncio
 import re
-from datetime import datetime
+from contextlib import suppress
 
 import discord
-from cmdClient import cmdClient
+from cmdClient import Context  # noqa
 from utils.lib import prop_tabulate
 
 from .emojis import emoji_names_by_unicode, emojis_by_name
 from .module import utils_module as module
 
-default_emoji_url = (
-    "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/{}.png"
-)
+default_emoji_url = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/{}.png"
 
 
-def get_custom_emoji(ctx, emoji_str):
+def get_custom_emoji(ctx: type[Context], emoji_str: str):
     # Not valid emoji name or emoji id
     # Cross fingers and hope it is of form a:name:id, <a:name:id>, name:id, or <:name:id>
     # Give up otherwise
@@ -30,40 +28,26 @@ def get_custom_emoji(ctx, emoji_str):
     if not emoji_str.isdigit():
         if ctx.guild:
             return (
-                discord.utils.find(
-                    lambda e: emoji_str.lower() == e.name.lower(), ctx.guild.emojis
-                )
-                or discord.utils.find(
-                    lambda e: emoji_str.lower() in e.name.lower(), ctx.guild.emojis
-                )
-                or discord.utils.find(
-                    lambda e: emoji_str.lower() == e.name.lower(), ctx.client.emojis
-                )
-                or discord.utils.find(
-                    lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis
-                )
+                discord.utils.find(lambda e: emoji_str.lower() == e.name.lower(), ctx.guild.emojis)
+                or discord.utils.find(lambda e: emoji_str.lower() in e.name.lower(), ctx.guild.emojis)
+                or discord.utils.find(lambda e: emoji_str.lower() == e.name.lower(), ctx.client.emojis)
+                or discord.utils.find(lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis)
             )
-        else:
-            return discord.utils.find(
-                lambda e: emoji_str.lower() == e.name.lower(), ctx.client.emojis
-            ) or discord.utils.find(
-                lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis
-            )
+        return discord.utils.find(
+            lambda e: emoji_str.lower() == e.name.lower(), ctx.client.emojis
+        ) or discord.utils.find(lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis)
 
     # Valid emoji id
     if ctx.guild:
-        return discord.utils.get(
-            ctx.guild.emojis, id=int(emoji_str)
-        ) or discord.utils.get(ctx.client.emojis, id=int(emoji_str))
-    else:
-        return discord.utils.get(ctx.client.emojis, id=int(emoji_str))
+        return discord.utils.get(ctx.guild.emojis, id=int(emoji_str)) or discord.utils.get(
+            ctx.client.emojis, id=int(emoji_str)
+        )
+    return discord.utils.get(ctx.client.emojis, id=int(emoji_str))
 
 
-def unicode_char_rep(uni):
+def unicode_char_rep(uni: str) -> str:
     # 65039 is fe0f, doesn't play nicely with Twemoji
-    return "-".join(
-        f"{ord(c):X}".lower() for c in uni if ord(c) >= 128 and ord(c) != 65039
-    )
+    return "-".join(f"{ord(c):X}".lower() for c in uni if ord(c) >= 128 and ord(c) != 65039)
 
 
 @module.cmd(
@@ -72,7 +56,7 @@ def unicode_char_rep(uni):
     aliases=["e", "ee", "ree", "sree", "emote"],
     flags=["e", "to==", "up=="],
 )
-async def cmd_emoji(ctx: cmdClient, flags):
+async def cmd_emoji(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}emoji <emoji> [-e]
@@ -103,9 +87,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
     if not ctx.args and not react_only:
         # List the current guild custom emojis
         if not ctx.guild:
-            return await ctx.error_reply(
-                "Search for emojis using `{}emoji <emojistring>`".format(prefix)
-            )
+            return await ctx.error_reply(f"Search for emojis using `{prefix}emoji <emojistring>`")
 
         emojis = ctx.guild.emojis
 
@@ -115,12 +97,8 @@ async def cmd_emoji(ctx: cmdClient, flags):
                 "Use this command to search for custom emojis from my other guilds."
             )
 
-        emojistrs = [
-            "{}`{id}` {name}".format(str(e), id=e.id, name=e.name) for e in emojis
-        ]
-        blocks = [
-            "\n".join(emojistrs[i : i + 10]) for i in range(0, len(emojistrs), 10)
-        ]
+        emojistrs = [f"{str(e)}`{e.id}` {e.name}" for e in emojis]
+        blocks = ["\n".join(emojistrs[i : i + 10]) for i in range(0, len(emojistrs), 10)]
         embeds = [
             discord.Embed(
                 title="Custom emojis in this guild",
@@ -170,11 +148,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
             "url": default_emoji_url.format(unicode),
         }
     else:
-        name = (
-            em_str
-            if em_str in emojis_by_name
-            else next((n for n in emojis_by_name if em_str in n), None)
-        )
+        name = em_str if em_str in emojis_by_name else next((n for n in emojis_by_name if em_str in n), None)
 
         if name:
             unicode = unicode_char_rep(emojis_by_name[name])
@@ -194,14 +168,10 @@ async def cmd_emoji(ctx: cmdClient, flags):
     if react_only:
         react_message = None
         if ctx.guild and not ctx.ch.permissions_for(ctx.author).add_reactions:
-            return await ctx.error_reply(
-                "You do not have permissions to add reactions here!"
-            )
+            return await ctx.error_reply("You do not have permissions to add reactions here!")
 
         if ctx.guild and not ctx.ch.permissions_for(ctx.guild.me).add_reactions:
-            return await ctx.error_reply(
-                "I do not have permissions to add reactions here!"
-            )
+            return await ctx.error_reply("I do not have permissions to add reactions here!")
 
         # If a messageid to react to was specified, get it. Otherwise get the previous message in the channel.
         if flags["to"]:
@@ -210,14 +180,9 @@ async def cmd_emoji(ctx: cmdClient, flags):
             react_message = await ctx.ch.fetch_message(int(flags["to"]))
             if not react_message:
                 # Couldn't find the requested message to react to
-                return await ctx.error_reply(
-                    "Couldn't find that message in this channel!"
-                )
+                return await ctx.error_reply("Couldn't find that message in this channel!")
         else:
-            if flags["up"] and flags["up"].isdigit() and int(flags["up"]) < 20:
-                distance = int(flags["up"]) + 1
-            else:
-                distance = 2
+            distance = int(flags["up"]) + 1 if flags["up"] and flags["up"].isdigit() and int(flags["up"]) < 20 else 2
             # Grab logs
             # TODO: Does this need permission checking?
             logs = ctx.ch.history(limit=distance)
@@ -232,11 +197,7 @@ async def cmd_emoji(ctx: cmdClient, flags):
         # Wrap this in try/except in case the message was deleted in the meantime somehow.
         try:
             await ctx.client.http.add_reaction(
-                ctx.ch.id,
-                react_message.id,
-                "{}:{}".format(emoji.name, emoji.id)
-                if emoji_is_custom
-                else emoji["emoji"],
+                ctx.ch.id, react_message.id, f"{emoji.name}:{emoji.id}" if emoji_is_custom else emoji["emoji"]
             )
         except discord.NotFound:
             pass
@@ -245,42 +206,29 @@ async def cmd_emoji(ctx: cmdClient, flags):
 
         # If we need to delete the source message, do this now
         if ctx.alias == "sree":
-            try:
+            with suppress(discord.NotFound):
                 await ctx.msg.delete()
-            except discord.Forbidden:
-                pass
 
         # Monitor the react message for reactions for a bit. If someone else reacts, remove our reaction.
-        try:
+        with suppress(asyncio.TimeoutError):
             reaction, _ = await ctx.client.wait_for(
                 "reaction_add",
                 check=lambda reaction, user: (
                     user != ctx.client.user
                     and reaction.message == react_message
-                    and (
-                        reaction.emoji.id == int(emoji.id)
-                        if emoji_is_custom
-                        else str(reaction) == emoji["emoji"]
-                    )
+                    and (reaction.emoji.id == int(emoji.id) if emoji_is_custom else str(reaction) == emoji["emoji"])
                 ),
                 timeout=60,
             )
-        except asyncio.TimeoutError:
-            pass
 
         # Remove our reaction (if possible)
-        try:
-            await react_message.remove_reaction(
-                reaction, ctx.guild.me if ctx.guild else ctx.client.user
-            )
-        except Exception:
-            pass
+        with suppress(discord.NotFound, discord.Forbidden):
+            await react_message.remove_reaction(reaction, ctx.guild.me if ctx.guild else ctx.client.user)
+
     elif enlarged_only:
         # We just want to post an embed with the enlarged emoji as the image.
         embed = discord.Embed(colour=discord.Colour.light_grey())
-        await ctx.reply(
-            embed=embed.set_image(url=emoji.url if emoji_is_custom else emoji["url"])
-        )
+        return await ctx.reply(embed=embed.set_image(url=emoji.url if emoji_is_custom else emoji["url"]))
     elif info:
         # We want to post the embed with the enlarged emoji, and as much info as we can get.
         prop_list = []
@@ -290,9 +238,9 @@ async def cmd_emoji(ctx: cmdClient, flags):
             prop_list.append("Name")
             value_list.append(emoji.name)
             prop_list.append("ID")
-            value_list.append("{}".format(emoji.id))
+            value_list.append(f"{emoji.id}")
             prop_list.append("Image link")
-            value_list.append("[Click here]({})".format(emoji.url))
+            value_list.append(f"[Click here]({emoji.url})")
             if emoji.user:
                 prop_list.append("Creator")
                 value_list.append("{username}#{discriminator}".format(**emoji.user))
@@ -302,24 +250,16 @@ async def cmd_emoji(ctx: cmdClient, flags):
             value_list.append(ctx.ts(emoji.created_at))
         else:
             prop_list = ["Name", "Unicode", "String", "Image link"]
-            value_list = [
-                emoji["shortcode"],
-                emoji["unicode"],
-                emoji["emoji"],
-                "[Click here]({})".format(emoji["url"]),
-            ]
+            value_list = [emoji["shortcode"], emoji["unicode"], emoji["emoji"], "[Click here]({})".format(emoji["url"])]
 
         desc = prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(
-            color=discord.Colour.light_grey(), description=desc, title="Emoji info!"
-        )
+        embed = discord.Embed(color=discord.Colour.light_grey(), description=desc, title="Emoji info!")
         embed.set_image(url=emoji.url if emoji_is_custom else emoji["url"])
-        await ctx.reply(embed=embed)
+        return await ctx.reply(embed=embed)
     else:
         # Final use case, just post the emoji
         if emoji_is_custom:
-            await ctx.reply(
-                "<{}:{}:{}>".format("a" if emoji.animated else "", emoji.name, emoji.id)
-            )
-        else:
-            await ctx.reply(emoji["emoji"])
+            return await ctx.reply("<{}:{}:{}>".format("a" if emoji.animated else "", emoji.name, emoji.id))
+        return await ctx.reply(emoji["emoji"])
+
+    return None

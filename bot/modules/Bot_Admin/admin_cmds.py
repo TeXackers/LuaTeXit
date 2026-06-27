@@ -2,7 +2,7 @@ import inspect
 
 import aiohttp
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from utils.ctx_addons import format_usage  # noqa
 from utils.interactive import pager  # noqa
 from utils.lib import split_text
@@ -46,7 +46,7 @@ activity_dict = {
 
 @module.cmd("shutdown", desc="Shut down the client.", aliases=["restart"])
 @is_manager()
-async def cmd_shutdown(ctx: Context):
+async def cmd_shutdown(ctx: type[Context]):
     """
     Usage``:
         {prefix}shutdown
@@ -66,7 +66,7 @@ async def cmd_shutdown(ctx: Context):
     flags=["type=", "desc==", "url==", "avatar==", "status="],
 )
 @is_manager()
-async def cmd_setgame(ctx: Context, flags):
+async def cmd_setgame(ctx: type[Context], flags):
     """
     Usage``:
         {prefix}setinfo [--type activity type] [--desc activity] [--url url] [--status status] [--avatar avatar_url]
@@ -96,18 +96,14 @@ async def cmd_setgame(ctx: Context, flags):
     activity = None
     if flags["desc"] or flags["type"]:
         activity = discord.Activity(
-            type=activity_dict[flags["type"]]
-            if flags["type"]
-            else discord.ActivityType.playing,
+            type=activity_dict[flags["type"]] if flags["type"] else discord.ActivityType.playing,
             name=flags["desc"] or None,
             url=flags["url"] or None,
         )
 
     # Change the presence
     if flags["status"] or activity:
-        await ctx.client.change_presence(
-            status=flags["status"] or None, activity=activity
-        )
+        await ctx.client.change_presence(status=flags["status"] or None, activity=activity)
 
     # Inform the user
     await ctx.reply("Updated!")
@@ -115,7 +111,7 @@ async def cmd_setgame(ctx: Context, flags):
 
 @module.cmd("dm", desc="Sends a direct message to a user, if possible.")
 @is_master()
-async def cmd_dm(ctx: Context):
+async def cmd_dm(ctx: type[Context]):
     """
     Usage``:
         {prefix}dm user_id message
@@ -155,7 +151,7 @@ async def cmd_dm(ctx: Context):
 
 @module.cmd("logs", desc="Read and return the bot logs.")
 @is_master()
-async def cmd_logs(ctx: Context):
+async def cmd_logs(ctx: type[Context]):
     """
     Usage``:
         {prefix}logs [lines]
@@ -171,9 +167,7 @@ async def cmd_logs(ctx: Context):
         try:
             await ctx.reply(file=logfile)
         except discord.HTTPException:
-            await ctx.error_reply(
-                "Could not send the logfile. Perhaps it was too large?"
-            )
+            await ctx.error_reply("Could not send the logfile. Perhaps it was too large?")
     else:
         # Retrieve the number of lines to send
         if not ctx.args.isdigit():
@@ -181,15 +175,15 @@ async def cmd_logs(ctx: Context):
         lines = int(ctx.args)
 
         # Run tail to get the last <lines> lines of the log
-        logs = await ctx.run_in_shell("tail -n {} {}".format(lines, logpath))
+        logs = await ctx.run_in_shell(f"tail -n {lines} {logpath}")
 
         # Split the log blocks and page the result
-        await ctx.pager(split_text(logs))
+        return await ctx.pager(split_text(logs))
 
 
 @module.cmd("showcmd", desc="Shows the source of a command.")
 @is_master()
-async def cmd_showcmd(ctx: Context):
+async def cmd_showcmd(ctx: type[Context]) -> None:
     """
     Usage:
         {prefix}showcmd <name>
@@ -209,4 +203,4 @@ async def cmd_showcmd(ctx: Context):
     source = source.replace("```", "[codeblock]")
     blocks = split_text(source, 1800, syntax="python")
 
-    await ctx.offer_delete(await ctx.pager(blocks, locked=False))
+    return await ctx.offer_delete(await ctx.pager(blocks, locked=False))

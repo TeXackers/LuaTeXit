@@ -38,6 +38,5 @@ schema = tableSchema(
 @module.data_init_task
 def attach_selfrole_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_selfroles",
+        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_selfroles"
     )

@@ -13,9 +13,7 @@ async def make_muted(ctx):
     role = discord.utils.get(ctx.server.roles, name="Muted")
     if role:
         await ctx.server_conf.mute_role.set(ctx, role.id)
-        await ctx.reply(
-            "Set Muted role to existing role named Muted. You can change this in the config."
-        )
+        await ctx.reply("Set Muted role to existing role named Muted. You can change this in the config.")
         return role
 
     out_msg = await ctx.reply("Creating Mute role, please wait...")
@@ -27,14 +25,8 @@ async def make_muted(ctx):
     overwrite = discord.PermissionOverwrite()
     overwrite.send_messages = False
     try:
-        role = await ctx.bot.create_role(
-            ctx.server, name=role_name, colour=colour, permissions=perms
-        )
-        hot_roles = [
-            r.position
-            for r in ctx.me.roles
-            if r.permissions.manage_roles or r.permissions.administrator
-        ]
+        role = await ctx.bot.create_role(ctx.server, name=role_name, colour=colour, permissions=perms)
+        hot_roles = [r.position for r in ctx.me.roles if r.permissions.manage_roles or r.permissions.administrator]
         if hot_roles:
             hot_position = max(hot_roles)
             await ctx.bot.move_role(ctx.server, role, hot_position - 1)
@@ -49,8 +41,7 @@ async def make_muted(ctx):
 
         await ctx.server_conf.mute_role.set(ctx, role.id)
         await ctx.bot.edit_message(
-            out_msg,
-            "Created new Mute role Muted. Please check the permission restrictions are correct.",
+            out_msg, "Created new Mute role Muted. Please check the permission restrictions are correct."
         )
         return role
 
@@ -69,28 +60,18 @@ async def mute(ctx, user, **kwargs):
         return 1
     except Exception:
         return 2
-    dur = kwargs.get("duration", None)
+    dur = kwargs.get("duration")
     if dur and dur.total_seconds():
-        unmute_event = ModEvent(
-            ctx,
-            "unmute",
-            ctx.author,
-            [user],
-            "Scheduled Unmute after " + ctx.strfdelta(dur),
-        )
+        unmute_event = ModEvent(ctx, "unmute", ctx.author, [user], "Scheduled Unmute after " + ctx.strfdelta(dur))
         embed = await unmute_event.embedify()
 
         now = datetime.datetime.now(datetime.UTC).timestamp()
         to_store = (user.id, now + dur.total_seconds(), embed.to_dict())
-        scheduled_unmutes = (
-            await ctx.data.servers_long.get(ctx.server.id, "unmutes")
-        ) or []
+        scheduled_unmutes = (await ctx.data.servers_long.get(ctx.server.id, "unmutes")) or []
         scheduled_unmutes.append(to_store)
         await ctx.data.servers_long.set(ctx.server.id, "unmutes", scheduled_unmutes)
 
-        asyncio.ensure_future(
-            schedule_unmute(ctx.bot, ctx.server, user, dur.total_seconds(), role, embed)
-        )
+        asyncio.ensure_future(schedule_unmute(ctx.bot, ctx.server, user, dur.total_seconds(), role, embed))
     return 0
 
 
@@ -161,18 +142,14 @@ async def cmd_mute(ctx):
     if ctx.flags["t"]:
         dur = ctx.parse_dur(ctx.flags["t"])
         if not dur:
-            await ctx.reply(
-                "Didn't understand the duration given. See the help for usage."
-            )
+            await ctx.reply("Didn't understand the duration given. See the help for usage.")
             return
 
     action_func = test_action if ctx.flags["f"] else mute
     strings = {
         "action_name": "mute",
         "action_multi_name": "multi-mute",
-        "start": "Muting... \n"
-        if not dur
-        else "Temp-Muting for `{}`... \n".format(ctx.strfdelta(dur)),
+        "start": "Muting... \n" if not dur else f"Temp-Muting for `{ctx.strfdelta(dur)}`... \n",
         "fail_unknown": "🚨 Encountered an unexpected fatal error muting `{user.name}`! Aborting sequence...",
     }
     strings["results"] = {
@@ -229,9 +206,7 @@ async def register_scheduled_unmutes(bot):
         unmutes = await bot.data.servers_long.get(server.id, "unmutes")
         if unmutes:
             muteroleid = await bot.data.servers.get(server.id, "mute_role")
-            muterole = (
-                discord.utils.get(server.roles, id=muteroleid) if muteroleid else None
-            )
+            muterole = discord.utils.get(server.roles, id=muteroleid) if muteroleid else None
             if not muterole:
                 await bot.data.servers_long.set(server.id, "unmutes", None)
             else:
@@ -243,11 +218,9 @@ async def register_scheduled_unmutes(bot):
                     dur = dur if dur > 0 else 1
                     embed = discord.Embed.from_data(embed_dict)
                     scheduled += 1
-                    asyncio.ensure_future(
-                        schedule_unmute(bot, server, member, dur, muterole, embed)
-                    )
+                    asyncio.ensure_future(schedule_unmute(bot, server, member, dur, muterole, embed))
 
-    await bot.log("Scheduled {} users to unmute.".format(scheduled))
+    await bot.log(f"Scheduled {scheduled} users to unmute.")
 
 
 async def add_mute_perm(bot, channel):

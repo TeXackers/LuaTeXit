@@ -1,13 +1,6 @@
-from registry import (
-    Column,
-    ColumnType,
-    ForeignKey,
-    ReferenceAction,
-    tableInterface,
-    tableSchema,
-)
+from registry import Column, ColumnType, ForeignKey, ReferenceAction, tableInterface, tableSchema
 
-from ..module import guild_moderation_module as module
+from modules.Guild_Moderation.module import guild_moderation_module as module
 
 # Define data schemas
 ticket_schema = tableSchema(
@@ -28,9 +21,7 @@ member_schema = tableSchema(
     "guild_moderation_ticket_members",
     Column("ticketid", ColumnType.INT, required=True),
     Column("memberid", ColumnType.SNOWFLAKE, required=True),
-    ForeignKey(
-        "ticketid", ticket_schema.name, "ticketid", on_delete=ReferenceAction.CASCADE
-    ),
+    ForeignKey("ticketid", ticket_schema.name, "ticketid", on_delete=ReferenceAction.CASCADE),
 )
 
 
@@ -38,11 +29,9 @@ member_schema = tableSchema(
 @module.data_init_task
 def attach_mod_ticket_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ticket_schema, shared=True),
-        "guild_mod_tickets",
+        tableInterface.from_schema(client.data, client.app, ticket_schema, shared=True), "guild_mod_tickets"
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_schema, shared=True),
-        "guild_mod_ticket_members",
+        tableInterface.from_schema(client.data, client.app, member_schema, shared=True), "guild_mod_ticket_members"
     )

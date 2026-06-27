@@ -1,5 +1,7 @@
+from contextlib import suppress
+
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from utils.lib import paginate_list
 
 from .module import fun_module as module
@@ -19,12 +21,8 @@ Commands provided:
 """
 
 
-@module.cmd(
-    "convertbinary",
-    desc="Converts binary to text.",
-    aliases=["bin2t", "binarytotext", "convbin"],
-)
-async def cmd_convertbinary(ctx: Context):
+@module.cmd("convertbinary", desc="Converts binary to text.", aliases=["bin2t", "binarytotext", "convbin"])
+async def cmd_convertbinary(ctx: type[Context]):
     """
     Usage``:
         {prefix}convertbinary <binary string>
@@ -36,29 +34,25 @@ async def cmd_convertbinary(ctx: Context):
         await ctx.reply("Please provide a valid binary string!")
         return
     bytelist = map("".join, zip(*[iter(bitstr)] * 8))
-    asciilist = [
-        chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist
-    ]
+    asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
     await ctx.reply("Output: `{}`".format("".join(asciilist)))
 
 
 @module.cmd("lenny", desc="( ͡° ͜ʖ ͡°)")
-async def cmd_lenny(ctx: Context):
+async def cmd_lenny(ctx: type[Context]):
     """
     Usage``:
         {prefix}lenny
     Description:
         Sends lenny ( ͡° ͜ʖ ͡°).
     """
-    try:
+    with suppress(discord.Forbidden):
         await ctx.msg.delete()
-    except discord.Forbidden:
-        pass
     await ctx.reply("( ͡° ͜ʖ ͡°)")
 
 
 @module.cmd("discrim", desc="Searches for users with a given discriminator.")
-async def cmd_discrim(ctx: Context):
+async def cmd_discrim(ctx: type[Context]):
     """
     Usage``:
         {prefix}discrim [discriminator]
@@ -75,25 +69,16 @@ async def cmd_discrim(ctx: Context):
     if len(found_members) == 0:
         await ctx.reply("No users with this discriminator found!")
         return
-    user_info = [(str(m), "({})".format(m.id)) for m in found_members]
+    user_info = [(str(m), f"({m.id})") for m in found_members]
     max_len = len(max(list(zip(*user_info))[0], key=len))
-    user_strs = [
-        "{0[0]:^{max_len}} {0[1]:^25}".format(user, max_len=max_len)
-        for user in user_info
-    ]
+    user_strs = ["{0[0]:^{max_len}} {0[1]:^25}".format(user, max_len=max_len) for user in user_info]
     await ctx.pager(
-        paginate_list(
-            user_strs,
-            title="{} user{} found".format(
-                len(user_strs),
-                "s" if len(user_strs) > 1 else "",
-            ),
-        )
+        paginate_list(user_strs, title="{} user{} found".format(len(user_strs), "s" if len(user_strs) > 1 else ""))
     )
 
 
 @module.cmd("sorry", desc="Sorry, love.")
-async def cmd_sorry(ctx: Context):
+async def cmd_sorry(ctx: type[Context]):
     """
     Usage``:
         {prefix}sorry
@@ -102,9 +87,7 @@ async def cmd_sorry(ctx: Context):
     """
     try:
         embed = discord.Embed(color=discord.Colour.purple())
-        embed.set_image(
-            url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png"
-        )
+        embed.set_image(url="https://cdn.discordapp.com/attachments/309625872665542658/406040395462737921/image.png")
         await ctx.reply(embed=embed)
     except discord.Forbidden:
         return await ctx.error_reply("I lack the permission to send embeds here.")

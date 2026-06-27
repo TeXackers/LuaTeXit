@@ -1,6 +1,8 @@
 import asyncio
+from contextlib import suppress
 
 import discord
+from cmdClient import Context  # noqa
 
 # from datetime import datetime
 from cmdClient.lib import ResponseTimedOut, UserCancelled
@@ -14,21 +16,10 @@ from .module import guild_moderation_module as module
     "prune",
     desc="Purges messages matching selected criteria from the current channel.",
     aliases=["purge"],
-    flags=[
-        "r==",
-        "bot",
-        "bots",
-        "user",
-        "embed",
-        "file",
-        "me",
-        "from==",
-        "after==",
-        "force",
-    ],
+    flags=["r==", "bot", "bots", "user", "embed", "file", "me", "from==", "after==", "force"],
 )
 @guild_moderator()
-async def cmd_prune(ctx, flags):
+async def cmd_prune(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}prune [number] [flags] [--after <msgid>] [--from <user>] [-r <reason>]
@@ -76,9 +67,7 @@ async def cmd_prune(ctx, flags):
     after_msg_id = None
     if flags["after"]:
         if flags["after"] is True or not flags["after"].isdigit():
-            return await ctx.error_reply(
-                "**Usage:** {}purge ... --after <msgid> ...".format(ctx.best_prefix())
-            )
+            return await ctx.error_reply(f"**Usage:** {ctx.best_prefix()}purge ... --after <msgid> ...")
 
         after_msg_id = int(flags["after"])
 
@@ -86,10 +75,8 @@ async def cmd_prune(ctx, flags):
     if not ctx.args:
         number = 1000 if after_msg_id is not None else 100
     elif not ctx.args.isdigit():
-        await ctx.reply(
-            "Please give me a valid number of messages to delete. See the help for this command for usage."
-        )
-        return
+        await ctx.reply("Please give me a valid number of messages to delete. See the help for this command for usage.")
+        return None
     else:
         number = int(ctx.args)
 
@@ -98,9 +85,7 @@ async def cmd_prune(ctx, flags):
     if flags["from"]:
         user = await ctx.find_member(flags["from"], interactive=True)
         if user is None:
-            return await ctx.error_reply(
-                "Couldn't find the requested user, cancelling purge."
-            )
+            return await ctx.error_reply("Couldn't find the requested user, cancelling purge.")
 
     # Retrieve the reason from the flag, or request it
     if flags["r"] is True or not flags["r"]:
@@ -108,17 +93,11 @@ async def cmd_prune(ctx, flags):
             reason = "None, forced prune."
         else:
             try:
-                reason = await ctx.input(
-                    "Please enter a reason for this purge, or `c` to cancel."
-                )
+                reason = await ctx.input("Please enter a reason for this purge, or `c` to cancel.")
             except ResponseTimedOut:
-                raise ResponseTimedOut(
-                    "Reason prompt timed out, cancelling purge."
-                ) from None
+                raise ResponseTimedOut("Reason prompt timed out, cancelling purge.") from None
             if reason.lower() == "c":
-                raise UserCancelled(
-                    "Moderator cancelled the reason prompt, cancelling purge."
-                )
+                raise UserCancelled("Moderator cancelled the reason prompt, cancelling purge.")
 
             if not reason:
                 return await ctx.error_reply("No reason provided, cancelling purge.")
@@ -148,9 +127,7 @@ async def cmd_prune(ctx, flags):
 
         # Check whether we should delete this message
         to_delete = True
-        to_delete = to_delete and (
-            not (flags["bot"] or flags["bots"]) or message.author.bot
-        )
+        to_delete = to_delete and (not (flags["bot"] or flags["bots"]) or message.author.bot)
         to_delete = to_delete and (not flags["user"] or not message.author.bot)
         to_delete = to_delete and (not flags["embed"] or message.embeds)
         to_delete = to_delete and (not flags["file"] or message.attachments)
@@ -161,68 +138,49 @@ async def cmd_prune(ctx, flags):
             message_list.append(message)
             listing = count_dict["bots" if message.author.bot else "users"]
             if message.author.id not in listing:
-                listing[message.author.id] = {
-                    "count": 0,
-                    "name": "{}".format(message.author),
-                }
+                listing[message.author.id] = {"count": 0, "name": f"{message.author}"}
             listing[message.author.id]["count"] += 1
 
     if after_msg_id and not msg_found:
-        return await ctx.reply(
-            "The given message wasn't found in the last {} messages".format(number)
-        )
+        return await ctx.reply(f"The given message wasn't found in the last {number} messages")
 
     if not message_list:
-        return await ctx.error_reply(
-            "No messages matching the given criteria were found!"
-        )
+        return await ctx.error_reply("No messages matching the given criteria were found!")
 
     bot_lines = "\n".join(
         [
-            "\t**{name}** ({key}): ***{count}*** messages".format(
-                **count_dict["bots"][key], key=key
-            )
+            "\t**{name}** ({key}): ***{count}*** messages".format(**count_dict["bots"][key], key=key)
             for key in count_dict["bots"]
         ]
     )
     user_lines = "\n".join(
         [
-            "\t**{name}** ({key}): ***{count}*** messages".format(
-                **count_dict["users"][key], key=key
-            )
+            "\t**{name}** ({key}): ***{count}*** messages".format(**count_dict["users"][key], key=key)
             for key in count_dict["users"]
         ]
     )
-    bot_counts = "__**Bots**__\n{}".format(bot_lines) if bot_lines else ""
-    user_counts = "__**Users**__\n{}".format(user_lines) if user_lines else ""
-    counts = "{}\n{}".format(bot_counts, user_counts)
+    bot_counts = f"__**Bots**__\n{bot_lines}" if bot_lines else ""
+    user_counts = f"__**Users**__\n{user_lines}" if user_lines else ""
+    counts = f"{bot_counts}\n{user_counts}"
     abort = False
     if not flags["force"]:
         out_msg = await ctx.reply(
-            "Purging **{}** messages. Message Breakdown:\n"
-            "{}\n--------------------\n"
-            "Please type `confirm` to delete the above messages or `abort` to abort now.".format(
-                len(message_list), counts
-            )
+            f"Purging **{len(message_list)}** messages. Message Breakdown:\n"
+            f"{counts}\n--------------------\n"
+            "Please type `confirm` to delete the above messages or `abort` to abort now."
         )
         try:
-            reply_msg = await ctx.listen_for(
-                allowed_input=["abort", "confirm"], timeout=60
-            )
+            reply_msg = await ctx.listen_for(allowed_input=["abort", "confirm"], timeout=60)
         except ResponseTimedOut:
-            await ctx.error_reply(
-                "Purge confirmation request timed out, cancelling purge."
-            )
+            await ctx.error_reply("Purge confirmation request timed out, cancelling purge.")
             abort = True
         else:
             if reply_msg.content.lower() == "abort":
                 await ctx.error_reply("Moderator cancelled message purge.")
                 abort = True
         finally:
-            try:
-                await reply_msg.delete()
-            except Exception:
-                pass
+            with suppress(Exception):
+                await out_msg.delete()
 
     if not abort:
         try:
@@ -235,25 +193,18 @@ async def cmd_prune(ctx, flags):
                 msgids = [msg.id for msg in message_list]
                 await ctx.ch.purge(limit=number, check=lambda msg: msg.id in msgids)
         except discord.Forbidden:
-            await ctx.error_reply(
-                "I have insufficient permissions to delete these messages."
-            )
+            await ctx.error_reply("I have insufficient permissions to delete these messages.")
             abort = True
         except discord.HTTPException:
             try:
                 for msg in message_list:
-                    try:
+                    with suppress(discord.NotFound):
                         await msg.delete()
-                    except discord.NotFound:
-                        # The message may have been deleted in the meantime
-                        pass
             except discord.Forbidden:
-                await ctx.reply(
-                    "I have insufficient permissions to delete these messages."
-                )
+                await ctx.reply("I have insufficient permissions to delete these messages.")
                 abort = True
     if abort:
-        return
+        return None
 
     success = await ctx.reply("Purge complete.")
     try:
@@ -261,27 +212,3 @@ async def cmd_prune(ctx, flags):
         await success.delete()
     except Exception:
         pass
-
-
-#    final_message = "Purged **{}** messages. Message breakdown:\n{}".format(len(message_list), counts)
-#    await ctx.reply(final_message)
-
-# modlog posting should be integrated with mod commands
-# have a modlog method which makes an embed post labelled with time and moderator name.
-#     modlog = await ctx.server_conf.modlog_ch.get(ctx)
-#     if not modlog:
-#         return
-#     modlog = ctx.server.get_channel(modlog)
-#     if not modlog:
-#         return
-
-#     embed = discord.Embed(title="Messages purged", color=discord.Colour.red(), description="**{}** messages purged in {}.".format(len(message_list), ctx.ch.mention))
-#     embed.add_field(name="Message Breakdown", value=counts, inline=False)
-#     embed.add_field(name="Reason", value=reason, inline=False)
-#     embed.set_footer(icon_url=ctx.author.avatar.url, text=datetime.datetime.now(datetime.UTC).strftime("Acting Moderator: {} at %I:%M %p, %d/%m/%Y".format(ctx.author)))
-#     try:
-#         await ctx.bot.send_message(modlog, embed=embed)
-#     except discord.Forbidden:
-#         await ctx.reply("Tried to post to the modlog but had insufficient permissions")
-#     except Exception:
-#         pass

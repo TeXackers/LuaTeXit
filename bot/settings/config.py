@@ -4,7 +4,7 @@ class _guild_config:
     """
 
     settings = {}
-    __slots__ = tuple()
+    __slots__ = ()
 
     def __init__(self):
         pass

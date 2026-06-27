@@ -34,10 +34,7 @@ class Connector:
         """
         Attach a data interface to this connector.
         """
-        log(
-            f"a     |--[attach] {interface.__class__.__name__} as {name}.",
-            context="DATABASE",
-        )
+        log(f"a     |--[attach] {interface.__class__.__name__} as {name}.", context="DATABASE")
         setattr(self, name, interface)
         self.interfaces[name] = interface
 
@@ -61,12 +58,10 @@ class Connector:
         conditional_strings = []
         for key, item in conditions.items():
             if isinstance(item, (list, tuple)):
-                conditional_strings.append(
-                    "{} IN ({})".format(key, ", ".join([self.replace_char] * len(item)))
-                )
+                conditional_strings.append("{} IN ({})".format(key, ", ".join([self.replace_char] * len(item))))
                 values.extend(item)
             else:
-                conditional_strings.append("{}={}".format(key, self.replace_char))
+                conditional_strings.append(f"{key}={self.replace_char}")
                 values.append(item)
 
         return (" AND ".join(conditional_strings), values)
@@ -79,7 +74,7 @@ class Connector:
             return ("", tuple())
         keys, values = zip(*valuedict.items())
 
-        set_str = ", ".join("{} = {}".format(key, self.replace_char) for key in keys)
+        set_str = ", ".join(f"{key} = {self.replace_char}" for key in keys)
 
         return (set_str, values)
 
@@ -89,8 +84,7 @@ class Connector:
         """
         if not keys:
             return "*"
-        else:
-            return ", ".join(keys)
+        return ", ".join(keys)
 
     def format_insertkeys(self, keys):
         """
@@ -98,8 +92,7 @@ class Connector:
         """
         if not keys:
             return ""
-        else:
-            return "({})".format(", ".join(keys))
+        return "({})".format(", ".join(keys))
 
     def format_insertvalues(self, values):
         """
@@ -116,14 +109,12 @@ class Connector:
         col_str = self.format_selectkeys(select_columns)
 
         if conditions:
-            where_str = "WHERE {}".format(criteria)
+            where_str = f"WHERE {criteria}"
         else:
             where_str = ""
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
-        cursor.execute(
-            "SELECT {} FROM {} {}".format(col_str, table, where_str), criteria_values
-        )
+        cursor.execute(f"SELECT {col_str} FROM {table} {where_str}", criteria_values)
         return cursor.fetchall()
 
     def update_where(self, table, valuedict, cursor=None, **conditions):
@@ -134,15 +125,12 @@ class Connector:
         criteria, criteria_values = self.format_conditions(conditions)
 
         if conditions:
-            where_str = "WHERE {}".format(criteria)
+            where_str = f"WHERE {criteria}"
         else:
             where_str = ""
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
-        cursor.execute(
-            "UPDATE {} SET {} {}".format(table, key_str, where_str),
-            tuple((*key_values, *criteria_values)),
-        )
+        cursor.execute(f"UPDATE {table} SET {key_str} {where_str}", tuple((*key_values, *criteria_values)))
         self.conn.commit()
         return cursor
 
@@ -153,9 +141,7 @@ class Connector:
         criteria, criteria_values = self.format_conditions(conditions)
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
-        cursor.execute(
-            "DELETE FROM {} WHERE {}".format(table, criteria), criteria_values
-        )
+        cursor.execute(f"DELETE FROM {table} WHERE {criteria}", criteria_values)
         self.conn.commit()
         return cursor
 
@@ -171,9 +157,7 @@ class Connector:
         action = "REPLACE" if allow_replace else "INSERT"
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
-        cursor.execute(
-            "{} INTO {} {} VALUES {}".format(action, table, key_str, value_str), values
-        )
+        cursor.execute(f"{action} INTO {table} {key_str} VALUES {value_str}", values)
         self.conn.commit()
         return cursor
 
@@ -182,17 +166,13 @@ class Connector:
         Insert all the given values into the table
         """
         key_str = self.format_insertkeys(insert_keys)
-        value_strs, value_tuples = zip(
-            *(self.format_insertvalues(value_tuple) for value_tuple in value_tuples)
-        )
+        value_strs, value_tuples = zip(*(self.format_insertvalues(value_tuple) for value_tuple in value_tuples))
 
         value_str = ", ".join(value_strs)
         values = tuple(chain(*value_tuples))
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
-        cursor.execute(
-            "INSERT INTO {} {} VALUES {}".format(table, key_str, value_str), values
-        )
+        cursor.execute(f"INSERT INTO {table} {key_str} VALUES {value_str}", values)
         self.conn.commit()
         return cursor
 

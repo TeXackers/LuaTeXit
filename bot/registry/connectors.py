@@ -19,9 +19,7 @@ class mysqlConnector(Connector):
         super().__init__(**dbopts)
 
         if not MYSQL:
-            raise ImportError(
-                "No MySQL connector available in your system, please install MySQL."
-            )
+            raise ImportError("No MySQL connector available in your system, please install MySQL.")
 
         self.conn = mysql.connector.connect(**dbopts)
         self.conn.autocommit = True
@@ -40,9 +38,7 @@ class mysqlConnector(Connector):
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
         cursor.execute(
-            "INSERT INTO {} {} VALUES {} ON DUPLICATE KEY UPDATE {}".format(
-                table, key_str, value_str, update_key_str
-            ),
+            f"INSERT INTO {table} {key_str} VALUES {value_str} ON DUPLICATE KEY UPDATE {update_key_str}",
             tuple((*values, *update_key_values)),
         )
         self.conn.commit()
@@ -77,9 +73,7 @@ class sqliteConnector(Connector):
 
         cursor = cursor or self.conn.cursor(**self.cursor_args)
         cursor.execute(
-            "INSERT INTO {} {} VALUES {} ON CONFLICT({}) DO UPDATE SET {}".format(
-                table, key_str, value_str, constraint, update_key_str
-            ),
+            f"INSERT INTO {table} {key_str} VALUES {value_str} ON CONFLICT({constraint}) DO UPDATE SET {update_key_str}",
             tuple((*values, *update_key_values)),
         )
         self.conn.commit()

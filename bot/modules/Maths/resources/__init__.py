@@ -1,5 +1,5 @@
-import os
+from pathlib import Path
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__location__ = Path(__file__).resolve().parent
 
-font_path = os.path.join(__location__, "wolf_font.ttf")
+font_path = Path(__location__) / "wolf_font.ttf"

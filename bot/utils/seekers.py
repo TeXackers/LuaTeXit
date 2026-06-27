@@ -1,19 +1,14 @@
 import asyncio
+
 import discord
 from cmdClient import Context
-from cmdClient.lib import (
-    InvalidContext,
-    UserCancelled,
-    ResponseTimedOut,
-    SafeCancellation,
-)
+from cmdClient.lib import InvalidContext, ResponseTimedOut, SafeCancellation, UserCancelled
+
 from . import interactive as _interactive  # noqa
 
 
 @Context.util
-async def find_role(
-    ctx, userstr, create=False, interactive=False, collection=None, allow_notfound=True
-):
+async def find_role(ctx, userstr, create=False, interactive=False, collection=None, allow_notfound=True):
     """
     Find a guild role given a partial matching string,
     allowing custom role collections and several behavioural switches.
@@ -88,16 +83,11 @@ async def find_role(
         # We have multiple matching roles!
         if interactive:
             # Interactive prompt with the list of roles, handle `Object`s
-            role_names = [
-                role.name if isinstance(role, discord.Role) else str(role.id)
-                for role in roles
-            ]
+            role_names = [role.name if isinstance(role, discord.Role) else str(role.id) for role in roles]
 
             try:
                 selected = await ctx.selector(
-                    "`{}` roles found matching `{}`!".format(len(roles), userstr),
-                    role_names,
-                    timeout=60,
+                    f"`{len(roles)}` roles found matching `{userstr}`!", role_names, timeout=60
                 )
             except UserCancelled:
                 raise UserCancelled("User cancelled role selection.") from None
@@ -111,7 +101,7 @@ async def find_role(
 
     # Handle non-existence of the role
     if role is None:
-        msgstr = "Couldn't find a role matching `{}`!".format(userstr)
+        msgstr = f"Couldn't find a role matching `{userstr}`!"
         if create:
             # Inform the user
             msg = await ctx.error_reply(msgstr)
@@ -122,20 +112,13 @@ async def find_role(
                     # They accepted, create the role
                     # Before creation, check if the role name is too long
                     if len(userstr) > 100:
-                        await ctx.error_reply(
-                            "Could not create a role with a name over 100 characters long!"
-                        )
+                        await ctx.error_reply("Could not create a role with a name over 100 characters long!")
                     else:
                         role = await ctx.guild.create_role(
-                            name=userstr,
-                            reason="Interactive role creation for {} (uid:{})".format(
-                                ctx.author, ctx.author.id
-                            ),
+                            name=userstr, reason=f"Interactive role creation for {ctx.author} (uid:{ctx.author.id})"
                         )
                         await msg.delete()
-                        await ctx.reply(
-                            "You have created the role `{}`!".format(userstr)
-                        )
+                        await ctx.reply(f"You have created the role `{userstr}`!")
 
             # If we still don't have a role, cancel unless allow_notfound is set
             if role is None and not allow_notfound:
@@ -149,9 +132,7 @@ async def find_role(
 
 
 @Context.util
-async def find_channel(
-    ctx, userstr, interactive=False, collection=None, chan_type=None
-):
+async def find_channel(ctx, userstr, interactive=False, collection=None, chan_type=None):
     """
     Find a guild channel given a partial matching string,
     allowing custom channel collections and several behavioural switches.
@@ -225,9 +206,7 @@ async def find_channel(
 
             try:
                 selected = await ctx.selector(
-                    "`{}` channels found matching `{}`!".format(len(channels), userstr),
-                    chan_names,
-                    timeout=60,
+                    f"`{len(channels)}` channels found matching `{userstr}`!", chan_names, timeout=60
                 )
             except UserCancelled:
                 raise UserCancelled("User cancelled channel selection.") from None
@@ -240,15 +219,13 @@ async def find_channel(
             chan = channels[0]
 
     if chan is None:
-        await ctx.error_reply("Couldn't find a channel matching `{}`!".format(userstr))
+        await ctx.error_reply(f"Couldn't find a channel matching `{userstr}`!")
 
     return chan
 
 
 @Context.util
-async def find_member(
-    ctx, userstr, interactive=False, collection=None, silent_notfound=False
-):
+async def find_member(ctx, userstr, interactive=False, collection=None, silent_notfound=False):
     """
     Find a guild member given a partial matching string,
     allowing custom member collections.
@@ -302,11 +279,7 @@ async def find_member(
 
     # Check method to determine whether a member matches
     def check(member):
-        return (
-            member.id == userid
-            or searchstr in member.display_name.lower()
-            or searchstr in str(member).lower()
-        )
+        return member.id == userid or searchstr in member.display_name.lower() or searchstr in str(member).lower()
 
     # Get list of matching roles
     members = list(filter(check, collection))
@@ -323,19 +296,15 @@ async def find_member(
             # Interactive prompt with the list of members
             member_names = [
                 "{} {}".format(
-                    member.nick
-                    if member.nick
-                    else (member if members.count(member) > 1 else member),
-                    ("({})".format(member)) if member.nick else "",
+                    member.nick if member.nick else (member if members.count(member) > 1 else member),
+                    (f"({member})") if member.nick else "",
                 )
                 for member in members
             ]
 
             try:
                 selected = await ctx.selector(
-                    "`{}` members found matching `{}`!".format(len(members), userstr),
-                    member_names,
-                    timeout=60,
+                    f"`{len(members)}` members found matching `{userstr}`!", member_names, timeout=60
                 )
             except UserCancelled:
                 raise UserCancelled("User cancelled member selection.") from None
@@ -348,7 +317,7 @@ async def find_member(
             member = members[0]
 
     if member is None and not silent_notfound:
-        await ctx.error_reply("Couldn't find a member matching `{}`!".format(userstr))
+        await ctx.error_reply(f"Couldn't find a member matching `{userstr}`!")
 
     return member
 
@@ -381,11 +350,7 @@ async def find_message(ctx, msgid, chlist=None, ignore=[]):
 
     # Build the channel list to search
     if chlist is None:
-        chlist = [
-            ch
-            for ch in ctx.guild.text_channels
-            if ch.permissions_for(ctx.author).read_messages
-        ]
+        chlist = [ch for ch in ctx.guild.text_channels if ch.permissions_for(ctx.author).read_messages]
 
     # Remove any channels we are ignoring
     chlist = [ch for ch in chlist if ch.id not in ignore]
@@ -394,7 +359,7 @@ async def find_message(ctx, msgid, chlist=None, ignore=[]):
 
     i = 0
     while True:
-        done = set((task for task in tasks if task.done()))
+        done = {task for task in tasks if task.done()}
         tasks = tasks.difference(done)
 
         results = [task.result() for task in done]
@@ -416,7 +381,7 @@ async def find_message(ctx, msgid, chlist=None, ignore=[]):
 
 async def _search_in_channel(channel: discord.TextChannel, msgid: int):
     if channel.type != discord.ChannelType.text:
-        return
+        return None
 
     try:
         message = await channel.fetch_message(msgid)

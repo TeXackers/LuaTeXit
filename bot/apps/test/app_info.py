@@ -1,6 +1,8 @@
+from pathlib import Path
+
 HELP_FILE = "apps/test/help.txt"
 
-with open(HELP_FILE, "r") as help_file:
+with Path.open(HELP_FILE) as help_file:
     help_str = help_file.read()
 
 

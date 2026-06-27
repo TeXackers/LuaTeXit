@@ -3,14 +3,17 @@ ABC and data definitions for manual moderation tickets.
 """
 
 import datetime
-from typing import Any, List, Mapping, Optional, Type, TypeVar
+from collections.abc import Mapping  # noqa
+from contextlib import suppress
+from typing import Any, TypeVar
 
 import discord
-from cmdClient.cmdClient import cmdClient
-from registry import tableInterface
+from cmdClient.cmdClient import cmdClient  # noqa
+from registry import tableInterface  # noqa
 from utils.lib import jumpto
 
-from ..module import guild_moderation_module as module
+from modules.Guild_Moderation.module import guild_moderation_module as module
+
 from .TicketTypes import TicketType
 
 T = TypeVar("T", bound="Ticket")
@@ -75,12 +78,8 @@ class Ticket:
     _client: cmdClient = None  # Client, attached at initialisation
 
     # Data interfaces
-    _ticket_data: tableInterface = (
-        None  # Ticket properties, interface for the raw ticket table
-    )
-    _member_data: tableInterface = (
-        None  # Ticket members, interface for the ticket member table
-    )
+    _ticket_data: tableInterface = None  # Ticket properties, interface for the raw ticket table
+    _member_data: tableInterface = None  # Ticket members, interface for the ticket member table
 
     # Ticket properties with extra properties joined or derived from all ticket types
     _combined_ticket_data: tableInterface = None
@@ -88,7 +87,7 @@ class Ticket:
     # Type of ticket the class represents
     _ticket_type = None
 
-    def __init__(self, row: Mapping[str, Any], memberids: List[int], *args):
+    def __init__(self, row: Mapping[str, Any], memberids: list[int], *args):
         self.guildid: int = row["guildid"]
         self.modid: int = row["modid"]
         self.agentid: int = row["agentid"]
@@ -100,7 +99,7 @@ class Ticket:
         self.reason: str = row["reason"]
         self.created_at: int = row["created_at"]
 
-        self.memberids: List[int] = memberids
+        self.memberids: list[int] = memberids
 
     @property
     def embed(self):
@@ -110,26 +109,20 @@ class Ticket:
         """
         # Base embed
         embed = discord.Embed(
-            title="Ticket #{}".format(self.ticketgid),
-            timestamp=datetime.datetime.fromtimestamp(self.created_at),
+            title=f"Ticket #{self.ticketgid}", timestamp=datetime.datetime.fromtimestamp(self.created_at)
         )
 
         # Moderator information
         mod_user = self._client.get_user(self.modid)
         if mod_user is not None:
-            embed.set_footer(
-                text="Responsible moderator: {}".format(mod_user),
-                icon_url=mod_user.avatar_url,
-            )
+            embed.set_footer(text=f"Responsible moderator: {mod_user}", icon_url=mod_user.avatar_url)
         else:
-            embed.set_footer(text="Responsible moderator: {}".format(self.modid))
+            embed.set_footer(text=f"Responsible moderator: {self.modid}")
 
         # Target information
-        targets = "\n".join(
-            "<@{0}> ({0})".format(targetid) for targetid in self.memberids
-        )
+        targets = "\n".join(f"<@{targetid}> ({targetid})" for targetid in self.memberids)
         if len(self.memberids) == 1:
-            embed.description = "`Target`: {}".format(targets)
+            embed.description = f"`Target`: {targets}"
         else:
             embed.add_field(name="Targets", value=targets, inline=False)
 
@@ -144,19 +137,14 @@ class Ticket:
         """
         Brief one-line summary of the ticket.
         """
-        return "**{}**".format(self._ticket_type.name)
+        return f"**{self._ticket_type.name}**"
 
     @property
     def field_summary(self):
         """
         Ticket summary as a tuple `(name, value)` suitable for an embed field.
         """
-        name = "(#{}) **{}** on {} by {}".format(
-            self.ticketgid,
-            self._ticket_type.name,
-            datetime.datetime.fromtimestamp(self.created_at),
-            self._client.get_user(self.modid) or self.modid,
-        )
+        name = f"(#{self.ticketgid}) **{self._ticket_type.name}** on {datetime.datetime.fromtimestamp(self.created_at)} by {self._client.get_user(self.modid) or self.modid}"
         value = self.reason or "No reason given"
         return (name, value)
 
@@ -170,6 +158,7 @@ class Ticket:
 
         if modlogid and self.msgid:
             return jumpto(self.guildid, modlogid, self.msgid)
+        return None
 
     @classmethod
     def setup(cls, client):
@@ -180,13 +169,13 @@ class Ticket:
 
     @classmethod
     def create(
-        cls: Type[T],
+        cls: type[T],
         guildid: int,
         modid: int,
         agentid: int,
-        memberids: List[int],
-        auditid: Optional[int] = None,
-        reason: Optional[str] = None,
+        memberids: list[int],
+        auditid: int | None = None,
+        reason: str | None = None,
         **kwargs,
     ) -> T:
         """
@@ -214,8 +203,7 @@ class Ticket:
 
         # Save the member data
         cls._member_data.insert_many(
-            *((ticketid, memberid) for memberid in memberids),
-            insert_keys=("ticketid", "memberid"),
+            *((ticketid, memberid) for memberid in memberids), insert_keys=("ticketid", "memberid")
         )
 
         return cls._create_ticket(ticketid, memberids, **kwargs)
@@ -227,7 +215,7 @@ class Ticket:
         return cls(row, memberids)
 
     @classmethod
-    def fetch_tickets_where(cls: Type[T], memberid=None, **kwargs) -> List[T]:
+    def fetch_tickets_where(cls: type[T], memberid=None, **kwargs) -> list[T]:
         """
         Fetch tickets matching the given criteria.
         Additionally filters by the current `_ticket_type`, if set and not given in `kwargs`.
@@ -273,11 +261,7 @@ class Ticket:
                 ticket_members[row["ticketid"]].append(row["memberid"])
 
             for row in ticket_rows:
-                tickets.append(
-                    TicketType(row["ticket_type"]).Ticket(
-                        row, ticket_members[row["ticketid"]]
-                    )
-                )
+                tickets.append(TicketType(row["ticket_type"]).Ticket(row, ticket_members[row["ticketid"]]))
         else:
             return []
 
@@ -299,8 +283,7 @@ class Ticket:
         if new_memberids is not None:
             self._member_data.delete_where(ticketid=self.ticketid)
             self._member_data.insertmany(
-                ("ticketid", "memberid"),
-                *((self.ticketid, memberid) for memberid in new_memberids),
+                ("ticketid", "memberid"), *((self.ticketid, memberid) for memberid in new_memberids)
             )
 
         return self
@@ -325,16 +308,14 @@ class Ticket:
                 except discord.NotFound:
                     pass
                 except discord.Forbidden:
-                    return None
+                    return
                 except discord.HTTPException:
-                    return None
+                    return
 
                 if message is not None and message.author != self._client.user:
                     # The message was probably sent by another app
-                    try:
+                    with suppress(discord.Forbidden):
                         await message.delete()
-                    except discord.Forbidden:
-                        pass
                     message = None
 
             if message is not None:

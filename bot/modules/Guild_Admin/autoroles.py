@@ -1,7 +1,7 @@
 import logging
 
-import discord
-from cmdClient import cmdClient
+from cmdClient import cmdClient  # noqa
+from discord import Member  # noqa
 from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import GuildSetting, ListData, RoleList
@@ -44,7 +44,7 @@ class bot_autoroles(ListData, RoleList, GuildSetting):
 
 
 # Define event handler
-async def give_autoroles(client: cmdClient, member: discord.Member):
+async def give_autoroles(client: cmdClient, member: Member):
     # Get the autoroles from storage
     if member.bot:
         autoroles = client.guild_config.bot_autoroles.get(client, member.guild.id).value
@@ -55,17 +55,13 @@ async def give_autoroles(client: cmdClient, member: discord.Member):
     if autoroles and member.guild.me.guild_permissions.manage_roles:
         # Retrieve my top role with manage role permissions
         my_mr_roles = [
-            role
-            for role in member.guild.me.roles
-            if role.permissions.manage_roles or role.permissions.administrator
+            role for role in member.guild.me.roles if role.permissions.manage_roles or role.permissions.administrator
         ]
 
         # Filter autoroles based on what I have permission to add
         if my_mr_roles:
             max_mr_role = max(my_mr_roles)
-            autoroles = [
-                role for role in autoroles if role is not None and role < max_mr_role
-            ]
+            autoroles = [role for role in autoroles if role is not None and role < max_mr_role]
         else:
             autoroles = None
 
@@ -75,14 +71,7 @@ async def give_autoroles(client: cmdClient, member: discord.Member):
                 await member.add_roles(*autoroles, reason="Adding autoroles")
             except Exception as e:
                 log(
-                    "Failed to add autoroles to new member '{}' (uid:{}) in guild '{} (gid:{})."
-                    " Exception: {}".format(
-                        member,
-                        member.id,
-                        member.guild.name,
-                        member.guild.id,
-                        e.__repr__(),
-                    ),
+                    f"Failed to add autoroles to new member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
                     context="GIVE_AUTOROLE",
                     level=logging.WARNING,
                 )
@@ -114,11 +103,9 @@ bar_schema = tableSchema(
 @module.data_init_task
 def attach_autorole_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ar_schema, shared=False),
-        "guild_autoroles",
+        tableInterface.from_schema(client.data, client.app, ar_schema, shared=False), "guild_autoroles"
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, bar_schema, shared=False),
-        "guild_bot_autoroles",
+        tableInterface.from_schema(client.data, client.app, bar_schema, shared=False), "guild_bot_autoroles"
     )

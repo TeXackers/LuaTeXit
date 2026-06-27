@@ -1,6 +1,6 @@
 from registry import Column, ColumnType, tableInterface, tableSchema
 
-from ..module import latex_module as module
+from modules.Tex.module import latex_module as module
 
 # The active user and guild preambles
 user_preamble_schema = tableSchema(
@@ -40,8 +40,7 @@ global_preset_schema = tableSchema(
 )
 
 global_whitelist_schema = tableSchema(
-    "global_latex_package_whitelist",
-    Column("package", ColumnType.SHORTSTRING, required=True),
+    "global_latex_package_whitelist", Column("package", ColumnType.SHORTSTRING, required=True)
 )
 
 
@@ -50,40 +49,27 @@ global_whitelist_schema = tableSchema(
 def attach_preamble_data(client):
     # User active preambles
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, user_preamble_schema, shared=True
-        ),
-        "user_latex_preambles",
+        tableInterface.from_schema(client.data, client.app, user_preamble_schema, shared=True), "user_latex_preambles"
     )
 
     # Guild active preambles
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, guild_preamble_schema, shared=True
-        ),
-        "guild_latex_preambles",
+        tableInterface.from_schema(client.data, client.app, guild_preamble_schema, shared=True), "guild_latex_preambles"
     )
 
     # User pending preambles
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, user_pending_preamble_schema, shared=True
-        ),
+        tableInterface.from_schema(client.data, client.app, user_pending_preamble_schema, shared=True),
         "user_pending_preambles",
     )
 
     # Global presets
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, global_preset_schema, shared=True
-        ),
-        "global_latex_presets",
+        tableInterface.from_schema(client.data, client.app, global_preset_schema, shared=True), "global_latex_presets"
     )
 
     # Global package whitelist
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, global_whitelist_schema, shared=True
-        ),
+        tableInterface.from_schema(client.data, client.app, global_whitelist_schema, shared=True),
         "global_package_whitelist",
     )

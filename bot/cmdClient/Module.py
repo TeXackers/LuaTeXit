@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, Type
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .Context import Context
 
 from . import cmdClient
@@ -15,12 +17,10 @@ class Module:
 
     name: str = "Base Module"
 
-    def __init__(
-        self, name: Optional[str] = None, baseCommand: Type[Command] = Command
-    ) -> None:
+    def __init__(self, name: str | None = None, baseCommand: type[Command] = Command) -> None:
         if name:
             self.name: str = name
-        self.baseCommand: Type[Command] = baseCommand
+        self.baseCommand: type[Command] = baseCommand
 
         self.cmds: list[Command] = []
         self.initialised: bool = False
@@ -34,9 +34,7 @@ class Module:
 
         log("     module", context=self.name)
 
-    def cmd(
-        self, name, cmdClass: Type[Command] | None = None, **kwargs
-    ) -> Callable[[Callable], Command]:
+    def cmd(self, name, cmdClass: type[Command] | None = None, **kwargs) -> Callable[[Callable], Command]:
         """
         Decorator to create a command in this module with the given `name`.
         Creates the command using the provided `cmdClass`.
@@ -88,10 +86,7 @@ class Module:
             log("      task init", context=self.name)
 
             for task in self.init_tasks:
-                log(
-                    f"t     |--[task] {task.__name__}",
-                    context=self.name,
-                )
+                log(f"t     |--[task] {task.__name__}", context=self.name)
                 task(client)
 
             self.initialised = True
@@ -115,21 +110,21 @@ class Module:
         else:
             log("s     |--[skip]", context=self.name)
 
-    async def pre_command(self, ctx: Context):
+    async def pre_command(self, ctx: type[Context]):
         """
         Pre-command hook.
         Executed before a command is run.
         """
         pass
 
-    async def post_command(self, ctx: Context):
+    async def post_command(self, ctx: type[Context]):
         """
         Post-command hook.
         Executed after a command is run without exception.
         """
         pass
 
-    async def on_exception(self, ctx: Context, exception: Exception):
+    async def on_exception(self, ctx: type[Context], exception: Exception):
         """
         Exception hook.
         Executed when a command function throws an exception.

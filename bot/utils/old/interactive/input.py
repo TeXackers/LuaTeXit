@@ -1,5 +1,6 @@
-import discord
 import re
+
+import discord
 
 
 def load_into(bot):
@@ -10,17 +11,13 @@ def load_into(bot):
             def check(message):
                 return (message.content.lower() if lower else message.content) in chars
 
-        msg = await ctx.bot.wait_for_message(
-            author=ctx.author, check=check, timeout=timeout
-        )
+        msg = await ctx.bot.wait_for_message(author=ctx.author, check=check, timeout=timeout)
         return msg
 
     @bot.util
     async def input(ctx, msg="", timeout=120, prompt_msg=None):
         offer_msg = prompt_msg if prompt_msg is not None else await ctx.reply(msg)
-        result_msg = await ctx.bot.wait_for_message(
-            author=ctx.author, channel=ctx.ch, timeout=timeout
-        )
+        result_msg = await ctx.bot.wait_for_message(author=ctx.author, channel=ctx.ch, timeout=timeout)
         if result_msg is None:
             return None
         result = result_msg.content
@@ -34,11 +31,7 @@ def load_into(bot):
     @bot.util
     async def ask(ctx, msg, timeout=30, use_msg=None, del_on_timeout=False):
         out = "{} {}".format(msg, "`y(es)`/`n(o)`")
-        offer_msg = (
-            await ctx.bot.edit_message(use_msg, out)
-            if use_msg
-            else await ctx.reply(out)
-        )
+        offer_msg = await ctx.bot.edit_message(use_msg, out) if use_msg else await ctx.reply(out)
         result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=timeout)
 
         if result_msg is None:
@@ -71,15 +64,7 @@ def load_into(bot):
         """
 
     @bot.util
-    async def selector(
-        ctx,
-        message,
-        select_from,
-        timeout=120,
-        max_len=20,
-        silent=False,
-        allow_single=False,
-    ):
+    async def selector(ctx, message, select_from, timeout=120, max_len=20, silent=False, allow_single=False):
         """
         Interactive method to ask the user to select an entry from a list.
         Returns the index of the list which was selected,
@@ -93,15 +78,11 @@ def load_into(bot):
         if not allow_single and len(select_from) == 1:
             return 0
         pages = [
-            "{}\n{}\nType the number of your selection or `c` to cancel.".format(
-                message, page
-            )
+            f"{message}\n{page}\nType the number of your selection or `c` to cancel."
             for page in ctx.paginate_list(select_from, block_length=max_len)
         ]
         out_msg = await ctx.pager(pages)
-        result_msg = await ctx.listen_for(
-            [str(i + 1) for i in range(0, len(select_from))] + ["c"], timeout=timeout
-        )
+        result_msg = await ctx.listen_for([str(i + 1) for i in range(0, len(select_from))] + ["c"], timeout=timeout)
         try:
             await ctx.bot.delete_message(out_msg)
         except discord.NotFound:
@@ -127,12 +108,7 @@ def load_into(bot):
 
     @bot.util
     async def multi_selector(
-        ctx,
-        message: discord.Message,
-        select_from: list,
-        timeout=120,
-        max_len=20,
-        silent=False,
+        ctx, message: discord.Message, select_from: list, timeout=120, max_len=20, silent=False
     ) -> list:
         """
         Interactive method to ask the user to select an entry from a list.
@@ -148,9 +124,7 @@ def load_into(bot):
             return []
         # paginate possible choices (indexes become +1 here!)
         pages = [
-            "{}\n{}\nType the numbers of your selection or `c` to cancel.".format(
-                message, page
-            )
+            f"{message}\n{page}\nType the numbers of your selection or `c` to cancel."
             for page in ctx.paginate_list(select_from, block_length=max_len)
         ]
         # send pages off to discord
@@ -224,18 +198,10 @@ def load_into(bot):
             return None
         if len(select_from) == 1:
             return 0
-        page = "{}\n{}\nType the number of your selection or `c` to cancel.".format(
-            message, ctx.paginate_list(select_from, block_length=50)[0]
-        )
+        page = f"{message}\n{ctx.paginate_list(select_from, block_length=50)[0]}\nType the number of your selection or `c` to cancel."
 
-        out_msg = (
-            await ctx.bot.edit_message(use_msg, page)
-            if use_msg
-            else await ctx.reply(page)
-        )
-        result_msg = await ctx.listen_for(
-            [str(i + 1) for i in range(0, len(select_from))] + ["c"], timeout=timeout
-        )
+        out_msg = await ctx.bot.edit_message(use_msg, page) if use_msg else await ctx.reply(page)
+        result_msg = await ctx.listen_for([str(i + 1) for i in range(0, len(select_from))] + ["c"], timeout=timeout)
 
         if not use_msg:
             try:
@@ -258,9 +224,7 @@ def load_into(bot):
         return int(result_msg.content) - 1
 
     @bot.util
-    async def menu(
-        ctx, items, callback, menu_msg=None, title="Menu", prompt=None, timeout=120
-    ):
+    async def menu(ctx, items, callback, menu_msg=None, title="Menu", prompt=None, timeout=120):
         menu = {
             "items": items,
             "callback": callback,
@@ -281,14 +245,9 @@ def load_into(bot):
 
         while True:
             # Print the menu
-            nice_list = ctx.paginate_list(
-                menu["items"], title=menu["title"], block_length=50
-            )[0]
+            nice_list = ctx.paginate_list(menu["items"], title=menu["title"], block_length=50)[0]
             nice_list = "{}\n{}".format(
-                nice_list,
-                menu["prompt"]
-                if menu["prompt"]
-                else "Please type your selection number or `c` to go back.",
+                nice_list, menu["prompt"] if menu["prompt"] else "Please type your selection number or `c` to go back."
             )
             menu["msg"] = (
                 await ctx.bot.edit_message(menu["msg"], nice_list)
@@ -361,9 +320,7 @@ def load_into(bot):
         to_return = None
 
         while invalid:
-            output = await ctx.bot.wait_for_message(
-                author=ctx.author, timeout=600, channel=ctx.ch
-            )
+            output = await ctx.bot.wait_for_message(author=ctx.author, timeout=600, channel=ctx.ch)
             to_delete.append(output)
             if output is None:
                 break
@@ -375,16 +332,13 @@ def load_into(bot):
                         to_delete.append(await ctx.reply(err))
                         continue
                 if len(output.content) > max_len:
-                    to_delete.append(
-                        await ctx.reply("This is too long! Please try again.")
-                    )
+                    to_delete.append(await ctx.reply("This is too long! Please try again."))
                     continue
+                invalid = False
+                if output.content == "_":
+                    to_return = ""
                 else:
-                    invalid = False
-                    if output.content == "_":
-                        to_return = ""
-                    else:
-                        to_return = output.content
+                    to_return = output.content
             else:
                 invalid = False
 

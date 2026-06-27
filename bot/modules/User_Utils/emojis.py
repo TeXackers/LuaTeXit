@@ -2,7 +2,7 @@
 
 # Second dict generating code
 """
-emoji_names_by_unicode = {}
+emoji_names_by_unicode: dict[str, str] = {}
 
 for name, e in emojis_by_name.items():
     unicode_str = "-".join(f"{ord(c):X}".lower() for c in e)
@@ -12,7 +12,7 @@ for name, e in emojis_by_name.items():
 print(emoji_names_by_unicode)
 """
 
-emojis_by_name = {
+emojis_by_name: dict[str, str] = {
     "100": "💯",
     "1234": "🔢",
     "soccer": "⚽",

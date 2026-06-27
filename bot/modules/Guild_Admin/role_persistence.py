@@ -1,9 +1,9 @@
 import datetime
 import logging
+from contextlib import suppress
 from logging import log
 
 from aiohttp import payload
-
 from cmdClient.lib import UserCancelled
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import BoolData, Boolean, GuildSetting, ListData, RoleList
@@ -13,11 +13,7 @@ from wards import guild_admin, guild_manager
 from .module import guild_admin_module as module
 
 
-@module.cmd(
-    "forgetrolesfor",
-    desc="Forget stored persistent roles for one or all members.",
-    flags=["all"],
-)
+@module.cmd("forgetrolesfor", desc="Forget stored persistent roles for one or all members.", flags=["all"])
 @guild_admin()
 async def cmd_forgetrolesfor(ctx, flags):
     """
@@ -33,37 +29,23 @@ async def cmd_forgetrolesfor(ctx, flags):
     """
     if flags["all"]:
         # Confirm deletion of all stored persistent roles
-        if await ctx.ask(
-            "Are you sure you want me to forget all the stored persistent roles for this guild?"
-        ):
+        if await ctx.ask("Are you sure you want me to forget all the stored persistent roles for this guild?"):
             # Delete all stored persistent roles
             ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id)
-            await ctx.reply("Purged stored persistent roles for all users.")
-        else:
-            raise UserCancelled("Cancelled upon user request.")
-    elif ctx.args:
+            return await ctx.reply("Purged stored persistent roles for all users.")
+        raise UserCancelled("Cancelled upon user request.")
+    if ctx.args:
         # Deleting stored roles for a single user
         if not ctx.args.isdigit():
             return await ctx.error_reply("Please supply the id of the user to forget.")
-        else:
-            # Lookup the user
-            user = await ctx.client.fetch_user(ctx.args)
+        # Lookup the user
+        user = await ctx.client.fetch_user(ctx.args)
 
-            if not user:
-                return await ctx.error_reply(
-                    "User `{}` is not known to Discord.".format(ctx.args)
-                )
-            else:
-                ctx.client.data.member_stored_roles.delete_where(
-                    guildid=ctx.guild.id, userid=user.id
-                )
-                await ctx.reply(
-                    "Purged stored persistent roles for {} (uid:`{}`).".format(
-                        user, user.id
-                    )
-                )
-    else:
-        await ctx.reply("Please see the help for this command for usage.")
+        if not user:
+            return await ctx.error_reply(f"User `{ctx.args}` is not known to Discord.")
+        ctx.client.data.member_stored_roles.delete_where(guildid=ctx.guild.id, userid=user.id)
+        return await ctx.reply(f"Purged stored persistent roles for {user} (uid:`{user.id}`).")
+    return await ctx.reply("Please see the help for this command for usage.")
 
 
 # Define configuration settings
@@ -121,29 +103,22 @@ async def store_roles(client, member):
     role_list = [role.id for role in member.roles]
 
     # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
-    if (
-        datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp()
-        < 10
-    ):
+    if datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp() < 10:
         return
 
     # Delete the stored roles associated to this member
-    client.data.member_stored_roles.delete_where(
-        guildid=member.guild.id, userid=member.id
-    )
+    client.data.member_stored_roles.delete_where(guildid=member.guild.id, userid=member.id)
 
     # TODO: This is asking for some nasty clashes between different apps
     # We probably want to make it a db transaction, i.e. lock the table.
 
     # Insert the new roles if there are any
     if role_list:
-        try:
+        with suppress(Exception):
             client.data.member_stored_roles.insert_many(
                 *((payload.guild_id, member.id, role) for role in role_list),
                 insert_keys=("guildid", "userid", "roleid"),
             )
-        except Exception:
-            pass
 
 
 async def restore_roles(client, member):
@@ -158,26 +133,16 @@ async def restore_roles(client, member):
     # We could place an async lock on role modifications for the user
 
     # Retrieve the stored roles for this member
-    roles = client.data.member_stored_roles.select_where(
-        guildid=member.guild.id, userid=member.id
-    )
+    roles = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
     roleids = []
     for i in range(len(roles)):
         roleids.append(roles[i]["roleid"])
 
     if roleids:
         # Get the ignored roles
-        ignored = set(
-            client.guild_config.role_persistence_ignores.get(
-                client, member.guild.id
-            ).value
-        )
+        ignored = set(client.guild_config.role_persistence_ignores.get(client, member.guild.id).value)
         # Filter the roles
-        roleids = [
-            roleid
-            for roleid in roleids
-            if roleid not in ignored and roleid != member.guild.default_role.id
-        ]
+        roleids = [roleid for roleid in roleids if roleid not in ignored and roleid != member.guild.default_role.id]
 
     if roleids and member.guild.me.guild_permissions.manage_roles:
         # Get the associated roles, removing the nonexistent ones
@@ -186,9 +151,7 @@ async def restore_roles(client, member):
 
         # Retrieve my top role with manage role permissions
         my_mr_roles = [
-            role
-            for role in member.guild.me.roles
-            if role.permissions.manage_roles or role.permissions.administrator
+            role for role in member.guild.me.roles if role.permissions.manage_roles or role.permissions.administrator
         ]
 
         # Filter roles based on what I have permission to add
@@ -201,18 +164,10 @@ async def restore_roles(client, member):
         # Add the roles if there are any left
         if roles:
             try:
-                await member.add_roles(
-                    *roles, reason="Restoring member roles (Role persistence)"
-                )
+                await member.add_roles(*roles, reason="Restoring member roles (Role persistence)")
             except Exception as e:
                 log(
-                    "Failed to restore roles for new member '{}' (uid:{}) in guild '{} (gid:{}). Exception: {}".format(
-                        member,
-                        member.id,
-                        member.guild.name,
-                        member.guild.id,
-                        e.__repr__(),
-                    ),
+                    f"Failed to restore roles for new member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
                     context="RESTORE_ROLE",
                     level=logging.WARNING,
                 )
@@ -249,22 +204,16 @@ member_stored_roles_schema = tableSchema(
 @module.data_init_task
 def attach_rolepersistence_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, role_persistence_schema, shared=False
-        ),
+        tableInterface.from_schema(client.data, client.app, role_persistence_schema, shared=False),
         "guild_role_persistence",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, role_persistence_ignores_schema, shared=False
-        ),
+        tableInterface.from_schema(client.data, client.app, role_persistence_ignores_schema, shared=False),
         "guild_role_persistence_ignores",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, member_stored_roles_schema, shared=True
-        ),
+        tableInterface.from_schema(client.data, client.app, member_stored_roles_schema, shared=True),
         "member_stored_roles",
     )

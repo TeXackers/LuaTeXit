@@ -1,16 +1,10 @@
 import datetime as dt
 
-from registry import (
-    Column,
-    ColumnType,
-    ForeignKey,
-    ReferenceAction,
-    tableInterface,
-    tableSchema,
-)
+from registry import Column, ColumnType, ForeignKey, ReferenceAction, tableInterface, tableSchema
 from utils.lib import strfdelta
 
-from ..module import guild_moderation_module as module
+from modules.Guild_Moderation.module import guild_moderation_module as module
+
 from . import (
     Ticket,
     TicketType,
@@ -34,20 +28,15 @@ class TimedMuteTicket(Ticket):
         embed = super().embed
         embed.set_author(name="Timed Mute")
         desc = embed.description or ""
-        desc += "\nMuted for {}".format(strfdelta(dt.timedelta(seconds=self.duration)))
+        desc += f"\nMuted for {strfdelta(dt.timedelta(seconds=self.duration))}"
         embed.description = desc
         return embed
 
     @classmethod
-    def _create_ticket(
-        cls, ticketid, memberids, duration=None, roleid=None, unmute_timestamp=None
-    ):
+    def _create_ticket(cls, ticketid, memberids, duration=None, roleid=None, unmute_timestamp=None):
         # Save the extra timed mute data
         cls._client.data.guild_timed_mute_tickets.insert(
-            ticketid=ticketid,
-            duration=duration,
-            roleid=roleid,
-            unmute_timestamp=unmute_timestamp,
+            ticketid=ticketid, duration=duration, roleid=roleid, unmute_timestamp=unmute_timestamp
         )
 
         # Finish creating the ticket
@@ -60,18 +49,12 @@ schema = tableSchema(
     Column("duration", ColumnType.INT, required=True),
     Column("roleid", ColumnType.SNOWFLAKE, required=True),
     Column("unmute_timestamp", ColumnType.INT, required=True),
-    ForeignKey(
-        "ticketid",
-        "guild_moderation_tickets",
-        "ticketid",
-        on_delete=ReferenceAction.CASCADE,
-    ),
+    ForeignKey("ticketid", "guild_moderation_tickets", "ticketid", on_delete=ReferenceAction.CASCADE),
 )
 
 
 @module.data_init_task
 def attach_mute_ticket_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_timed_mute_tickets",
+        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_timed_mute_tickets"
     )

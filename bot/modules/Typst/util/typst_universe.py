@@ -11,8 +11,8 @@ import discord
 from bs4 import BeautifulSoup
 from utils.lib import prop_tabulate
 
-from ...Tex.latexutil_cmds import MarkdownConverter
-from ..module import typst_module as module
+from modules.Tex.latexutil_cmds import MarkdownConverter
+from modules.Typst.module import typst_module as module
 
 TYPST_UNIVERSE_URL = "https://typst.app/universe/package/{}"
 TYPST_UNIVERSE_SEARCH_DISCIPLINE = "https://typst.app/universe/search?discipline={}"
@@ -20,19 +20,15 @@ TYPST_UNIVERSE_SEARCH_CATEGORY = "https://typst.app/universe/search?category={}"
 
 
 async def typst_soup_site(url: str) -> BeautifulSoup | None:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, allow_redirects=False) as response:
-            if response.status == 200:
-                data = await response.read()
-                return BeautifulSoup(data.decode("utf8"), "html.parser")
-            else:
-                print(response.status, response.reason)
-                return None
+    async with aiohttp.ClientSession() as session, session.get(url, allow_redirects=False) as response:
+        if response.status == 200:
+            data = await response.read()
+            return BeautifulSoup(data.decode("utf8"), "html.parser")
+        print(response.status, response.reason)
+        return None
 
 
-async def get_typst_universe_package_info(
-    soup: BeautifulSoup,
-) -> tuple[str, str, str, list[str], list[str], list[str]]:
+async def get_typst_universe_package_info(soup: BeautifulSoup) -> tuple[str, str, str, list[str], list[str], list[str]]:
     try:
         typst_universe_package_title = soup.find_all("h1")[-1].text
     except AttributeError:
@@ -46,10 +42,7 @@ async def get_typst_universe_package_info(
         typst_universe_package_desc = typst_universe_package_desc.replace("  ", " ")
 
     typst_universe_package_colour = (
-        soup.find_all("div", id="banner")[0]
-        .attrs["style"]
-        .split(";")[-1]
-        .split("#")[1][0:6]
+        soup.find_all("div", id="banner")[0].attrs["style"].split(";")[-1].split("#")[1][0:6]
     )
 
     typst_universe_package_metadata = soup.find_all("dd")
@@ -77,12 +70,8 @@ async def get_typst_universe_package_info(
         typst_universe_package_category = ", ".join(category_links)
 
     try:
-        typst_universe_package_repository_link = (
-            typst_universe_package_metadata[7].find("a").attrs["href"]
-        )
-        typst_universe_package_repository = (
-            f"[link]({typst_universe_package_repository_link})"
-        )
+        typst_universe_package_repository_link = typst_universe_package_metadata[7].find("a").attrs["href"]
+        typst_universe_package_repository = f"[link]({typst_universe_package_repository_link})"
     except IndexError:
         typst_universe_package_repository_link = ""
         typst_universe_package_repository = ""
@@ -163,9 +152,7 @@ async def cmd_typst_universe(ctx):
 
     # righto, let's send the URL
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
-    ttan_out_msg = await ctx.reply(
-        f"Looking up Typst Universe. Please wait... {loading_emoji}"
-    )
+    ttan_out_msg = await ctx.reply(f"Looking up Typst Universe. Please wait... {loading_emoji}")
 
     ttan_soup = await typst_soup_site(ttan_url)
 
@@ -179,9 +166,7 @@ async def cmd_typst_universe(ctx):
     ) = await get_typst_universe_package_info(ttan_soup)
 
     if not typst_universe_package_title:
-        return await ttan_out_msg.edit(
-            content=f"Could not find a package named `{ctx.args}` on Typst Universe."
-        )
+        return await ttan_out_msg.edit(content=f"Could not find a package named `{ctx.args}` on Typst Universe.")
 
     embed_table = ""
     if len(field_value) > 0:
@@ -189,7 +174,9 @@ async def cmd_typst_universe(ctx):
     else:
         pass
 
-    find_out_more = f"Find out more at [Typst Universe](https://typst.app/universe/package/{typst_universe_package_title.lower()})."
+    find_out_more = (
+        f"Find out more at [Typst Universe](https://typst.app/universe/package/{typst_universe_package_title.lower()})."
+    )
 
     # description
     if len(typst_universe_package_desc) > 400:

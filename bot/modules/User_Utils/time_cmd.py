@@ -3,6 +3,7 @@ import random
 from datetime import datetime
 
 import discord
+from cmdClient import Context  # noqa
 from pytz import all_timezones, timezone
 from utils import interactive, seekers  # noqa
 from utils.lib import paginate_list
@@ -43,13 +44,11 @@ for country in countries:
         cont_dict[country["continent"]] = [country]
     else:
         cont_dict[country["continent"]].append(country)
-continents = [
-    {"name": name, "countries": countries} for name, countries in cont_dict.items()
-]
+continents = [{"name": name, "countries": countries} for name, countries in cont_dict.items()]
 cont_names = [c["name"] for c in continents]
 
 
-def get_time(tz):
+def get_time(tz) -> type[datetime]:
     """
     Get a datetime object representing the current time in the given timezone.
     """
@@ -57,27 +56,21 @@ def get_time(tz):
     return datetime.now(TZ)
 
 
-def gen_tz_strings(tzlist):
+def gen_tz_strings(tzlist) -> list[str]:
     """
     Generates blocks of timezone (time) pairs with nice spacing, ready for use in a pager.
     """
     tzlist = [(tz, get_time(tz).strftime("%I:%M %p")) for tz in tzlist]
     tz_blocks = [tzlist[i : i + 20] for i in range(0, len(tzlist), 20)]
-    max_block_lens = [
-        len(max(list(zip(*tz_block))[0], key=len)) for tz_block in tz_blocks
-    ]
+    max_block_lens = [len(max(list(zip(*tz_block))[0], key=len)) for tz_block in tz_blocks]
     block_strs = [
-        [
-            "{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i])
-            for tzpair in tzblock
-        ]
+        ["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock]
         for i, tzblock in enumerate(tz_blocks)
     ]
-    blocks = list(itertools.chain(*block_strs))
-    return blocks
+    return list(itertools.chain(*block_strs))
 
 
-async def tz_lookup(ctx, search_str):
+async def tz_lookup(ctx: type[Context], search_str: str) -> str:
     """
     Intelligently Lookup a timezone from a given partial or full string.
     """
@@ -88,12 +81,7 @@ async def tz_lookup(ctx, search_str):
     search_str = search_str.lower()
     # Generate timezone list for searching
     searchlist = [
-        (
-            tz,
-            "{} {} {}".format(
-                tz, get_time(tz).strftime("%I:%M%p"), get_time(tz).strftime("%H:%M")
-            ).lower(),
-        )
+        (tz, "{} {} {}".format(tz, get_time(tz).strftime("%I:%M%p"), get_time(tz).strftime("%H:%M")).lower())
         for tz in all_timezones
     ]
 
@@ -110,9 +98,7 @@ async def tz_lookup(ctx, search_str):
                 search_str = search_str[:-1] + str(int(search_str[-1]) + 1)
                 options = [tz for tz, tzstr in searchlist if search_str in tzstr]
             elif search_str[-3].isdigit():
-                search_str = (
-                    search_str[:-3] + str(int(search_str[-3]) + 1) + search_str[-2:]
-                )
+                search_str = search_str[:-3] + str(int(search_str[-3]) + 1) + search_str[-2:]
                 options = [tz for tz, tzstr in searchlist if search_str in tzstr]
     else:
         # So it's not a time, just some string.
@@ -124,15 +110,11 @@ async def tz_lookup(ctx, search_str):
     if options:
         # Yay we found some matches
         tzid = await ctx.selector(
-            "Multiple matching timezones found, please select one!",
-            gen_tz_strings(options),
-            allow_single=False,
+            "Multiple matching timezones found, please select one!", gen_tz_strings(options), allow_single=False
         )
         return options[tzid] if tzid is not None else None
-    else:
-        # Nope, we tried our best but couldn't find any matches
-        await ctx.reply("No matching timezones were found!")
-        return None
+    # Nope, we tried our best but couldn't find any matches
+    return await ctx.error_reply("No matching timezones were found!")
 
 
 async def tz_picker(ctx):
@@ -160,9 +142,7 @@ def get_timestr(tz, brief=False):
     """
     Get the current time in the given timezone, using a fixed format string.
     """
-    format_str = (
-        "**%H:%M, %d/%m/%Y**" if brief else "**%I:%M %p (%Z)** on **%a, %d/%m/%Y**"
-    )
+    format_str = "**%H:%M, %d/%m/%Y**" if brief else "**%I:%M %p (%Z)** on **%a, %d/%m/%Y**"
     return get_time(tz).strftime(format_str)
 
 
@@ -179,7 +159,7 @@ async def time_diff(ctx, tz, auth_tz, brief=False):
     name = ctx.author.name
 
     if diffsecs == 0:
-        return ", the same as **{}**!".format(name)
+        return f", the same as **{name}**!"
 
     modifier = "behind" if diffsecs > 0 else "ahead"
     diffsecs = abs(diffsecs)
@@ -188,11 +168,9 @@ async def time_diff(ctx, tz, auth_tz, brief=False):
     mins, _ = divmod(remainder, 60)
 
     hourstr = "{} hour{} ".format(hours, "s" if hours > 1 else "") if hours else ""
-    minstr = "{} minutes ".format(mins) if mins else ""
+    minstr = f"{mins} minutes " if mins else ""
     joiner = "and " if (hourstr and minstr) else ""
-    return ".\n**{}** is {}{}{}{}, at {}.".format(
-        name, hourstr, joiner, minstr, modifier, get_timestr(auth_tz, brief=brief)
-    )
+    return f".\n**{name}** is {hourstr}{joiner}{minstr}{modifier}, at {get_timestr(auth_tz, brief=brief)}."
 
 
 @module.cmd(
@@ -244,21 +222,17 @@ async def cmd_time(ctx, flags):
         if tz:
             # We have a timezone, display the success message, current time, and a warning about Etc if needed.
             user_time = get_timestr(tz, brief=brief)
-            msg = (
-                "Your timezone has been set to `{}`!\nYour current time is {}.".format(
-                    tz, user_time
-                )
-            )
+            msg = f"Your timezone has been set to `{tz}`!\nYour current time is {user_time}."
             if ctx.args and (tz.startswith("Etc/GMT+") or tz.startswith("Etc/GMT-")):
                 other_tz = tz.replace("+", "-").replace("-", "+")
                 other_time = get_timestr(other_tz, brief=brief)
                 proper_time = other_tz[4:]
                 warning = (
-                    "\nNote that due to the POSIX standard, the timezone `{}` represents the time in `{}`.\n"
-                    "If your time is incorrect, consider setting your timezone to `{}`, "
-                    "where the time is currently {}.\n"
+                    f"\nNote that due to the POSIX standard, the timezone `{tz}` represents the time in `{proper_time}`.\n"
+                    f"If your time is incorrect, consider setting your timezone to `{other_tz}`, "
+                    f"where the time is currently {other_time}.\n"
                     "You can read more about the standard at https://en.wikipedia.org/wiki/Tz_database#Area."
-                ).format(tz, proper_time, other_tz, other_time)
+                )
 
                 msg += warning
 
@@ -266,22 +240,16 @@ async def cmd_time(ctx, flags):
             await ctx.reply(msg)
         else:
             # We failed to get a timezone, post setting help.
-            setter_help = (
-                "Need help setting your timezone? One of the following might help!"
-            )
+            setter_help = "Need help setting your timezone? One of the following might help!"
             methods = []
             if ctx.args:
-                methods.append(
-                    "Try using our interactive timezone picker with `{prefix}ti --set`"
-                )
+                methods.append("Try using our interactive timezone picker with `{prefix}ti --set`")
             else:
                 methods.append(
                     "Try entering the name of your nearest capital city, e.g. `{prefix}ti --set London`, "
                     "or your current time, e.g. `{prefix}ti --set 7:20`."
                 )
-            methods.append(
-                "Find your timezone in the complete list with `{prefix}ti --list`"
-            )
+            methods.append("Find your timezone in the complete list with `{prefix}ti --list`")
             methods.append(
                 "Use [this interactive map](http://kevalbhatt.github.io/timezone-picker) to find your timezone!"
             )
@@ -289,27 +257,17 @@ async def cmd_time(ctx, flags):
                 "Get your timezone from your country and region "
                 "[here](http://www.timezoneconverter.com/cgi-bin/findzone)!"
             )
-            methods.append(
-                "Or join our [support server]({support}) and ask one of our friendly support team!"
-            )
+            methods.append("Or join our [support server]({support}) and ask one of our friendly support team!")
 
-            desc = ("\n".join(methods)).format(
-                prefix=prefix, support=ctx.client.app_info["support_guild"]
-            )
-            embed = discord.Embed(
-                title=setter_help, description=desc, colour=discord.Colour.green()
-            )
+            desc = ("\n".join(methods)).format(prefix=prefix, support=ctx.client.app_info["support_guild"])
+            embed = discord.Embed(title=setter_help, description=desc, colour=discord.Colour.green())
             await ctx.reply(embed=embed)
     elif flags["at"]:
         # Handle getting the time at a given timezone
         if not ctx.args:
             # No timezone was given, grumble and return
             # TODO: adapt interactive picker for this
-            await ctx.reply(
-                "Usage: `{prefix}ti --at <timezone>`, e.g. `{prefix}ti --at Melbourne`".format(
-                    prefix=prefix
-                )
-            )
+            await ctx.reply(f"Usage: `{prefix}ti --at <timezone>`, e.g. `{prefix}ti --at Melbourne`")
         else:
             # Lookup the timezone
             tz = await tz_lookup(ctx, ctx.args)
@@ -324,21 +282,11 @@ async def cmd_time(ctx, flags):
                 msg = "The time in `{}` is {}{}".format(tz, timestr, tdiffstr or ".")
                 await ctx.reply(msg)
     elif flags["list"]:
-        await ctx.offer_delete(
-            await ctx.pager(
-                paginate_list(gen_tz_strings(all_timezones), title="Timezone list")
-            )
-        )
+        await ctx.offer_delete(await ctx.pager(paginate_list(gen_tz_strings(all_timezones), title="Timezone list")))
     elif flags["brief"]:
         brief = 1 - brief
-        time_data.upsert(
-            constraint="userid", userid=ctx.author.id, brief_display=bool(brief)
-        )
-        await ctx.reply(
-            "Your clock is now more compact."
-            if brief
-            else "Your clock is now more verbose."
-        )
+        time_data.upsert(constraint="userid", userid=ctx.author.id, brief_display=bool(brief))
+        await ctx.reply("Your clock is now more compact." if brief else "Your clock is now more verbose.")
     elif flags["reset"]:
         # Add a confirmation before resetting the timezone
         if await ctx.ask("Are you sure you want to reset your timezone?"):
@@ -361,39 +309,28 @@ async def cmd_time(ctx, flags):
                 if not user:
                     return
         else:
-            user = (
-                (await ctx.find_member(ctx.args, interactive=True))
-                if ctx.args
-                else ctx.author
-            )
+            user = (await ctx.find_member(ctx.args, interactive=True)) if ctx.args else ctx.author
         if user is None:
             # Failed to find the target user
             # find_member already complained, so just return
             return
-        else:
-            # Found a user, get their timezone and construct the time message
-            tuser = time_data.select_where(userid=user.id)
-            tz = tuser[0]["timezone"] if tuser else None
+        # Found a user, get their timezone and construct the time message
+        tuser = time_data.select_where(userid=user.id)
+        tz = tuser[0]["timezone"] if tuser else None
 
-            if not tz:
-                # Oops, this user doesn't have a timezone set.
-                if user == ctx.author:
-                    msg = (
-                        "You haven't set your timezone! "
-                        "Set it using the interactive timezone picker with `{prefix}ti --set`."
-                    )
-                elif ctx.guild and user == ctx.guild.me:
-                    msg = random.choice(time_quotes)
-                else:
-                    msg = "This user hasn't set their timezone! Ask them to set it using `{prefix}ti --set`."
+        if not tz:
+            # Oops, this user doesn't have a timezone set.
+            if user == ctx.author:
+                msg = (
+                    "You haven't set your timezone! "
+                    "Set it using the interactive timezone picker with `{prefix}ti --set`."
+                )
+            elif ctx.guild and user == ctx.guild.me:
+                msg = random.choice(time_quotes)
             else:
-                timestr = get_timestr(tz, brief=brief)
-                tdiffstr = (
-                    await time_diff(ctx, tz, auth_tz, brief=brief)
-                    if user != ctx.author
-                    else ""
-                )
-                msg = "The current time for **{}** is {}{}".format(
-                    user.name, timestr, tdiffstr or "."
-                )
+                msg = "This user hasn't set their timezone! Ask them to set it using `{prefix}ti --set`."
+        else:
+            timestr = get_timestr(tz, brief=brief)
+            tdiffstr = await time_diff(ctx, tz, auth_tz, brief=brief) if user != ctx.author else ""
+            msg = "The current time for **{}** is {}{}".format(user.name, timestr, tdiffstr or ".")
         await ctx.reply(msg.format(prefix=prefix))

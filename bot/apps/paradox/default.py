@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-HELP_FILE = os.path.join(__location__, "help.txt")
+__location__ = Path(__file__).parent.resolve()
+HELP_FILE = __location__ / "help.txt"
 
-with open(HELP_FILE, "r") as help_file:
+with Path.open(HELP_FILE) as help_file:
     help_str = help_file.read()
 
 

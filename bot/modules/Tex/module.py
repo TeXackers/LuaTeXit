@@ -1,8 +1,6 @@
 from paraModule import paraModule
 
-latex_module = paraModule(
-    "LaTeX", description="Render LaTeX code and configure rendering options."
-)
+latex_module = paraModule("LaTeX", description="Render LaTeX code and configure rendering options.")
 # TODO: A link on LaTeX here could work.
 
 

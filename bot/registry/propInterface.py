@@ -1,5 +1,5 @@
-from .Interface import Interface
 from .connectors import Connector
+from .Interface import Interface
 
 
 class propInterface(Interface):
@@ -14,7 +14,7 @@ class propInterface(Interface):
         self.app = app_name
         self.keys = keys
 
-        self.maptable = "{}_props".format(table_name)
+        self.maptable = f"{table_name}_props"
         self.prop_map = None  # Set in _get_propmap
 
     @property
@@ -36,43 +36,32 @@ class propInterface(Interface):
 
         # Generate property map table schema
         maptable_schema = (
-            "CREATE TABLE {table}(\n"
-            "\tproperty {shortstrcol} NOT NULL,\n"
-            "\tshared {boolcol} NOT NULL,\n"
+            f"CREATE TABLE {self.maptable}(\n"
+            f"\tproperty {shortstrcol} NOT NULL,\n"
+            f"\tshared {boolcol} NOT NULL,\n"
             "\tPRIMARY KEY (property)\n"
-            ");".format(table=self.maptable, shortstrcol=shortstrcol, boolcol=boolcol)
+            ");"
         )
 
         # Generate property table schema
         # Key column list
-        key_columns = ["{} {} NOT NULL".format(key, intcol) for key in self.keys]
-        key_column_str = (
-            "{},\n\t".format(",\n\t".join(keycol for keycol in key_columns))
-            if self.keys
-            else ""
-        )
+        key_columns = [f"{key} {intcol} NOT NULL" for key in self.keys]
+        key_column_str = "{},\n\t".format(",\n\t".join(keycol for keycol in key_columns)) if self.keys else ""
 
         # Key primary key list
         key_list = "{}, ".format(", ".join(self.keys)) if self.keys else ""
 
         maintable_schema = (
-            "CREATE TABLE {table}(\n"
-            "\t{key_column_str}property {shortstrcol} NOT NULL,\n"
-            "\tvalue {strcol},\n"
-            "\tPRIMARY KEY ({key_list}property),\n"
+            f"CREATE TABLE {self.table}(\n"
+            f"\t{key_column_str}property {shortstrcol} NOT NULL,\n"
+            f"\tvalue {strcol},\n"
+            f"\tPRIMARY KEY ({key_list}property),\n"
             "\tFOREIGN KEY (property)\n"
-            "\t\tREFERENCES {maptable} (property)\n"
-            ");".format(
-                table=self.table,
-                key_column_str=key_column_str,
-                shortstrcol=shortstrcol,
-                strcol=strcol,
-                key_list=key_list,
-                maptable=self.maptable,
-            )
+            f"\t\tREFERENCES {self.maptable} (property)\n"
+            ");"
         )
 
-        return "{}\n\n{}".format(maptable_schema, maintable_schema)
+        return f"{maptable_schema}\n\n{maintable_schema}"
 
     # Internal property mapping methods
     def _get_propmap(self):
@@ -96,11 +85,9 @@ class propInterface(Interface):
 
             # Return the mapped prop
             if not self.prop_map.get(prop, True):
-                return "{}_{}".format(self.app, prop)
-            else:
-                return prop
-        else:
+                return f"{self.app}_{prop}"
             return prop
+        return prop
 
     def ensure_exists(self, *props, shared=True, update=False):
         """
@@ -123,9 +110,7 @@ class propInterface(Interface):
                     else:
                         # Raise value error
                         raise ValueError(
-                            "Incorrect shared value '{}' passed for property '{}' of table '{}'".format(
-                                shared, prop, self.table
-                            )
+                            f"Incorrect shared value '{shared}' passed for property '{prop}' of table '{self.table}'"
                         )
             else:
                 # Add property to property table
@@ -148,9 +133,7 @@ class propInterface(Interface):
         key_dict = {keyname: key for (keyname, key) in zip(self.keys, keys)}
 
         # Retrieve requested value
-        results = self.conn.select_where(
-            self.table, select_columns=["value"], property=prop, **key_dict
-        )
+        results = self.conn.select_where(self.table, select_columns=["value"], property=prop, **key_dict)
 
         # Return the result, or None if there was no result
         return results[0]["value"] if results else None
@@ -169,15 +152,13 @@ class propInterface(Interface):
 
         # Catch non-string value
         if not isinstance(value, str):
-            raise TypeError("Unsupported value type '{}'".format(type(value)))
+            raise TypeError(f"Unsupported value type '{type(value)}'")
 
         # Build dictionary of keys
         key_dict = {keyname: key for (keyname, key) in zip(self.keys, keys)}
 
         # Set or update the property
-        return self.conn.insert(
-            self.table, allow_replace=True, property=prop, value=value, **key_dict
-        )
+        return self.conn.insert(self.table, allow_replace=True, property=prop, value=value, **key_dict)
 
     def unset(self, *args):
         """

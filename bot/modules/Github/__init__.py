@@ -1,4 +1,3 @@
-from . import module
+from . import github_api, module, tabularray
 
-from . import tabularray
-from . import github_api
+__all__ = ["github_api", "module", "tabularray"]

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import discord
 import modules  # noqa
@@ -114,7 +115,7 @@ for module in client.modules:
 # If the schema was requested, write it here and exit
 if schema_file is not None:
     log("Writing schema.")
-    with open(schema_file, "w") as f:
+    with Path.open(schema_file, "w") as f:
         f.write(client.data.get_schema())
     log("Written schema, closing.")
     exit()
@@ -192,10 +193,7 @@ async def on_ready():
     # Attach the log client and log the alive message
     attach_log_client(client)
 
-    if SHARD_COUNT > 1:
-        shard_msg = f"on {shard_num} with {SHARD_COUNT}"
-    else:
-        shard_msg = ""
+    shard_msg: str = f"on {shard_num} with {SHARD_COUNT}" if SHARD_COUNT > 1 else ""
 
     log_msg = (
         f"Init {client.user.name} [{client.user.id}, {client.app_info['app']}.conf]\n"

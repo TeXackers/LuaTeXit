@@ -1,4 +1,3 @@
-import datetime
 import random
 import re
 import subprocess as sh
@@ -8,6 +7,7 @@ import discord
 import iso639
 import requests
 from bs4 import BeautifulSoup, NavigableString
+from cmdClient import Context  # noqa
 from utils.lib import prop_tabulate, split_text
 
 from .module import latex_module as module
@@ -56,7 +56,7 @@ def chomp(text):
     return (prefix, suffix, text)
 
 
-class MarkdownConverter(object):
+class MarkdownConverter:
     def __init__(self):
         self.bullets = "-+*"
 
@@ -75,7 +75,7 @@ class MarkdownConverter(object):
             else:
                 text += self.process_tag(el)
 
-        convert_fn = getattr(self, "convert_%s" % node.name, None)
+        convert_fn = getattr(self, f"convert_{node.name}", None)
         if convert_fn:
             text = convert_fn(node, text)
 
@@ -90,41 +90,37 @@ class MarkdownConverter(object):
         return line_beginning_re.sub("\t" * level, text) if text else ""
 
     @staticmethod
-    def underline(text, pad_char):
-        text = (text or "").rstrip()
-        return "%s\n%s\n\n" % (text, pad_char * len(text)) if text else ""
+    def underline(text: str, pad_char: str) -> str:
+        text: str = (text or "").rstrip()
+        return f"{text}\n{pad_char * len(text)}\n\n" if text else ""
 
-    def convert_a(self, el, text):
+    def convert_a(self, el, text: str) -> str:
         prefix, suffix, text = chomp(text)
         if not text:
             return ""
         href = urllib.parse.urljoin(ctan_url, el.get("href"))
         title = el.get("title")
         # For the replacement see #29: text nodes underscores are escaped
-        title_part = ' "%s"' % title.replace('"', r"\"") if title else ""
-        return (
-            "%s[%s](%s%s)%s" % (prefix, text, href, title_part, suffix)
-            if href
-            else text
-        )
+        title_part = f' "{title.replace('"', r'\\"')}"' if title else ""
+        return f"{prefix}[{text}]({href}{title_part}){suffix}" if href else text
 
-    def convert_b(self, el, text):
+    def convert_b(self, el, text: str) -> str:
         return self.convert_strong(el, text)
 
-    def convert_span(self, el, text):
-        return "%s" % text if text else ""
+    def convert_span(self, text: str) -> str:
+        return f"{text}" if text else ""
 
-    def convert_blockquote(self, el, text):
-        return "\n" + line_beginning_re.sub("> ", text) if text else ""
+    def convert_blockquote(self, el, text) -> str:
+        return f"\n{line_beginning_re.sub('> ', text)}" if text else ""
 
-    def convert_br(self, el, text):
+    def convert_br(self, el, text) -> str:
         return "  \n"
 
-    def convert_em(self, el, text):
+    def convert_em(self, text: str) -> str:
         prefix, suffix, text = chomp(text)
         if not text:
             return ""
-        return "%s*%s*%s" % (prefix, text, suffix)
+        return f"{prefix}*{text}*{suffix}"
 
     def convert_i(self, el, text):
         return self.convert_em(el, text)
@@ -151,10 +147,7 @@ class MarkdownConverter(object):
     def convert_li(self, el, text):
         parent = el.parent
         if parent is not None and parent.name == "ol":
-            if parent.get("start"):
-                start = int(parent.get("start"))
-            else:
-                start = 1
+            start = int(parent.get("start", 1)) if parent.get("start") else 1
             bullet = "%s." % (start + parent.index(el))
         else:
             depth = -1
@@ -164,16 +157,16 @@ class MarkdownConverter(object):
                 el = el.parent
             bullets = self.bullets
             bullet = self.bullets[depth % len(bullets)]
-        return "%s %s\n" % (bullet, text or "")
+        return f"{bullet} {text or ''}\n"
 
-    def convert_p(self, el, text):
-        return "%s" % text if text else ""
+    def convert_p(self, text: str) -> str:
+        return f"{text}" if text else ""
 
-    def convert_strong(self, el, text):
+    def convert_strong(self, text: str) -> str:
         prefix, suffix, text = chomp(text)
         if not text:
             return ""
-        return "%s**%s**%s" % (prefix, text, suffix)
+        return f"{prefix}**{text}**{suffix}"
 
 
 def search_n_parse(soup: BeautifulSoup):
@@ -217,9 +210,7 @@ def search_n_parse(soup: BeautifulSoup):
                 if link.text == urllib.parse.urljoin(ctan_url, link.attrs["href"]):
                     md_link = link.text
                 else:
-                    md_link = "[{}]({})".format(
-                        link.text, urllib.parse.urljoin(ctan_url, link.attrs["href"])
-                    )
+                    md_link = "[{}]({})".format(link.text, urllib.parse.urljoin(ctan_url, link.attrs["href"]))
                 tds[1].a.replace_with(md_link)
 
         prop_list.append(tds[0].text)
@@ -229,7 +220,7 @@ def search_n_parse(soup: BeautifulSoup):
 
 
 @module.cmd("texdoc", desc="Searches the [texdoc](http://texdoc.net)", aliases=["td"])
-async def cmd_texdoc(ctx):
+async def cmd_texdoc(ctx: type[Context]):
     """
     Usage``:
         {prefix}texdoc <package_name>
@@ -241,20 +232,14 @@ async def cmd_texdoc(ctx):
     """
     if len(ctx.args) > 800:
         return await ctx.error_reply("Given query is too long!")
-    elif not ctx.args:
+    if not ctx.args:
         return await ctx.error_reply("Please give me something to search for!")
 
-    await ctx.reply(
-        "Documentation for `{}`: {}".format(
-            ctx.args, texdoc_url.format(urllib.parse.quote_plus(ctx.args))
-        )
-    )
+    return await ctx.reply(f"Documentation for `{ctx.args}`: {texdoc_url.format(urllib.parse.quote_plus(ctx.args))}")
 
 
-@module.cmd(
-    "ctan", desc="Searches the [ctan](https://ctan.org)", aliases=["ctanlink", "ctans"]
-)
-async def cmd_ctan(ctx):
+@module.cmd("ctan", desc="Searches the [ctan](https://ctan.org)", aliases=["ctanlink", "ctans"])
+async def cmd_ctan(ctx: type[Context]):
     """
     Usage``:
         {prefix}ctan <package_name>
@@ -272,7 +257,7 @@ async def cmd_ctan(ctx):
         {prefix}ctan amsmath
         {prefix}ctans tables
     """
-    url = ctan_url.format("pkg/{}".format(urllib.parse.quote_plus(ctx.args)))
+    url = ctan_url.format(f"pkg/{urllib.parse.quote_plus(ctx.args)}")
     search_url = ctan_url.format("search?phrase={}&max=10")
     if len(url) > 1500:
         return await ctx.error_reply("Given query is too long!")
@@ -291,9 +276,7 @@ async def cmd_ctan(ctx):
         return await ctx.error_reply(f"`{ctx.args}` is not a valid package name!")
 
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
-    out_msg = await ctx.reply(
-        "Searching the CTAN, please wait... {}".format(loading_emoji)
-    )
+    out_msg = await ctx.reply(f"Searching the CTAN, please wait... {loading_emoji}")
 
     soup = soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
@@ -301,11 +284,9 @@ async def cmd_ctan(ctx):
     if ctx.alias.lower() == "ctans":
         result_url = search_url.format(urllib.parse.quote_plus(ctx.args))
         soup = soup_site(result_url)
-        desc = "From {}".format(result_url)
+        desc = f"From {result_url}"
         if title:
-            desc += "\nDirect page found at [{args}]({url})".format(
-                args=ctx.args, url=url
-            )
+            desc += f"\nDirect page found at [{ctx.args}]({url})"
         search_title = soup.find("h1").text
         embed = discord.Embed(title=search_title, description=desc)
         stats = soup.find("p").text
@@ -324,24 +305,17 @@ async def cmd_ctan(ctx):
             if url.text == urllib.parse.urljoin(ctan_url, url.attrs["href"]):
                 md_link = url.text
             else:
-                md_link = "[{}]({})".format(
-                    url.text, urllib.parse.urljoin(ctan_url, url.attrs["href"])
-                )
+                md_link = "[{}]({})".format(url.text, urllib.parse.urljoin(ctan_url, url.attrs["href"]))
             md_links.append(md_link)
         field_value = "\n".join(md_links)
         embed.add_field(name=stats, value=field_value)
         return await out_msg.edit(content="", embed=embed)
 
     if not title:
-        return await out_msg.edit(
-            content=f"I couldn't find a package named `{ctx.args}`!"
-        )
+        return await out_msg.edit(content=f"I couldn't find a package named `{ctx.args}`!")
 
-    if prop_list:
-        table = prop_tabulate(prop_list, value_list)
-    else:
-        table = ""
-    read_more = "Read more at [CTAN page]({}) of the package.".format(url)
+    table = prop_tabulate(prop_list, value_list) if prop_list else ""
+    read_more = f"Read more at [CTAN page]({url}) of the package."
     if len(desc) > 700:
         desc = desc[:700]
         r_newline = desc.rfind("\n")
@@ -380,7 +354,7 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
         argstack: list[str] = arg.split(",")
     else:
         argstack: list[str] = [arg]
-    output: list[str | None] = list()
+    output: list[str] = []
 
     for a in argstack:
         a = a.strip().lower().lstrip("u+")
@@ -394,9 +368,9 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
         elif len(a) > 1:
             a_test = f"{a:0>5}"
             # Is it unicode? Each letter must be between 0-9 or a-f
-            if all([True if c in "0123456789abcdef" else False for c in a_test]):
+            if all(c in "0123456789abcdef" for c in a_test):
                 # also ensure that the hex value is no greater than 1FA6D
-                if int(a_test, 16) <= int(0x1FA6D):
+                if int(a_test, 16) <= 0x1FA6D:
                     output.append(a_test)
                 else:
                     output.append(None)
@@ -405,10 +379,7 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
         else:
             output.append(None)
 
-    # remove empty strings
-    output = [o for o in output if o is not None]
-
-    return output
+    return [o for o in output if o is not None]
 
 
 async def fc_pagination(
@@ -424,23 +395,15 @@ async def fc_pagination(
     else:
         blocks: list[None] = [None]
 
-    if not time:
-        time = datetime.datetime.now(datetime.UTC)
-    else:
-        time = datetime.datetime.fromtimestamp(time)
+    time = discord.utils.utcnow() if time is None else discord.utils.format_dt(time, "f")
 
     blocknum = len(blocks)
 
     if blocknum == 1:
         block = blocks[0] if blocks[0] else None
-        if header:
-            desc = f"{header}\n{block or ''}"
-        else:
-            desc = block if block else None
+        desc = f"{header}\n{block or ''}" if header else block if block else None
 
-        embed = discord.Embed(
-            title=basetitle, color=colour, timestamp=time, description=desc
-        )
+        embed = discord.Embed(title=basetitle, color=colour, timestamp=time, description=desc)
 
         if flags:
             for key, value in flags.items():
@@ -449,14 +412,9 @@ async def fc_pagination(
 
     embeds = []
     for i, block in enumerate(blocks):
-        if header:
-            desc = f"{header}\n{block}"
-        else:
-            desc = block
+        desc = f"{header}\n{block}" if header else block
 
-        embed = discord.Embed(
-            title=basetitle, color=colour, timestamp=time, description=desc
-        )
+        embed = discord.Embed(title=basetitle, color=colour, timestamp=time, description=desc)
 
         embed.set_footer(text=f"Page {i + 1}/{blocknum}")
 
@@ -471,16 +429,11 @@ async def fc_pagination(
 async def view_embeds(ctx, text, title, start_page=0, **pagination_args):
     pages = await fc_pagination(text, basetitle=title, **pagination_args)
 
-    msg = await ctx.pager(pages, start_page=start_page, locked=False)
-
-    return msg
+    return await ctx.pager(pages, start_page=start_page, locked=False)
 
 
 @module.cmd(
-    "findfont",
-    desc="Looks for fonts supporting a given argument",
-    aliases=["fc"],
-    flags=["char==", "lang==", "name=="],
+    "findfont", desc="Looks for fonts supporting a given argument", aliases=["fc"], flags=["char==", "lang==", "name=="]
 )
 async def cmd_findfont(ctx, flags):
     """
@@ -501,7 +454,7 @@ async def cmd_findfont(ctx, flags):
         requested_chars = glyph_or_unicode(flags["char"])
         if not requested_chars:
             return await ctx.error_reply("Invalid unicode or glyph(s).")
-        elif len(requested_chars) == 1:
+        if len(requested_chars) == 1:
             fclist_chars = ":charset=" + str(requested_chars[0])
             params_dict["Characters"] = str(requested_chars[0])
         else:
@@ -543,28 +496,19 @@ async def cmd_findfont(ctx, flags):
         return await ctx.error_reply("No fonts found.")
 
     # Remove fonts that start with `.`
-    fc_out_preprocessed = [
-        line.replace("\\", "") for line in fc_out if not line.startswith(".")
-    ]
+    fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
     # Split by `,` and only grab the first element
     fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
 
     if flags["name"]:
         params_dict["Name Query"] = flags["name"]
-        fc_out = [
-            f.title()
-            for f in [f.lower() for f in fc_out_preprocessed]
-            if flags["name"].lower() in f
-        ]
-        fc_out = sorted(list(set(fc_out)))
+        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if flags["name"].lower() in f]
+        fc_out = sorted(set(fc_out))
     else:
-        fc_out = sorted(list(set(fc_out_preprocessed)))
+        fc_out = sorted(set(fc_out_preprocessed))
         # remove empty strings
         fc_out = [f for f in fc_out if f]
 
-    await view_embeds(
-        ctx,
-        "\n".join(fc_out),
-        f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
-        flags=params_dict,
+    return await view_embeds(
+        ctx, "\n".join(fc_out), f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})", flags=params_dict
     )

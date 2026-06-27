@@ -1,14 +1,8 @@
-from settings import (
-    Boolean,
-    ChannelList,
-    ColumnData,
-    GuildSetting,
-    IntegerEnum,
-    ListData,
-)
+from settings import Boolean, ChannelList, ColumnData, GuildSetting, IntegerEnum, ListData
 from wards import guild_manager
 
-from ..module import latex_module as module
+from modules.Tex.module import latex_module as module
+
 from .LatexGuild import LatexGuild
 from .tex_utils import AutoTexLevel
 
@@ -54,9 +48,7 @@ class only_render_codeblocks(ColumnData, Boolean, GuildSetting):
     name = "only_render_codeblocks"
     desc = "Only render LaTeX found in codeblocks."
 
-    long_desc = (
-        "Whether automatic LaTeX recognition will only read and render codeblocks."
-    )
+    long_desc = "Whether automatic LaTeX recognition will only read and render codeblocks."
 
     _outputs = {True: "True", False: "False"}
 
@@ -136,10 +128,9 @@ class latex_channels(ListData, ChannelList, GuildSetting):
         LatexGuild.get(self.guildid).load()
 
     @classmethod
-    def _format_data(cls, *args, **kwargs):
+    def _format_data(cls, *args, **kwargs) -> str:
         """
         Add a default to the data formatter.
         """
         formatted = super()._format_data(*args, **kwargs)
-        if formatted is None:
-            return "All Channels"
+        return formatted if formatted else "No Channels"

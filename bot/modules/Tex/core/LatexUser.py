@@ -1,4 +1,7 @@
-from ..module import latex_module as module
+from cmdClient import cmdClient  # noqa
+from modules.Tex.core.tex_utils import AutoTexLevel, TexNameStyle  # noqa
+from modules.Tex.module import latex_module as module
+
 from . import (
     LatexUserSetting,
     user_data,  # noqa
@@ -26,15 +29,15 @@ class LatexUser:
         self.id = id
 
         # Explicitly typed user configuration settings
-        self.autotex = None  # type:bool
-        self.keepsourcefor = None  # type: int
-        self.colour = "light"  # type: str
-        self.alwaysmath = None  # type: bool
-        self.alwayswide = None  # type: bool
-        self.namestyle = None  # type: TexNameStyle
-        self.autotex_level = None  # type: AutoTexLevel
+        self.autotex: bool | None = None
+        self.keepsourcefor: int | None = None
+        self.colour: str = "light"
+        self.alwaysmath: bool | None = None
+        self.alwayswide: bool | None = None
+        self.namestyle: TexNameStyle | None = None
+        self.autotex_level: AutoTexLevel | None = None
 
-        self.preamble = None  # type: Optional[str]
+        self.preamble: str | None = None
 
         # Load the config from data
         self.load()
@@ -47,9 +50,7 @@ class LatexUser:
         rows = self._client.data.user_latex_config.select_where(userid=self.id)
         for name, setting in self.settings.items():
             value = setting._data_to_value(
-                self._client,
-                self.id,
-                setting.default if not rows or rows[0][name] is None else rows[0][name],
+                self._client, self.id, setting.default if not rows or rows[0][name] is None else rows[0][name]
             )
             setattr(self, name, value)
 
@@ -63,7 +64,7 @@ class LatexUser:
         Convenience method to retrieve the data for the requested setting.
         """
         if name not in self.settings:
-            raise ValueError("Requested setting `{}` does not exist.".format(name))
+            raise ValueError(f"Requested setting `{name}` does not exist.")
 
         setting = self.settings[name]
         value = getattr(self, name)
@@ -76,5 +77,5 @@ class LatexUser:
 
 
 @module.data_init_task
-def attach_latexuser_client(client):
+def attach_latexuser_client(client: type[cmdClient]):
     LatexUser._client = client

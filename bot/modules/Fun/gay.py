@@ -48,24 +48,11 @@ _col_positive: Colour = Colour.from_rgb(0, 150, 0)
 _col_uncertain: Colour = Colour.from_str("0xFFA107")
 _col_negative: Colour = Colour.from_rgb(150, 0, 0)
 
-BALL_COLOURS: list[Colour] = (
-    5 * [_col_megapositive]
-    + 5 * [_col_positive]
-    + 6 * [_col_uncertain]
-    + 5 * [_col_negative]
-)
+BALL_COLOURS: list[Colour] = 5 * [_col_megapositive] + 5 * [_col_positive] + 6 * [_col_uncertain] + 5 * [_col_negative]
 
 EMOJI: list[str] = ["🎱", "✨", "🔮", "🛐"]
 
-DIESHAPES: dict[int, str] = {
-    4: "🔺",
-    6: "🎲",
-    8: "🔷",
-    10: "🔶",
-    12: "🌟",
-    20: "🔯",
-    100: "🌕",
-}
+DIESHAPES: dict[int, str] = {4: "🔺", 6: "🎲", 8: "🔷", 10: "🔶", 12: "🌟", 20: "🔯", 100: "🌕"}
 
 
 def parse_die(die: str) -> tuple[int, int]:
@@ -73,9 +60,7 @@ def parse_die(die: str) -> tuple[int, int]:
     Parses a die string in the format [num]d[type], where num is optional and defaults to 1. Returns a tuple of (num, type) if successful, or None if the format is invalid.
     """
     if "d" not in die:
-        raise ValueError(
-            "Die must be in the format [num]d[type], where [num] is optional and defaults to 1."
-        )
+        raise ValueError("Die must be in the format [num]d[type], where [num] is optional and defaults to 1.")
     num_str, type_str = die.split("d", 1)
     if num_str == "":
         num = 1
@@ -100,11 +85,7 @@ def generate_die_stats(rolls: list[int]):
     """
 
 
-@module.cmd(
-    "8ball",
-    desc="Ask the magic 8ball a question.",
-    aliases=["8"],
-)
+@module.cmd("8ball", desc="Ask the magic 8ball a question.", aliases=["8"])
 async def cmd_8ball(ctx):
     """
     Usage``:
@@ -122,9 +103,7 @@ async def cmd_8ball(ctx):
         await asyncio.sleep(random.uniform(0.35, 0.95))
         await anim_msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}")
         await asyncio.sleep(random.uniform(0.35, 0.95))
-        await anim_msg.edit(
-            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
-        )
+        await anim_msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}")
         await asyncio.sleep(random.uniform(0.35, 0.95))
         await anim_msg.edit(
             content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
@@ -144,16 +123,11 @@ async def cmd_8ball(ctx):
                 BALL_COLOURS[BALL.index(ballsays)],
             )
         )
-    else:
-        return await ctx.error_reply("That doesn't look like a question.")
+    return await ctx.error_reply("That doesn't look like a question.")
 
 
-@module.cmd(
-    "roll",
-    desc="Roll a DND die.",
-    aliases=["die"],
-)
-async def cmd_roll(ctx: Context):
+@module.cmd("roll", desc="Roll a DND die.", aliases=["die"])
+async def cmd_roll(ctx: type[Context]):
     """
     Usage``:
         {prefix}roll <die>
@@ -184,9 +158,7 @@ async def cmd_roll(ctx: Context):
     random_shapes = list(DIESHAPES.values())
     msg = await ctx.reply(f"{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
-    await msg.edit(
-        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}"
-    )
+    await msg.edit(content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
     await msg.edit(
         content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"
@@ -196,4 +168,4 @@ async def cmd_roll(ctx: Context):
         content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"
     )
     await asyncio.sleep(random.uniform(0.35, 1.15))
-    await msg.edit(content=rolls_str)
+    return await msg.edit(content=rolls_str)

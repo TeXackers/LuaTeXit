@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from asyncio import Task
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, NamedTuple, Type, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import discord
 from discord import (
@@ -18,6 +17,9 @@ from discord import (
 )
 
 if TYPE_CHECKING:
+    from asyncio import Task
+    from collections.abc import Awaitable, Callable
+
     from .cmdClient import cmdClient
     from .Command import Command
 
@@ -100,12 +102,8 @@ class Context:
             | PartialMessageable
             | StageChannel
         )
-        self.ch = (
-            self.msg.channel if self.msg is not None else kwargs.pop("channel", None)
-        )
-        self.guild: discord.Guild | None = (
-            self.msg.guild if self.msg is not None else kwargs.pop("guild", None)
-        )
+        self.ch = self.msg.channel if self.msg is not None else kwargs.pop("channel", None)
+        self.guild: discord.Guild | None = self.msg.guild if self.msg is not None else kwargs.pop("guild", None)
         self.server: discord.Guild | None = self.guild
         self.author: discord.User | discord.Member | None = (
             self.msg.author if self.msg is not None else kwargs.pop("author", None)
@@ -132,7 +130,7 @@ class Context:
         self.tasks: list[Task] = []
 
     @classmethod
-    def util(cls: Type[Context], util_func: Callable[..., Awaitable]) -> None:
+    def util(cls: type[Context], util_func: Callable[..., Awaitable]) -> None:
         """
         Decorator to make a utility function available as a Context instance method
         """
@@ -161,7 +159,7 @@ class Context:
 
 @Context.util
 async def reply(
-    ctx: Context,
+    ctx: type[Context],
     content: str | None = None,
     reference: MessageReference | None = None,
     allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
@@ -170,65 +168,49 @@ async def reply(
     """
     Helper function to reply in the current channel.
     """
-    send_kwargs: dict[str, Any] = {
-        "content": content,
-        "allowed_mentions": allowed_mentions,
-        **kwargs,
-    }
+    send_kwargs: dict[str, Any] = {"content": content, "allowed_mentions": allowed_mentions, **kwargs}
     if reference is not None:
         send_kwargs["reference"] = reference
 
-    message: Message = await cast(discord.abc.Messageable, ctx.ch).send(**send_kwargs)
+    message: Message = await cast("discord.abc.Messageable", ctx.ch).send(**send_kwargs)
     ctx.sent_messages.append(message)
     return message
 
 
 @Context.util
-async def error_reply(ctx: Context, error_str: str):
+async def error_reply(ctx: type[Context], error_str: str):
     """
     Notify the user of a user level error.
     Typically, this will occur in a red embed, posted in the command channel.
     """
     try:
         message: Message = await ctx.reply(
-            view=ErrorEmbedView(
-                error_str, discord.utils.format_dt(discord.utils.utcnow(), "R")
-            )
+            view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
         )
         ctx.sent_messages.append(message)
         return message
     except discord.Forbidden:
         message: Message = await ctx.reply(
-            view=ErrorEmbedView(
-                error_str, discord.utils.format_dt(discord.utils.utcnow(), "R")
-            )
+            view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
         )
         ctx.sent_messages.append(message)
         return message
 
 
 @Context.util
-async def traceback(ctx: Context, helper_msg: str, error_str: str):
+async def traceback(ctx: type[Context], helper_msg: str, error_str: str):
     """
     Notify the user of an error, and show traceback
     """
     try:
         out_msg: Message = await ctx.reply(
-            view=DebugEmbedView(
-                helper_msg,
-                error_str,
-                discord.utils.format_dt(discord.utils.utcnow(), style="F"),
-            )
+            view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
         )
         ctx.sent_messages.append(out_msg)
         return out_msg
     except discord.Forbidden:
         out_msg: Message = await ctx.reply(
-            view=DebugEmbedView(
-                helper_msg,
-                error_str,
-                discord.utils.format_dt(discord.utils.utcnow(), style="F"),
-            )
+            view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
         )
         ctx.sent_messages.append(out_msg)
         return out_msg

@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
-app = os.getcwd().split(os.sep)[-1]
+app = Path.cwd().parts[-1]
 pipefile = "/home/paradox/pipe/" + app
 
-existence = os.path.exists(pipefile)
+existence = Path.exists(Path(pipefile))
 
 cest_une_pipe = None
 
@@ -14,7 +14,7 @@ async def handle_raw_socket(bot, msg):
 
     global cest_une_pipe
     if cest_une_pipe is None:
-        cest_une_pipe = open(pipefile, "w")
+        cest_une_pipe = Path.open(pipefile, "w")
     if isinstance(msg, str):
         cest_une_pipe.write(msg)
         cest_une_pipe.write("\n")

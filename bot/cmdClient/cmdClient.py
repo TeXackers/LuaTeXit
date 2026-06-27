@@ -2,17 +2,21 @@ import asyncio
 import imp
 import itertools
 import logging
-import os
 import sys
 import traceback
 from bisect import bisect
-from typing import Callable, ClassVar, Optional, Type
+from collections.abc import Callable  # noqa
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from .Module import Module
 
 import discord
 from cachetools import LRUCache
 from discord import Intents
 
-from .Command import Command
+from .Command import Command  # noqa
 from .Context import Context, FlatContext
 from .logger import log
 from .Module import Module
@@ -21,8 +25,8 @@ from .Module import Module
 class cmdClient(discord.Client):
     prefix: str | None
 
-    baseModule: ClassVar[Type[Module]] = Module
-    default_module: ClassVar[Optional[Module]] = None
+    baseModule: ClassVar[type[Module]] = Module
+    default_module: ClassVar[Module | None] = None
     # List of loaded modules
     modules: list[Module] = []
     # Command name cache, including aliases
@@ -33,7 +37,7 @@ class cmdClient(discord.Client):
         prefix: str | None = None,
         owners: list[int] | None = None,
         ctx_cache: LRUCache | None = None,
-        baseContext: Type[Context] = Context,
+        baseContext: type[Context] = Context,
         intents: Intents = Intents.default(),
         **kwargs,
     ):
@@ -42,7 +46,7 @@ class cmdClient(discord.Client):
         self.prefix = prefix
         self.owners = owners or []
         self.objects = {}
-        self.baseContext: Type[Context] = Context
+        self.baseContext: type[Context] = Context
         self.ctx_cache: LRUCache = ctx_cache or LRUCache(1000)
         self.active_contexts: dict[int, Context] = {}
         self.extra_message_parsers = []
@@ -52,9 +56,7 @@ class cmdClient(discord.Client):
         """
         A list of current available commands.
         """
-        return list(
-            itertools.chain(*[module.cmds for module in self.modules if module.enabled])
-        )
+        return list(itertools.chain(*[module.cmds for module in self.modules if module.enabled]))
 
     @classmethod
     def get_default_module(cls) -> Module:
@@ -66,9 +68,7 @@ class cmdClient(discord.Client):
         return cls.default_module
 
     @classmethod
-    def cmd(
-        cls, *args, mod: Optional[Module] = None, **kwargs
-    ) -> Callable[[Callable], Command]:
+    def cmd(cls, *args, mod: Module | None = None, **kwargs) -> Callable[[Callable], Command]:
         """
         Helper decorator to create a command with an optional module.
         If no module is specified, uses the class default module.
@@ -93,12 +93,9 @@ class cmdClient(discord.Client):
     async def valid_prefixes(self, message: discord.Message) -> tuple[str, ...]:
         if self.prefix:
             return (self.prefix,)
-        else:
-            log(
-                "No prefix set and no prefix function implemented.", level=logging.ERROR
-            )
-            await self.close()
-            return ()
+        log("No prefix set and no prefix function implemented.", level=logging.ERROR)
+        await self.close()
+        return ()
 
     def set_valid_prefixes(self, func: Callable) -> None:
         setattr(self, "valid_prefixes", func.__get__(self))
@@ -135,10 +132,7 @@ class cmdClient(discord.Client):
         An exception was caught in one of the event handlers.
         Log the exception with a traceback, and continue on.
         """
-        log(
-            f"Ignoring exception in {event_method}\n{traceback.format_exc()}",
-            level=logging.ERROR,
-        )
+        log(f"Ignoring exception in {event_method}\n{traceback.format_exc()}", level=logging.ERROR)
 
     async def on_message(self, message: discord.Message) -> None:
         """
@@ -147,18 +141,13 @@ class cmdClient(discord.Client):
         """
         await self.parse_message(message)
 
-    async def on_message_edit(
-        self, before: discord.Message, after: discord.Message
-    ) -> None:
+    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
         if before.content != after.content:
             if after.id in self.ctx_cache:
                 flatctx: FlatContext = self.ctx_cache[after.id]
 
                 if flatctx.cleanup_on_edit:
-                    if (
-                        after.id in self.active_contexts
-                        and self.active_contexts[after.id].tasks
-                    ):
+                    if after.id in self.active_contexts and self.active_contexts[after.id].tasks:
                         ctx = self.active_contexts[after.id]
                         [task.cancel() for task in ctx.tasks]
 
@@ -166,9 +155,7 @@ class cmdClient(discord.Client):
                             await asyncio.sleep(0.1)
                         asyncio.ensure_future(self.active_command_response_cleaner(ctx))
                     else:
-                        asyncio.ensure_future(
-                            self.flat_command_response_cleaner(flatctx)
-                        )
+                        asyncio.ensure_future(self.flat_command_response_cleaner(flatctx))
 
                 if flatctx.reparse_on_edit:
                     await self.parse_message(after)
@@ -176,12 +163,9 @@ class cmdClient(discord.Client):
                 await self.on_message(after)
 
     async def flat_command_response_cleaner(self, flatctx: FlatContext):
-        ch: (
-            discord.TextChannel
-            | discord.DMChannel
-            | discord.Thread
-            | discord.VoiceChannel
-        ) = self.get_channel(flatctx.ch)
+        ch: discord.TextChannel | discord.DMChannel | discord.Thread | discord.VoiceChannel = self.get_channel(
+            flatctx.ch
+        )
         if ch is not None:
             for msgid in flatctx.sent_messages:
                 try:
@@ -190,7 +174,7 @@ class cmdClient(discord.Client):
                 except Exception:
                     pass
 
-    async def active_command_response_cleaner(self, ctx: Context):
+    async def active_command_response_cleaner(self, ctx: type[Context]):
         try:
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.ch.delete_messages(ctx.sent_messages)
@@ -214,25 +198,19 @@ class cmdClient(discord.Client):
             # If the message starts with a valid command, pass it along to run_cmd
             stripcontent: str = content[len(prefix) :].strip()
             cmdnames: list[str] = [
-                cmdname
-                for cmdname in self.cmd_names
-                if stripcontent[: len(cmdname)].lower() == cmdname
+                cmdname for cmdname in self.cmd_names if stripcontent[: len(cmdname)].lower() == cmdname
             ]
 
             if cmdnames:
                 cmdname: str = max(cmdnames, key=len)
-                await self.run_cmd(
-                    message, cmdname, stripcontent[len(cmdname) :].strip(), prefix
-                )
+                await self.run_cmd(message, cmdname, stripcontent[len(cmdname) :].strip(), prefix)
                 return
 
         # Run the extra message parsers
         for parser in self.extra_message_parsers:
             asyncio.ensure_future(parser[0](self, message), loop=self.loop)
 
-    async def run_cmd(
-        self, message: discord.Message, cmdname: str, arg_str: str, prefix: str
-    ):
+    async def run_cmd(self, message: discord.Message, cmdname: str, arg_str: str, prefix: str):
         """
         Run a command and pass it the command message and the arg_str.
 
@@ -249,7 +227,7 @@ class cmdClient(discord.Client):
         """
 
         cmd: Command = self.cmd_names[cmdname]
-        content: str = "\n".join(("\t" + line for line in message.content.splitlines()))
+        content: str = "\n".join("\t" + line for line in message.content.splitlines())
 
         log(
             f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == 871997060239466496 else message.channel} ({'' if message.channel.id == 871997060239466496 else message.channel.id})\ngid: {message.guild if message.guild else ''} ({message.guild.id if message.guild else ''})\n\n{content}",
@@ -257,28 +235,17 @@ class cmdClient(discord.Client):
         )
 
         if not cmd.module.enabled:
-            log(
-                "s     skip",
-                context=f"mid:{message.id}",
-            )
+            log("s     skip", context=f"mid:{message.id}")
             self.update_cmdnames()
 
         if not cmd.module.ready:
-            log(
-                f"w     |-- waiting {cmd.module.name}",
-                context=f"mid:{message.id}",
-            )
+            log(f"w     |-- waiting {cmd.module.name}", context=f"mid:{message.id}")
             while not cmd.module.ready:
                 await asyncio.sleep(1)
 
         # Build the context
-        ctx: Context = self.baseContext(
-            client=self,
-            message=message,
-            arg_str=arg_str,
-            alias=cmdname,
-            cmd=cmd,
-            prefix=prefix,
+        ctx: type[Context] = self.baseContext(
+            client=self, message=message, arg_str=arg_str, alias=cmdname, cmd=cmd, prefix=prefix
         )
 
         # Add command to command cache and active contexts
@@ -305,9 +272,9 @@ class cmdClient(discord.Client):
         loaded: int = 0
         initial_cmds: int = len(self.cmds)
 
-        for fn in os.listdir(dirpath):
-            path = os.path.join(dirpath, fn)
-            if fn.endswith(".py"):
+        for fn in Path(dirpath).iterdir():
+            if fn.is_file() and fn.suffix == ".py":
+                path = fn.absolute()
                 sys.path.append(dirpath)
                 module = imp.load_source("bot_module_" + str(fn), path)
                 sys.path.remove(dirpath)
@@ -346,23 +313,15 @@ class cmdClient(discord.Client):
                         parser=func.__name__,
                         message=message,
                         guildid=message.guild.id if message.guild else None,
-                        content="\n".join(
-                            ("\t" + line for line in message.content.splitlines())
-                        ),
-                        traceback="\n".join(
-                            (
-                                "\t" + line
-                                for line in traceback.format_exc().splitlines()
-                            )
-                        ),
+                        content="\n".join("\t" + line for line in message.content.splitlines()),
+                        traceback="\n".join("\t" + line for line in traceback.format_exc().splitlines()),
                     ),
-                    context="mid:{}".format(message.id),
+                    context=f"mid:{message.id}",
                     level=logging.ERROR,
                 )
 
         self.extra_message_parsers.insert(
-            bisect([parser[1] for parser in self.extra_message_parsers], priority),
-            (new_func, priority),
+            bisect([parser[1] for parser in self.extra_message_parsers], priority), (new_func, priority)
         )
         log(f"+     |------{func.__name__} (priority: {priority})")
 
@@ -388,9 +347,8 @@ class cmdClient(discord.Client):
             except Exception:
                 log(
                     (
-                        "Exception encountered executing event handler '{}' for event '{}'. "
-                        "Traceback:\n{}"
-                    ).format(func.__name__, event, traceback.format_exc()),
+                        f"Exception encountered executing event handler '{func.__name__}' for event '{event}'. Traceback:\n{traceback.format_exc()}"
+                    ),
                     level=logging.ERROR,
                 )
 
@@ -398,9 +356,7 @@ class cmdClient(discord.Client):
         if not hasattr(self, after_handler):
             setattr(self, after_handler, [])
         handlers = getattr(self, after_handler)
-        handlers.insert(
-            bisect([handler[1] for handler in handlers], priority), (new_func, priority)
-        )
+        handlers.insert(bisect([handler[1] for handler in handlers], priority), (new_func, priority))
         log(f"+     |--[event] {func.__name__} | {event} (priority: {priority})")
 
     def dispatch(self, event, *args, **kwargs):

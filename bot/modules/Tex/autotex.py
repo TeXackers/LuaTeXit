@@ -3,7 +3,7 @@ import logging
 import traceback
 
 import discord
-from cmdClient import cmdClient
+from cmdClient import cmdClient  # noqa
 from logger import log
 
 from .core.LatexContext import LatexContext
@@ -13,7 +13,7 @@ from .core.tex_utils import AutoTexLevel, ParseMode
 from .module import latex_module as module
 
 
-async def latex_message_parser(client, message):
+async def latex_message_parser(client: type[cmdClient], message: str):
     """
     Check incoming messages for LaTeX, render them if required, and add them to cache.
     As a cmdClient message parser, it handles both new messages and edits which were ignored by the command parser.
@@ -39,9 +39,8 @@ async def latex_message_parser(client, message):
         if not (my_permissions.send_messages and my_permissions.attach_files):
             return
 
-        if lguild.latex_channels:
-            if message.channel.id not in lguild.latex_channels:
-                return
+        if lguild.latex_channels and message.channel.id not in lguild.latex_channels:
+            return
 
     # If the guild requires codeblocks, check now
     if lguild.require_codeblocks and "```" not in message.content:
@@ -94,9 +93,9 @@ async def latex_message_parser(client, message):
         ).format(
             message=message,
             guildid=message.guild.id if message.guild else None,
-            content="\n".join(("\t" + line for line in message.content.splitlines())),
+            content="\n".join("\t" + line for line in message.content.splitlines()),
         ),
-        context="mid:{}".format(message.id),
+        context=f"mid:{message.id}",
     )
 
     # First create a context for the message and add it to the context caches
@@ -115,7 +114,7 @@ async def latex_message_parser(client, message):
         if output_msg:
             log(
                 "Rendered source, now waiting for the LaTeXContext to deactivate.",
-                context="mid:{}".format(message.id),
+                context=f"mid:{message.id}",
                 level=logging.DEBUG,
             )
 
@@ -124,34 +123,26 @@ async def latex_message_parser(client, message):
     except discord.Forbidden:
         full_traceback = traceback.format_exc()
         log(
-            "Caught the following exception while rendering LaTeX.\n{}".format(
-                full_traceback
-            ),
-            context="mid:{}".format(message.id),
+            f"Caught the following exception while rendering LaTeX.\n{full_traceback}",
+            context=f"mid:{message.id}",
             level=logging.WARNING,
         )
         pass
     except Exception as e:
         full_traceback = traceback.format_exc()
         log(
-            "Caught the following exception while rendering LaTeX.\n{}".format(
-                full_traceback
-            ),
-            context="mid:{}".format(message.id),
+            f"Caught the following exception while rendering LaTeX.\n{full_traceback}",
+            context=f"mid:{message.id}",
             level=logging.ERROR,
         )
         raise e
     else:
-        log(
-            "Automatic LaTeX compilation completed normally.",
-            context="mid:{}".format(message.id),
-            level=logging.DEBUG,
-        )
+        log("Automatic LaTeX compilation completed normally.", context=f"mid:{message.id}", level=logging.DEBUG)
     finally:
         client.ctx_cache[message.id] = ctx.flatten()
         client.active_contexts.pop(message.id, None)
 
 
 @module.init_task
-def register_latex_parser(client: cmdClient):
+def register_latex_parser(client: type[cmdClient]):
     client.add_message_parser(latex_message_parser)

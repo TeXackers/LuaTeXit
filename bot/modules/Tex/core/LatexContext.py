@@ -1,15 +1,17 @@
 import asyncio
 import logging
-import os
 import re
 import time
+from contextlib import suppress
+from pathlib import Path
 
 import discord
-from cmdClient import Context, cmdClient
+from cmdClient import Context, cmdClient  # noqa
 from logger import log
 
-from ..module import latex_module as module
-from ..resources import default_preamble, failed_image_path
+from modules.Tex.module import latex_module as module
+from modules.Tex.resources import default_preamble, failed_image_path
+
 from .LatexGuild import LatexGuild
 from .LatexUser import LatexUser
 from .tex_compile import (  # noqa
@@ -40,14 +42,7 @@ class BucketOverFull(BucketFull):
 
 
 class Bucket:
-    __slots__ = (
-        "max_level",
-        "empty_time",
-        "leak_rate",
-        "_level",
-        "_last_checked",
-        "_last_full",
-    )
+    __slots__ = ("max_level", "empty_time", "leak_rate", "_level", "_last_checked", "_last_full")
 
     def __init__(self, max_level, empty_time):
         self.max_level = max_level
@@ -75,16 +70,14 @@ class Bucket:
         self._leak()
         if self._level + 1 > self.max_level + 1:
             raise BucketOverFull
-        elif self._level + 1 > self.max_level:
+        if self._level + 1 > self.max_level:
             self._level += 1
             if self._last_full:
                 raise BucketOverFull
-            else:
-                self._last_full = True
-                raise BucketFull
-        else:
-            self._last_full = False
-            self._level += 1
+            self._last_full = True
+            raise BucketFull
+        self._last_full = False
+        self._level += 1
 
 
 class LatexContext:
@@ -135,21 +128,12 @@ class LatexContext:
     emoji_show_errors = None
     emoji_delete_source = None
 
-    def __init__(
-        self,
-        ctx: Context,
-        source,
-        lguild=None,
-        luser=None,
-        wide=None,
-        spoiler=False,
-        **kwargs,
-    ):
+    def __init__(self, ctx: type[Context], source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs):
         self.ctx = ctx
         self.source = source
         self.lguild = lguild or LatexGuild.get(ctx.guild.id if ctx.guild else 0)
         self.luser = luser or LatexUser.get(ctx.author.id)
-        self._mask_id: str | None = kwargs.get("mask_id", None)
+        self._mask_id: str | None = kwargs.get("mask_id")
 
         # One-time forced compile flags
         self._force_wide = wide
@@ -184,9 +168,7 @@ class LatexContext:
         return self.luser.preamble or self.lguild.preamble or default_preamble
 
     def get_wide(self):
-        return (
-            self._force_wide if self._force_wide is not None else self.luser.alwayswide
-        )
+        return self._force_wide if self._force_wide is not None else self.luser.alwayswide
 
     def get_keepsourcefor(self):
         return self.luser.keepsourcefor
@@ -196,36 +178,19 @@ class LatexContext:
             case TexNameStyle.HIDDEN:
                 name = ""
             case TexNameStyle.MENTION:
-                name = "<@{}>".format(self.luser.id)
+                name = f"<@{self.luser.id}>"
             case TexNameStyle.DISPLAYNAME:
                 raw_name = self.ctx.author.display_name
-                name = "-# {}".format(
-                    discord.utils.escape_mentions(
-                        discord.utils.escape_markdown(raw_name)
-                    )
-                )
+                name = f"-# {discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))}"
             case TexNameStyle.USERNAME:
                 raw_name = self.ctx.author.name
-                name = "-# {}".format(
-                    discord.utils.escape_mentions(
-                        discord.utils.escape_markdown(raw_name)
-                    )
-                )
+                name = f"-# {discord.utils.escape_mentions(discord.utils.escape_markdown(raw_name))}"
             case TexNameStyle.RUNNINGAS:
                 target_name: str = self._mask_id
                 sender_name: str = str(self.ctx.author.id)
-                name = "-# <@{}> running as <@{}>".format(
-                    discord.utils.escape_mentions(
-                        discord.utils.escape_markdown(sender_name)
-                    ),
-                    discord.utils.escape_mentions(
-                        discord.utils.escape_markdown(target_name)
-                    ),
-                )
+                name = f"-# <@{discord.utils.escape_mentions(discord.utils.escape_markdown(sender_name))}> running as <@{discord.utils.escape_mentions(discord.utils.escape_markdown(target_name))}>"
             case _:
-                raise ValueError(
-                    "Unknown LatexUser namestyle `{}`.".format(self.luser.namestyle)
-                )
+                raise ValueError(f"Unknown LatexUser namestyle `{self.luser.namestyle}`.")
         return name
 
     def get_header(self):
@@ -233,35 +198,26 @@ class LatexContext:
 
     async def dm_source(self, target):
         embed = discord.Embed(
-            title="LaTeX source",
-            description="```latex\n{}\n```".format(self.source),
-            timestamp=self._source_message.created_at,
+            title="LaTeX source", description=f"```latex\n{self.source}\n```", timestamp=self._source_message.created_at
         )
         embed.set_footer(text="Sent at")
         embed.set_author(name=self._header_name)
 
         if self._errors:
             embed.add_field(
-                name="Compile Errors",
-                value="```{}```".format(self._errors.replace("```", "")),
-                inline=False,
+                name="Compile Errors", value="```{}```".format(self._errors.replace("```", "")), inline=False
             )
 
         embed.add_field(
             name="Jump link",
-            value="[Click here to jump back to the message]({})".format(
-                self._output_message.jump_url
-            ),
+            value=f"[Click here to jump back to the message]({self._output_message.jump_url})",
             inline=False,
         )
         try:
             await target.send(embed=embed)
         except discord.Forbidden:
             await self.ctx.error_reply(
-                "Could not direct message you {}, "
-                "do you have me blocked or direct messages disabled?".format(
-                    target.mention
-                )
+                f"Could not direct message you {target.mention}, do you have me blocked or direct messages disabled?"
             )
 
     async def delete_source(self, delay=0):
@@ -273,15 +229,9 @@ class LatexContext:
             if self._source_message:
                 if delay:
                     # Wait for the delay, and abort if the message has been edited while we wait
-                    last_modified = (
-                        self._source_message.edited_at
-                        or self._source_message.created_at
-                    )
+                    last_modified = self._source_message.edited_at or self._source_message.created_at
                     await asyncio.sleep(delay)
-                    if (
-                        self._source_message.edited_at
-                        and last_modified < self._source_message.edited_at
-                    ):
+                    if self._source_message.edited_at and last_modified < self._source_message.edited_at:
                         return
                 await self._source_message.delete()
         except asyncio.CancelledError:
@@ -315,23 +265,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -341,12 +280,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.compile()
@@ -359,9 +294,7 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(
-                    self.source.replace("```", "")
-                )
+                source_message = "```latex\n{}\n```".format(self.source.replace("```", ""))
 
             if error:
                 self._show_emoji = self.emoji_show_errors
@@ -369,38 +302,32 @@ class LatexContext:
                     self._header_name, source_message, error.replace("```", "")
                 )
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path.is_file(file_path))
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -413,13 +340,7 @@ class LatexContext:
         """
         Compile the source
         """
-        return await self.ctx.maketex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
-        )
+        return await self.ctx.maketex(self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide)
 
     async def luatexmake(self):
         """
@@ -438,23 +359,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -464,12 +374,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.luatexcompile()
@@ -482,46 +388,38 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = f"```latex\n{self.source}\n```"
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
-                )
+                self._header_shown = f"{self._header_name}\n{source_message}Compilation error:```{error}```"
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path.is_file(file_path))
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -535,11 +433,7 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.makeluatex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
+            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
         )
 
     async def xetexmake(self):
@@ -559,23 +453,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -585,12 +468,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.xetexcompile()
@@ -603,46 +482,38 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = f"```latex\n{self.source}\n```"
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
-                )
+                self._header_shown = f"{self._header_name}\n{source_message}Compilation error:```{error}```"
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path(file_path).is_file())
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -655,13 +526,7 @@ class LatexContext:
         """
         Compile the source
         """
-        return await self.ctx.makexetex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
-        )
+        return await self.ctx.makexetex(self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide)
 
     async def plain_luatex_make(self):
         """
@@ -680,23 +545,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -706,12 +560,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.plain_luatex_compile()
@@ -724,46 +574,38 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = f"```latex\n{self.source}\n```"
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
-                )
+                self._header_shown = f"{self._header_name}\n{source_message}Compilation error:```{error}```"
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path.is_file(file_path))
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -777,11 +619,7 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.make_plain_luatex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
+            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
         )
 
     async def plain_pdftex_make(self):
@@ -801,23 +639,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -827,12 +654,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.plain_pdftex_compile()
@@ -845,46 +668,38 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = f"```latex\n{self.source}\n```"
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
-                )
+                self._header_shown = f"{self._header_name}\n{source_message}Compilation error:```{error}```"
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path.is_file(file_path))
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -898,11 +713,7 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.make_plain_pdftex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
+            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
         )
 
     async def pythontexmake(self):
@@ -922,23 +733,12 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log(
-                "Aborting compile due to `BucketOverfull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log(
-                "Aborting compile due to BucketFull`.",
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.INFO,
-            )
+            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
-            await ctx.error_reply(
-                "Too many requests, please slow down!\n"
-                "(You may try again in `5` seconds.)"
-            )
+            await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
 
         # Retrieve the user lock, creating it if required
@@ -948,12 +748,8 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log(
-                    "Aborting compile due to a newly overfull bucket.",
-                    context="mid:{}".format(ctx.msg.id),
-                    level=logging.INFO,
-                )
-                return
+                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                return None
 
             # Compile the source
             error = await self.pythontexcompile()
@@ -966,46 +762,38 @@ class LatexContext:
             if self._dm_source:
                 source_message = "```fix\nLaTeX source sent via direct message.\n```"
             else:
-                source_message = "```latex\n{}\n```".format(self.source)
+                source_message = f"```latex\n{self.source}\n```"
 
             if error:
                 self._show_emoji = self.emoji_show_errors
-                self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error
-                )
+                self._header_shown = f"{self._header_name}\n{source_message}Compilation error:```{error}```"
                 self._header_collapsed = (
-                    "{}\n## Compile Error!\n"
-                    "Click the {} reaction to view the error message.\n"
+                    f"{self._header_name}\n## Compile Error!\n"
+                    f"Click the {self._show_emoji} reaction to view the error message.\n"
                     "-# (You may also edit your message to recompile.)"
-                ).format(self._header_name, self._show_emoji)
+                )
             else:
                 self._show_emoji = self.emoji_show_source
-                self._header_shown = "{}\n{}".format(self._header_name, source_message)
+                self._header_shown = f"{self._header_name}\n{source_message}"
                 self._header_collapsed = self._header_name
 
             # Fire deletion of source, if required
             if not error and self.keepsourcefor is not None:
-                self._source_deletion_task = asyncio.ensure_future(
-                    self.delete_source(delay=self.keepsourcefor)
-                )
+                self._source_deletion_task = asyncio.ensure_future(self.delete_source(delay=self.keepsourcefor))
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = "tex/staging/{id}/{id}.png".format(id=luser.id)
-            exists = True if os.path.isfile(file_path) else False
+            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
+            exists = bool(Path.is_file(file_path))
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
-            output_file = discord.File(
-                file_path, spoiler=exists and self._spoiler_output
-            )
+            output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
 
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed,
-                    file=output_file,
-                    allowed_mentions=discord.AllowedMentions.none(),
+                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -1019,11 +807,7 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.makepythontex(
-            self.source,
-            self.luser.id,
-            self.preamble,
-            self.luser.colour,
-            pad=not self.wide,
+            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
         )
 
     async def activate_reactions(self):
@@ -1061,7 +845,7 @@ class LatexContext:
         except asyncio.CancelledError:
             log(
                 "LatexContext lifetime cancelled, probably due to an edit.",
-                context="mid:{}".format(self.ctx.msg.id),
+                context=f"mid:{self.ctx.msg.id}",
                 level=logging.DEBUG,
             )
             pass
@@ -1103,9 +887,7 @@ class LatexContext:
         codeblocks = cls.extract_codeblocks(content)
         if codeblocks:
             # Build list of relevant blocks
-            blocks = [
-                block[1] for block in codeblocks if block[0] in ["", "tex", "latex"]
-            ]
+            blocks = [block[1] for block in codeblocks if block[0] in ["", "tex", "latex"]]
         else:
             # Strip any wrapping backtics from content
             if content.startswith("`") and content.endswith("`"):
@@ -1120,28 +902,11 @@ class LatexContext:
                 case ParseMode.DOCUMENT:
                     source = "\n\n".join(blocks)
                 case ParseMode.GATHER:
-                    source = "\n".join(
-                        [
-                            "$\\begin{{gathered}}\n{}\n\\end{{gathered}}$".format(block)
-                            for block in blocks
-                        ]
-                    )
+                    source = "\n".join([f"$\\begin{{gathered}}\n{block}\n\\end{{gathered}}$" for block in blocks])
                 case ParseMode.ALIGN:
-                    source = "\n".join(
-                        [
-                            "$\\begin{{aligned}}\n{}\n\\end{{aligned}}$".format(block)
-                            for block in blocks
-                        ]
-                    )
+                    source = "\n".join([f"$\\begin{{aligned}}\n{block}\n\\end{{aligned}}$" for block in blocks])
                 case ParseMode.TIKZ:
-                    source = "\n".join(
-                        [
-                            "\\begin{{tikzpicture}}\n{}\n\\end{{tikzpicture}}".format(
-                                block
-                            )
-                            for block in blocks
-                        ]
-                    )
+                    source = "\n".join([f"\\begin{{tikzpicture}}\n{block}\n\\end{{tikzpicture}}" for block in blocks])
                 case _:
                     # This should be impossible
                     raise ValueError("Unknown `mode` passed to LaTeX parser.")
@@ -1164,8 +929,7 @@ class LatexContext:
         if "$" in content and content.strip("$"):
             # Regex match for the $ pattern
             return cls.single_dollars_pattern.search(content) is not None
-        else:
-            return False
+        return False
 
     @classmethod
     def strict_hastex(cls, content):
@@ -1187,9 +951,7 @@ class LatexContext:
         #   and content.strip('$')
         #   and cls.double_dollars_pattern.search(content) is not None)
         has_tex = has_tex or (
-            content.count("$$") > 1
-            and content.strip("$")
-            and cls.double_dollars_pattern.search(content) is not None
+            content.count("$$") > 1 and content.strip("$") and cls.double_dollars_pattern.search(content) is not None
         )
 
         # Check for environments
@@ -1197,12 +959,11 @@ class LatexContext:
 
         # Check for mathmode macros
         has_tex = has_tex or ((r"\(" in content) and (r"\)" in content))
-        has_tex = has_tex or ((r"\[" in content) and (r"\]" in content))
 
-        return has_tex
+        return has_tex or ((r"\[" in content) and (r"\]" in content))
 
 
-async def reaction_listener(client, reaction, user):
+async def reaction_listener(client: type[cmdClient], reaction, user):
     # Ignore reaction if it isn't from an active context
     if reaction.message.id not in LatexContext.active_contexts:
         return
@@ -1219,26 +980,18 @@ async def reaction_listener(client, reaction, user):
     # We can't guarantee the state stays consistent through multiple awaits
     # Multiple reactions may even be used simultaneously
     # So wrap this is a general try block to avoid spitting out unhandled exceptions
-    try:
+    with suppress(discord.NotFound, discord.Forbidden):
         if reaction.emoji == LatexContext.emoji_delete:
             # Check permissions
-            if user.id == luser.id or (
-                ctx.guild and ctx.ch.permissions_for(user).manage_messages
-            ):
+            if user.id == luser.id or (ctx.guild and ctx.ch.permissions_for(user).manage_messages):
                 # Cancel all tasks (in particular cancelling the activate_reactions sleep and unregistering it)
                 [task.cancel() for task in ctx.tasks]
 
                 # Delete the output message
                 await reaction.message.delete()
-        elif reaction.emoji in [
-            LatexContext.emoji_show_source,
-            LatexContext.emoji_show_errors,
-        ]:
+        elif reaction.emoji in [LatexContext.emoji_show_source, LatexContext.emoji_show_errors]:
             # Check the user is the author or if they allow other people to view the source
-            if (
-                user.id == luser.id
-                or reaction.message.channel.permissions_for(user).manage_messages
-            ):
+            if user.id == luser.id or reaction.message.channel.permissions_for(user).manage_messages:
                 # Toggle the shown state
                 lctx._source_shown = 1 - lctx._source_shown
 
@@ -1252,45 +1005,37 @@ async def reaction_listener(client, reaction, user):
                 # Attempt to remove the user's reaction
                 if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                     await reaction.remove(user)
-        elif reaction.emoji == LatexContext.emoji_delete_source:
-            # Check permissions
-            if user.id == luser.id or (
-                ctx.guild and ctx.ch.permissions_for(user).manage_messages
-            ):
-                # Cancel any running source deletion task
-                if lctx._source_deletion_task:
-                    lctx._source_deletion_task.cancel()
+        elif reaction.emoji == LatexContext.emoji_delete_source and (
+            user.id == luser.id or (ctx.guild and ctx.ch.permissions_for(user).manage_messages)
+        ):
+            # Cancel any running source deletion task
+            if lctx._source_deletion_task:
+                lctx._source_deletion_task.cancel()
 
-                # Request immediate source deletion
-                await lctx.delete_source()
+            # Request immediate source deletion
+            await lctx.delete_source()
 
-                # Attempt to clear the reaction
-                # If the reaction appears at all, we probably have manage_messages
-                if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
-                    await reaction.clear()
-    except discord.NotFound:
-        pass
-    except discord.Forbidden:
-        pass
+            # Attempt to clear the reaction
+            # If the reaction appears at all, we probably have manage_messages
+            if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
+                await reaction.clear()
 
 
 @module.init_task
-def attach_emojis(client):
+def attach_emojis(client: type[cmdClient]):
     LatexContext.emoji_delete = client.conf.emojis.getemoji("delete")
     LatexContext.emoji_show_source = client.conf.emojis.getemoji("latex_show_source")
     LatexContext.emoji_show_errors = client.conf.emojis.getemoji("latex_show_errors")
-    LatexContext.emoji_delete_source = client.conf.emojis.getemoji(
-        "latex_delete_source"
-    )
+    LatexContext.emoji_delete_source = client.conf.emojis.getemoji("latex_delete_source")
 
 
 @module.init_task
-def register_reaction_listener(client: cmdClient):
+def register_reaction_listener(client: type[cmdClient]):
     client.add_after_event("reaction_add", reaction_listener)
 
 
 @module.init_task
-def attach_latex_locks(client):
+def attach_latex_locks(client: type[cmdClient]):
     # Attach user simultaneous rendering locks
     client.objects["latex_user_locks"] = LatexContext.user_locks
 

@@ -1,6 +1,7 @@
 from registry import Column, ColumnType, tableInterface, tableSchema
 
-from ..module import latex_module as module
+from modules.Tex.module import latex_module as module
+
 from . import preamble_data  # noqa
 
 # Define data schema
@@ -22,8 +23,5 @@ config_schema = tableSchema(
 @module.data_init_task
 def attach_latexguild_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, config_schema, shared=False
-        ),
-        "user_latex_config",
+        tableInterface.from_schema(client.data, client.app, config_schema, shared=False), "user_latex_config"
     )

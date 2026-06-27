@@ -15,36 +15,28 @@ REQUIRED_DATA_VERSION = 3
 # ------------------------------
 # Version table and checker
 # ------------------------------
-raw_insert_line = (
-    "INSERT INTO VERSION (version, updated_by) VALUES ({}, 'Initial Creation');".format(
-        REQUIRED_DATA_VERSION
-    )
+raw_insert_line: str = (
+    f"INSERT INTO VERSION (version, updated_by) VALUES ({REQUIRED_DATA_VERSION}, 'Initial Creation');"
 )
 
 version_schema = tableSchema(
     "VERSION",
     Column("version", ColumnType.INT, required=True, primary=True),
-    Column(
-        "updated_at", ColumnType.TIMESTAMP, default="CURRENT_TIMESTAMP", required=True
-    ),
+    Column("updated_at", ColumnType.TIMESTAMP, default="CURRENT_TIMESTAMP", required=True),
     Column("updated_by", ColumnType.SHORTSTRING),
     RawElement(raw_insert_line, raw_insert_line),
     add_timestamp=False,
 )
 
 versionModule = paraModule(
-    "version_table",
-    description="Skeleton module which loads the version table and checks the version on startup.",
+    "version_table", description="Skeleton module which loads the version table and checks the version on startup."
 )
 
 
 @versionModule.data_init_task
 def load_version_table(client):
     client.data.attach_interface(
-        tableInterface.from_schema(
-            client.data, client.app, version_schema, shared=True
-        ),
-        "version",
+        tableInterface.from_schema(client.data, client.app, version_schema, shared=True), "version"
     )
 
 
@@ -62,28 +54,21 @@ def check_data_version(client):
         if version != REQUIRED_DATA_VERSION:
             client.log(
                 "Refusing to start the client due to data version mismatch! "
-                "Current data version is `{}`, required version is `{}`. "
-                "Shutting down the client.".format(version, REQUIRED_DATA_VERSION),
+                f"Current data version is `{version}`, required version is `{REQUIRED_DATA_VERSION}`. "
+                "Shutting down the client.",
                 level=logging.CRITICAL,
                 context="DATA_VERSION",
             )
             raise DataVersionMismatch(
-                "Current version `{}` not equal to required version `{}`".format(
-                    version, REQUIRED_DATA_VERSION
-                )
+                f"Current version `{version}` not equal to required version `{REQUIRED_DATA_VERSION}`"
             )
-        else:
-            client.log(f"Data Version: {version}", context="DATA_VERSION")
+        client.log(f"Data Version: {version}", context="DATA_VERSION")
     else:
         client.log(
             "Refusing to start the client due to nonexistent version! "
-            "Required version is `{}`, but no version was found in the database. "
-            "Shutting down the client.".format(REQUIRED_DATA_VERSION),
+            f"Required version is `{REQUIRED_DATA_VERSION}`, but no version was found in the database. "
+            "Shutting down the client.",
             level=logging.CRITICAL,
             context="DATA_VERSION",
         )
-        raise DataVersionMismatch(
-            "No version in database. Required version is `{}`".format(
-                REQUIRED_DATA_VERSION
-            )
-        )
+        raise DataVersionMismatch(f"No version in database. Required version is `{REQUIRED_DATA_VERSION}`")

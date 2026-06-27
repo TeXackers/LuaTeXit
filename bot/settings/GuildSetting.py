@@ -1,9 +1,8 @@
 from typing import Any
+
 import discord
-
-from cmdClient import cmdClient, Context
-from cmdClient.Check import Check
-
+from cmdClient import Context, cmdClient  # noqa
+from cmdClient.Check import Check  # noqa
 from utils.lib import prop_tabulate
 
 
@@ -22,10 +21,8 @@ class GuildSetting:
 
     # Read and write checks.
     # These are not guaranteed to be checked internally, and should be handled by the caller
-    read_check: Check = None  # Check that needs to be passed to read the setting
-    write_check: Check = (
-        None  # Check that needs to be passed before changing the setting
-    )
+    read_check: type[Check] = None  # Check that needs to be passed to read the setting
+    write_check: type[Check] = None  # Check that needs to be passed before changing the setting
 
     # Configuration interface descriptions
     hidden: bool = False  # Whether this setting should appear in the configuration
@@ -36,7 +33,7 @@ class GuildSetting:
     long_desc: str = None  # User readable long description of the setting
     accepts: str = None  # User readable description of the acceptable values
 
-    def __init__(self, client: cmdClient, guildid: id, data: Any, **kwargs):
+    def __init__(self, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         self.client = client
         self.guildid = guildid
         self._data = data
@@ -47,9 +44,7 @@ class GuildSetting:
         """
         Discord Embed showing an information summary about the setting.
         """
-        embed = discord.Embed(
-            title="Configuration options for `{}`".format(self.name),
-        )
+        embed = discord.Embed(title=f"Configuration options for `{self.name}`")
         fields = ("Current value", "Default value", "Accepted input")
         values = (
             self.formatted or "Not Set",
@@ -57,7 +52,7 @@ class GuildSetting:
             self.accepts,
         )
         table = prop_tabulate(fields, values)
-        embed.description = "{}\n{}".format(self.long_desc, table)
+        embed.description = f"{self.long_desc}\n{table}"
         return embed
 
     @property
@@ -65,22 +60,16 @@ class GuildSetting:
         """
         Discord Embed showing an information summary about the setting, shown when `read_check` fails.
         """
-        embed = discord.Embed(
-            title="Configuration options for `{}`".format(self.name),
-        )
+        embed = discord.Embed(title=f"Configuration options for `{self.name}`")
         fields = ("Current value", "Default value", "Accepted input")
-        values = (
-            "Hidden",
-            self._format_data(self.client, self.guildid, self.default) or "None",
-            self.accepts,
-        )
+        values = ("Hidden", self._format_data(self.client, self.guildid, self.default) or "None", self.accepts)
         table = prop_tabulate(fields, values)
-        embed.description = "{}\n{}".format(self.long_desc, table)
+        embed.description = f"{self.long_desc}\n{table}"
         return embed
 
     # Instance generation
     @classmethod
-    def get(cls, client: cmdClient, guildid: int, **kwargs):
+    def get(cls, client: type[cmdClient], guildid: int, **kwargs):
         """
         Return a setting instance initialised from the stored value.
         """
@@ -88,7 +77,7 @@ class GuildSetting:
         return cls(client, guildid, data, **kwargs)
 
     @classmethod
-    async def parse(cls, ctx: Context, userstr: str, **kwargs):
+    async def parse(cls, ctx: type[Context], userstr: str, **kwargs):
         """
         Return a setting instance initialised from a parsed user string.
         """
@@ -151,7 +140,7 @@ class GuildSetting:
 
     # Raw converters
     @classmethod
-    def _data_from_value(cls, client: cmdClient, guildid: int, value, **kwargs):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value, **kwargs):
         """
         Convert a high-level setting value to internal data.
         Must be overriden by the setting.
@@ -161,7 +150,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _data_to_value(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         """
         Convert internal data to high-level setting value.
         Must be overriden by the setting.
@@ -169,7 +158,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Parse user provided input into internal data.
         Must be overriden by the setting if the setting is user-configurable.
@@ -177,7 +166,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         """
         Convert internal data into a formatted user-readable string.
         Must be overriden by the setting if the setting is user-viewable.
@@ -186,7 +175,7 @@ class GuildSetting:
 
     # Database access classmethods
     @classmethod
-    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
+    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
         """
         Read a setting from storage and return setting data or None.
         Must be overriden by the setting.
@@ -194,7 +183,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _writer(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+    def _writer(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         """
         Write provided setting data to storage.
         Must be overriden by the setting unless the `write` method is overidden.
@@ -204,7 +193,7 @@ class GuildSetting:
 
     # Helper methods for external use
     @classmethod
-    def initialise(cls, client: cmdClient, **kwargs):
+    def initialise(cls, client: type[cmdClient], **kwargs):
         """
         Initialisation method to set up the client for this setting.
         The setting does not run this itself,

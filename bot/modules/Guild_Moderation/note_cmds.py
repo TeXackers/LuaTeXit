@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 
 import discord
+from cmdClient import Context  # noqa
 from wards import guild_moderator
 
 from .module import guild_moderation_module as module
@@ -9,7 +10,7 @@ from .tickets import Ticket, TicketType, describes_ticket
 
 @module.cmd("note", desc="Create a moderation note on a member.", aliases=["addnote"])
 @guild_moderator()
-async def cmd_note(ctx):
+async def cmd_note(ctx: type[Context]):
     """
     Usage``:
         {prefix}note <user> [content]
@@ -27,7 +28,7 @@ async def cmd_note(ctx):
     # Attempt to get a user from the arguments
     user = await ctx.find_member(user, interactive=True)
     if user is None:
-        return
+        return None
 
     # If a note was provided, join the contents together.
     if note:
@@ -38,13 +39,9 @@ async def cmd_note(ctx):
         if note.lower() == "c":
             return await ctx.error_reply("Note creation cancelled.")
 
-    ticket = NoteTicket.create(
-        ctx.guild.id, ctx.author.id, ctx.client.user.id, [user.id], reason=note
-    )
-    embed = discord.Embed(
-        description=f"Ticket #{ticket.ticketgid}: Note created for {user.mention}."
-    )
-    await ctx.reply(embed=embed)
+    ticket = NoteTicket.create(ctx.guild.id, ctx.author.id, ctx.client.user.id, [user.id], reason=note)
+    embed = discord.Embed(description=f"Ticket #{ticket.ticketgid}: Note created for {user.mention}.")
+    return await ctx.reply(embed=embed)
 
 
 @describes_ticket(TicketType.NOTE)
@@ -56,27 +53,20 @@ class NoteTicket(Ticket):
         Overrides the original `Ticket.embed`.
         """
         # Base embed
-        embed = discord.Embed(
-            title="Ticket #{}".format(self.ticketgid),
-            timestamp=dt.fromtimestamp(self.created_at),
-        )
+        embed = discord.Embed(title=f"Ticket #{self.ticketgid}", timestamp=dt.fromtimestamp(self.created_at))
         embed.set_author(name="Note")
 
         # Moderator information
         mod_user = self._client.get_user(self.modid)
         if mod_user is not None:
-            embed.set_footer(
-                text="Created by: {}".format(mod_user), icon_url=mod_user.avatar_url
-            )
+            embed.set_footer(text=f"Created by: {mod_user}", icon_url=mod_user.avatar_url)
         else:
-            embed.set_footer(text="Created by: {}".format(self.modid))
+            embed.set_footer(text=f"Created by: {self.modid}")
 
         # Target information
-        targets = "\n".join(
-            "<@{0}> ({0})".format(targetid) for targetid in self.memberids
-        )
+        targets = "\n".join(f"<@{targetid}> ({targetid})" for targetid in self.memberids)
         if len(self.memberids) == 1:
-            embed.description = "`Subject`: {}".format(targets)
+            embed.description = f"`Subject`: {targets}"
         else:
             embed.add_field(name="Subjects", value=targets, inline=False)
 

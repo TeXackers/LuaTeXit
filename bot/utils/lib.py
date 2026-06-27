@@ -1,10 +1,9 @@
 import datetime
 import re
+from contextlib import suppress
 
 import discord
 import iso8601
-
-# from logger import log
 
 
 def prop_tabulate(prop_list, value_list, indent=True):
@@ -62,26 +61,14 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
         List of pages, each formatted into a codeblock,
         and containing at most `block_length` of the provided strings.
     """
-    lines = [
-        "{0:<5}{1:<5}".format("{}.".format(i + 1), str(line))
-        for i, line in enumerate(item_list)
-    ]
-    page_blocks = [
-        lines[i : i + block_length] for i in range(0, len(lines), block_length)
-    ]
+    lines = ["{:<5}{:<5}".format(f"{i + 1}.", str(line)) for i, line in enumerate(item_list)]
+    page_blocks = [lines[i : i + block_length] for i in range(0, len(lines), block_length)]
     pages = []
     for i, block in enumerate(page_blocks):
-        pagenum = "Page {}/{}".format(i + 1, len(page_blocks))
-        if title:
-            header = "{} ({})".format(title, pagenum) if len(page_blocks) > 1 else title
-        else:
-            header = pagenum
+        pagenum = f"Page {i + 1}/{len(page_blocks)}"
+        header = f"{title} ({pagenum})" if title else pagenum
         header_line = "=" * len(header)
-        full_header = (
-            "{}\n{}\n".format(header, header_line)
-            if len(page_blocks) > 1 or title
-            else ""
-        )
+        full_header = f"{header}\n{header_line}\n" if len(page_blocks) > 1 or title else ""
         pages.append("```{}\n{}{}```".format(style, full_header, "\n".join(block)))
     return pages
 
@@ -90,10 +77,17 @@ def timestamp_utcnow():
     """
     Return the current integer UTC timestamp.
     """
-    return int(datetime.datetime.timestamp(datetime.datetime.now(datetime.UTC)))
+    return int(discord.utils.utcnow().timestamp())
 
 
-def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
+def utcnow():
+    """
+    Return the current UTC datetime.
+    """
+    return discord.utils.utcnow()
+
+
+def split_text(text: str, blocksize=2000, code=True, syntax="", maxheight=50):
     """
     Break the text into blocks of maximum length blocksize
     If possible, break across nearby newlines. Otherwise just break at blocksize chars
@@ -138,7 +132,7 @@ def split_text(text, blocksize=2000, code=True, syntax="", maxheight=50):
 
     # Add the codeblock ticks and the code syntax header, if required
     if code:
-        blocks = ["```{}\n{}\n```".format(syntax, block) for block in blocks]
+        blocks = [f"```{syntax}\n{block}\n```" for block in blocks]
 
     return blocks
 
@@ -163,10 +157,7 @@ def strfdelta(delta, sec=False, minutes=True, short=False):
         Time units will be abbreviated if short was set to True.
     """
 
-    output = [
-        [delta.days, "d" if short else " day"],
-        [delta.seconds // 3600, "h" if short else " hour"],
-    ]
+    output = [[delta.days, "d" if short else " day"], [delta.seconds // 3600, "h" if short else " hour"]]
     if minutes:
         output.append([delta.seconds // 60 % 60, "m" if short else " minute"])
     if sec:
@@ -176,14 +167,14 @@ def strfdelta(delta, sec=False, minutes=True, short=False):
             output[i][1] += "s"
     reply_msg = []
     if output[0][0] != 0:
-        reply_msg.append("{}{} ".format(output[0][0], output[0][1]))
+        reply_msg.append(f"{output[0][0]}{output[0][1]} ")
     if output[0][0] != 0 or output[1][0] != 0 or len(output) == 2:
-        reply_msg.append("{}{} ".format(output[1][0], output[1][1]))
+        reply_msg.append(f"{output[1][0]}{output[1][1]} ")
     for i in range(2, len(output) - 1):
-        reply_msg.append("{}{} ".format(output[i][0], output[i][1]))
+        reply_msg.append(f"{output[i][0]}{output[i][1]} ")
     if not short and reply_msg:
         reply_msg.append("and ")
-    reply_msg.append("{}{}".format(output[-1][0], output[-1][1]))
+    reply_msg.append(f"{output[-1][0]}{output[-1][1]}")
     return "".join(reply_msg)
 
 
@@ -199,12 +190,7 @@ def parse_dur(time_str):
     Returns: int
         The number of seconds the duration represents.
     """
-    funcs = {
-        "d": lambda x: x * 24 * 60 * 60,
-        "h": lambda x: x * 60 * 60,
-        "m": lambda x: x * 60,
-        "s": lambda x: x,
-    }
+    funcs = {"d": lambda x: x * 24 * 60 * 60, "h": lambda x: x * 60 * 60, "m": lambda x: x * 60, "s": lambda x: x}
     time_str = time_str.strip(" ,")
     found = re.findall(r"(\d+)\s?(\w+?)", time_str)
     seconds = 0
@@ -265,20 +251,14 @@ def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
     """
     timestr = "%I:%M %p, %d/%m/%Y"
     if tz:
-        time = (
-            iso8601.parse_date(msg.timestamp.isoformat())
-            .astimezone(tz)
-            .strftime(timestr)
-        )
+        time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
     else:
         time = msg.timestamp.strftime(timestr)
     user = str(msg.author)
     attach_list = [attach["url"] for attach in msg.attachments if "url" in attach]
     if mask_link:
-        attach_list = ["[Link]({})".format(url) for url in attach_list]
-    attachments = (
-        "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
-    )
+        attach_list = [f"[Link]({url})" for url in attach_list]
+    attachments = "\nAttachments: {}".format(", ".join(attach_list)) if attach_list else ""
     return "`[{time}]` **{user}:** {line_break}{message} {attachments}".format(
         time=time,
         user=user,
@@ -302,12 +282,7 @@ def convdatestring(datestring):
     """
     datestring = datestring.strip(" ,")
     datearray = []
-    funcs = {
-        "d": lambda x: x * 24 * 60 * 60,
-        "h": lambda x: x * 60 * 60,
-        "m": lambda x: x * 60,
-        "s": lambda x: x,
-    }
+    funcs = {"d": lambda x: x * 24 * 60 * 60, "h": lambda x: x * 60 * 60, "m": lambda x: x * 60, "s": lambda x: x}
     currentnumber = ""
     for char in datestring:
         if char.isdigit():
@@ -392,13 +367,9 @@ def join_list(string, nfs=False):
     """
     if len(string) > 1:
         return "{}{} and {}{}".format(
-            (", ").join(string[:-1]),
-            "," if len(string) > 2 else "",
-            string[-1],
-            "" if nfs else ".",
+            (", ").join(string[:-1]), "," if len(string) > 2 else "", string[-1], "" if nfs else "."
         )
-    else:
-        return "{}{}".format("".join(string), "" if nfs else ".")
+    return "{}{}".format("".join(string), "" if nfs else ".")
 
 
 def format_activity(user):
@@ -428,36 +399,35 @@ def format_activity(user):
     AT = user.activity.type
     a = user.activity
     if str(AT) == "ActivityType.custom":
-        return "Status: {}".format(a)
+        return f"Status: {a}"
 
     if str(AT) == "ActivityType.playing":
-        string = "Playing {}".format(a.name)
-        try:
-            string += " ({})".format(a.details)
-        except Exception:
-            pass
+        string = f"Playing {a.name}"
+        with suppress(Exception):
+            string += f" ({a.details})"
 
         return string
 
     if str(AT) == "ActivityType.streaming":
-        return "Streaming {}".format(a.name)
+        return f"Streaming {a.name}"
 
     if str(AT) == "ActivityType.listening":
         try:
-            string = "Listening to `{}`".format(a.title)
+            string = f"Listening to `{a.title}`"
             if len(a.artists) > 1:
-                string += " by {}".format(join_list(string=a.artists))
+                string += f" by {join_list(string=a.artists)}"
             else:
-                string += " by **{}**".format(a.artist)
+                string += f" by **{a.artist}**"
         except Exception:
-            string = "Listening to `{}`".format(a.name)
+            string = f"Listening to `{a.name}`"
         return string
 
     if str(AT) == "ActivityType.watching":
-        return "Watching `{}`".format(a.name)
+        return f"Watching `{a.name}`"
 
     if str(AT) == "ActivityType.unknown":
         return "Unknown"
+    return None
 
 
 def shard_of(shard_count: int, guildid: int):
@@ -471,6 +441,4 @@ def jumpto(guildid: int, channeldid: int, messageid: int):
     """
     Build a jump link for a message given its location.
     """
-    return "https://discord.com/channels/{}/{}/{}".format(
-        guildid, channeldid, messageid
-    )
+    return f"https://discord.com/channels/{guildid}/{channeldid}/{messageid}"

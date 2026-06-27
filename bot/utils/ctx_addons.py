@@ -1,11 +1,12 @@
 import asyncio
 import logging
+from contextlib import suppress
 
 import discord
-from cmdClient import Context
+import logger
+from cmdClient import Context  # noqa
 from cmdClient.lib import SafeCancellation
 
-import logger
 from . import lib
 
 
@@ -81,57 +82,51 @@ async def _message_counter(client, channel, max_count):
 
 
 @Context.util
-def log(ctx: Context, *args, **kwargs):
+def log(ctx: type[Context], *args, **kwargs):
     """
     Shortcut to the logger which automatically adds the context.
     """
     if "context" not in kwargs:
-        kwargs["context"] = "mid:{}".format(ctx.msg.id)
+        kwargs["context"] = f"mid:{ctx.msg.id}"
     logger.log(*args, **kwargs)
 
 
 @Context.util
-async def run_in_shell(ctx: Context, script):
+async def run_in_shell(ctx: type[Context], script):
     """
     Execute a script or command asynchronously in a subprocess shell.
     """
-    process = await asyncio.create_subprocess_shell(
-        script, stdout=asyncio.subprocess.PIPE
-    )
+    process = await asyncio.create_subprocess_shell(script, stdout=asyncio.subprocess.PIPE)
     ctx.log(
         "Executing the following script:\n{}\nwith pid '{}'.".format(
-            "\n".join("\t{}".format(line) for line in script.splitlines()), process.pid
+            "\n".join(f"\t{line}" for line in script.splitlines()), process.pid
         ),
         level=logging.DEBUG,
     )
     stdout, stderr = await process.communicate()
     ctx.log(
-        "Completed the script with pid '{}'{}".format(
-            process.pid, " with errors" if process.returncode != 0 else ""
-        ),
+        "Completed the script with pid '{}'{}".format(process.pid, " with errors" if process.returncode != 0 else ""),
         level=logging.DEBUG,
     )
     return stdout.decode(errors="backslashreplace").strip()
 
 
 @Context.util
-def best_prefix(ctx: Context):
+def best_prefix(ctx: type[Context]):
     """
     Returns the best default prefix in the current context.
     This will be the server prefix if it is defined,
     otherwise the default client prefix.
     """
     if ctx.guild:
-        prefix = ctx.client.objects["guild_prefix_cache"].get(
-            ctx.guild.id, ctx.client.prefix
-        )
+        prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
     else:
         prefix = ctx.client.prefix
     return prefix
 
 
 @Context.util
-def format_usage(ctx: Context):
+def format_usage(ctx: type[Context]):
     """
     Formats the usage string of the current command.
     Assumes the first section of the doc string is the usage string.
@@ -142,7 +137,7 @@ def format_usage(ctx: Context):
 
 
 @Context.util
-async def confirm_sent(ctx: Context, msg=None, reply=None):
+async def confirm_sent(ctx: type[Context], msg=None, reply=None):
     """
     Confirms to a user that the bot has DMed them by adding a tick reaction to the command message.
     If the bot doesn't have permission to add reactions, it will respond with a message if reply is provided.
@@ -163,7 +158,7 @@ async def confirm_sent(ctx: Context, msg=None, reply=None):
 
 
 @Context.util
-async def offer_delete(ctx: Context, *to_delete, timeout=300):
+async def offer_delete(ctx: type[Context], *to_delete, timeout=300):
     """
     Offers to delete the provided messages via a reaction on the last message.
     Removes the reaction if the offer times out.
@@ -206,20 +201,14 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
     else:
 
         def check(reaction, user):
-            return (
-                user == ctx.author
-                and reaction.message.id == react_msg.id
-                and reaction.emoji == emoji
-            )
+            return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
 
-    try:
+    with suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
         # Add the reaction to the message
         await react_msg.add_reaction(emoji)
 
         # Wait for the user to press the reaction
-        reaction, user = await ctx.client.wait_for(
-            "reaction_add", check=check, timeout=timeout
-        )
+        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
 
         # Since the check was satisfied, the reaction is correct. Delete the messages, ignoring any exceptions
         deleted = False
@@ -233,30 +222,14 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
 
         # If we couldn't bulk delete, delete them one by one
         if not deleted:
-            try:
-                asyncio.gather(
-                    *[message.delete() for message in to_delete], return_exceptions=True
-                )
-            except Exception:
-                pass
-    except (asyncio.TimeoutError, asyncio.CancelledError):
-        # Timed out waiting for the reaction, attempt to remove the delete reaction
-        try:
-            await react_msg.remove_reaction(emoji, ctx.client.user)
-        except Exception:
-            pass
-    except discord.Forbidden:
-        pass
-    except discord.NotFound:
-        pass
-    except discord.HTTPException:
-        pass
+            with suppress(Exception):
+                await asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
 
 
 @Context.util
 async def mail(ctx, channelid, content=None, **kwargs):
     """
-    Mails a message to a channel not necessarially seen by the gateway.
+    Mails a message to a channel not necessarily seen by the gateway.
     (e.g. on another shard.)
     All arguments apart from `channelid` are passed transparently to `lib.mail`
     and then onto a minimal `Messageable` instance created from `channelid`.
@@ -265,7 +238,7 @@ async def mail(ctx, channelid, content=None, **kwargs):
 
 
 @Context.util
-async def safe_delete_msgs(ctx: Context, *msgs):
+async def safe_delete_msgs(ctx: type[Context], *msgs):
     """
     Safely deletes a list of messages, ignoring any exceptions that could be raised.
 
@@ -285,7 +258,7 @@ async def safe_delete_msgs(ctx: Context, *msgs):
 
 
 @Context.util
-async def dm_reply(ctx: Context, *args, **kwargs):
+async def dm_reply(ctx: type[Context], *args, **kwargs):
     """
     Respond to a user by DMing them.
 
@@ -301,7 +274,7 @@ async def dm_reply(ctx: Context, *args, **kwargs):
 
 
 @Context.util
-def clean_arg_str(ctx: Context):
+def clean_arg_str(ctx: type[Context]):
     """
     Re-parse a command message using `Message.clean_content`
     to clean mentions from the arguments.
@@ -319,7 +292,7 @@ def clean_arg_str(ctx: Context):
 
 
 @Context.util
-def usage_embed(ctx: Context, custom_usage=None):
+def usage_embed(ctx: type[Context], custom_usage=None):
     """
     Creates an embed displaying the current command's usage field.
     If `custom_usage` is provided, uses this instead of the help usage field.
@@ -331,9 +304,7 @@ def usage_embed(ctx: Context, custom_usage=None):
         raise ValueError("Cannot extract usage from a non-command context.")
     if not custom_usage:
         fields = ctx.cmd.long_help
-        usage_field = next(
-            (pair for pair in fields if pair[0].startswith("Usage")), None
-        )
+        usage_field = next((pair for pair in fields if pair[0].startswith("Usage")), None)
         if usage_field is None:
             raise ValueError("Cannot extract usage from command with no usage field.")
         if usage_field[0].endswith("``"):
@@ -344,7 +315,7 @@ def usage_embed(ctx: Context, custom_usage=None):
 
 
 @Context.util
-def ts(ctx: Context, timestamp, mode="F") -> str:
+def ts(ctx: type[Context], timestamp, mode="F") -> str:
     """
     Converts datetime timestamps for use in Discord's timestamp format.
     Intended to be used to display "created at" dates.
@@ -367,12 +338,4 @@ def ts(ctx: Context, timestamp, mode="F") -> str:
         The formatted timestamp to be displayed in Discord.
 
     """
-
-    # Handle timestamps being None (e.g. joined_at)
-    if not timestamp:
-        return "Unknown"
-
-    stamp = int(round(timestamp.timestamp()))
-    ts = f"<t:{stamp}:{mode}>"
-
-    return ts
+    return f"<t:{int(round(timestamp.timestamp()))}:{mode}>" if timestamp else "Unknown"

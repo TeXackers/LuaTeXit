@@ -1101,5 +1101,5 @@ GITHUB_LANG2COLOUR: dict[str, Colour] = {
     "Zig": Colour.from_str("#ec915c"),
     "ZIL": Colour.from_str("#dc75e5"),
     "Zimpl": Colour.from_str("#d67711"),
-    "Zmodel": Colour.from_str("#ff7100")
+    "Zmodel": Colour.from_str("#ff7100"),
 }

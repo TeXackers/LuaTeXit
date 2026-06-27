@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime as dt
+from contextlib import suppress
 
 import discord
 from wards import guild_moderator
@@ -24,32 +24,25 @@ async def cmd_tickets(ctx):
             That is, you need to have the `manage_guild` permission or the configured `modrole`.
     """
     if not ctx.args:
-        return await ctx.error_reply(
-            "Please provide a member or userid to show tickets for."
-        )
+        return await ctx.error_reply("Please provide a member or userid to show tickets for.")
 
     # Find the provided user
     user = await ctx.find_member(ctx.args, interactive=True, silent_notfound=True)
     if user is None:
         if not ctx.args.isdigit():
-            return await ctx.error_reply(
-                "No members found matching `{}`!".format(ctx.args)
-            )
-        else:
-            userid = int(ctx.args)
+            return await ctx.error_reply(f"No members found matching `{ctx.args}`!")
+        userid = int(ctx.args)
     else:
         userid = user.id
 
     # Fetch the tickets for the given user
     tickets = Ticket.fetch_tickets_where(guildid=ctx.guild.id, memberid=userid)
     if not tickets:
-        return await ctx.error_reply(
-            "No tickets found for `{}`!".format(user or userid)
-        )
+        return await ctx.error_reply(f"No tickets found for `{user or userid}`!")
     tickets.reverse()
 
     # Build the ticket list pages
-    title = "Tickets for {}".format(user or userid)
+    title = f"Tickets for {user or userid}"
     ticket_lines = [
         "[#{}]({}) ⎪ {} ⎪ `{:<8}` ⎪ {}".format(
             ticket.ticketgid,
@@ -62,19 +55,13 @@ async def cmd_tickets(ctx):
         )
         for ticket in tickets
     ]
-    pages = [
-        "\n".join(ticket_lines[i : i + 10]) for i in range(0, len(ticket_lines), 10)
-    ]
+    pages = ["\n".join(ticket_lines[i : i + 10]) for i in range(0, len(ticket_lines), 10)]
     embeds = [
-        discord.Embed(title=title, description=page).set_footer(
-            text="Page {}/{}".format(p + 1, len(pages))
-        )
+        discord.Embed(title=title, description=page).set_footer(text=f"Page {p + 1}/{len(pages)}")
         for p, page in enumerate(pages)
     ]
 
-    out_msg = await ctx.pager(
-        embeds, content="Type a ticket number to see the full ticket."
-    )
+    out_msg = await ctx.pager(embeds, content="Type a ticket number to see the full ticket.")
 
     display_task = asyncio.create_task(_ticket_display(ctx, tickets))
     await _offer_cancel(ctx, out_msg, display_task)
@@ -100,9 +87,7 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
         # Wait for the user to press the reaction
         reaction, user = await ctx.client.wait_for(
             "reaction_add",
-            check=lambda r, u: (
-                r.message == msg and r.emoji == emoji and u == ctx.author
-            ),
+            check=lambda r, u: r.message == msg and r.emoji == emoji and u == ctx.author,
             timeout=timeout,
         )
 
@@ -110,10 +95,8 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
         await msg.clear_reaction(emoji)
     except (asyncio.TimeoutError, asyncio.CancelledError):
         # Timed out or cancelled waiting for the reaction, attempt to remove the reaction
-        try:
+        with suppress(Exception):
             await msg.remove_reaction(emoji, ctx.client.user)
-        except Exception:
-            pass
     except discord.Forbidden:
         pass
     except discord.NotFound:
@@ -149,10 +132,8 @@ async def _ticket_display(ctx, tickets):
                 return
 
             # Delete the response
-            try:
+            with suppress(discord.HTTPException):
                 await result.delete()
-            except discord.HTTPException:
-                pass
 
             # Display the ticket
             embed = ticket_map[int(result.content)].embed

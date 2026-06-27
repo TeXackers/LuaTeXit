@@ -12,9 +12,7 @@ def temp_disabled(func):
             This command has been temporarily disabled pending the next update.
         """
         await ctx.error_reply(
-            "Sorry, the `{}` command has been temporarily disabled pending the next update".format(
-                func.__name__[4:]
-            )
+            f"Sorry, the `{func.__name__[4:]}` command has been temporarily disabled pending the next update"
         )
 
     return _func
@@ -26,9 +24,7 @@ async def cmd_giverole(ctx):
     pass
 
 
-@module.cmd(
-    "rolemod", desc="Give/take groups of roles to groups of members.", disabled=True
-)
+@module.cmd("rolemod", desc="Give/take groups of roles to groups of members.", disabled=True)
 @temp_disabled
 async def cmd_rolemod(ctx):
     pass

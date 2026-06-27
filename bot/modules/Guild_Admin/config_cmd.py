@@ -1,4 +1,5 @@
 import discord
+from cmdClient import Context  # noqa
 from settings import BadUserInput
 from utils.ctx_addons import best_prefix  # noqa
 from utils.lib import prop_tabulate
@@ -12,10 +13,8 @@ conf_pages = {
     "Greeting and Farewell messages": ["Greeting message", "Farewell message"],
 }
 
-# TODO: Cat descriptions
 
-
-async def _build_config_pages(ctx, show_help=True):
+async def _build_config_pages(ctx: type[Context], show_help=True):
     """
     Build guild configuration pages.
     """
@@ -23,9 +22,7 @@ async def _build_config_pages(ctx, show_help=True):
     pages = []
 
     # Generated sorted lists of options in each cat
-    for option in sorted(
-        ctx.client.guild_config.settings.values(), key=lambda s: len(s.name)
-    ):
+    for option in sorted(ctx.client.guild_config.settings.values(), key=lambda s: len(s.name)):
         cat = option.category
         if cat not in cats:
             cats[cat] = []
@@ -46,12 +43,8 @@ async def _build_config_pages(ctx, show_help=True):
                     names.append(option.name)
                     if show_help:
                         values.append(option.desc)
-                    elif (option.read_check is None) or await option.read_check.run(
-                        ctx
-                    ):
-                        value = (
-                            option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
-                        )
+                    elif (option.read_check is None) or await option.read_check.run(ctx):
+                        value = option.get(ctx.client, ctx.guild.id).formatted or "Not Set"
                         value = value if len(value) < 100 else "(Too long to display)"
                         values.append(value)
                     else:
@@ -76,7 +69,7 @@ async def _build_config_pages(ctx, show_help=True):
 
 @module.cmd("config", desc="View and set the guild configuration.")
 @in_guild()
-async def cmd_config(ctx):
+async def cmd_config(ctx: type[Context]):
     """
     Usage``:
         {prefix}config
@@ -96,9 +89,7 @@ async def cmd_config(ctx):
         {prefix}config prefix {prefix}
     """
     # Prebuild dictionary of setting names
-    settings = {
-        setting.name: setting for setting in ctx.client.guild_config.settings.values()
-    }
+    settings = {setting.name: setting for setting in ctx.client.guild_config.settings.values()}
 
     params = ctx.args.split(maxsplit=1)
     if not ctx.args:
@@ -112,17 +103,12 @@ async def cmd_config(ctx):
     elif params[0] not in settings:
         # Handle unrecognised option
         await ctx.error_reply(
-            "Unrecognised guild option `{}`. Use `{}config help` to see all the options.".format(
-                params[0], ctx.best_prefix()
-            )
+            f"Unrecognised guild option `{params[0]}`. Use `{ctx.best_prefix()}config help` to see all the options."
         )
     elif len(params) == 1:
         # Assume argument is an option, display option information
         option = settings[params[0]].get(ctx.client, ctx.guild.id)
-        if (option.read_check is None) or await option.read_check.run(ctx):
-            embed = option.embed
-        else:
-            embed = option.hidden_embed
+        embed = option.med if (option.read_check is None) or await option.read_check.run(ctx) else option.hidden_med
         await ctx.reply(embed=embed)
     else:
         # Handle setting an option
@@ -139,14 +125,11 @@ async def cmd_config(ctx):
                 (await setting.parse(ctx, value)).write()
             except BadUserInput as e:
                 desc = e.msg or (
-                    "Did not understand the provided value, "
-                    "please check the accepted values and try again."
+                    "Did not understand the provided value, please check the accepted values and try again."
                 )
                 embed = discord.Embed(description=desc, color=discord.Color.red())
                 embed.set_footer(
-                    text="Use `{}config {}` to see more detailed information about this setting.".format(
-                        ctx.best_prefix(), setting.name
-                    )
+                    text=f"Use `{ctx.best_prefix()}config {setting.name}` to see more detailed information about this setting."
                 )
                 await ctx.reply(embed=embed)
             else:

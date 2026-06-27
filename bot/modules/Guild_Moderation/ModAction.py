@@ -4,7 +4,7 @@ import re
 from enum import Enum
 
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from utils.lib import parse_dur, strfdelta
 
@@ -44,8 +44,8 @@ class ModAction:
     summary_success_report = "Acted on {count} members."
     summary_failure_report = "Failed to act on {count} members."
 
-    def __init__(self, ctx: Context, flags):
-        self.ctx: Context = ctx
+    def __init__(self, ctx: type[Context], flags):
+        self.ctx: type[Context] = ctx
         self.flags = flags
 
         self.reason = None
@@ -72,7 +72,7 @@ class ModAction:
         Collection of users to lookup targets in.
         Override to specify a custom collection.
         """
-        return None
+        return
 
     async def run(self, **kwargs):
         """
@@ -122,46 +122,24 @@ class ModAction:
             result = results[target]
 
             if result == ActionState.SUCCESS:
-                description = (
-                    "[Ticket #{ticket.ticketgid}]({ticket.jumpto}): {template}".format(
-                        ticket=self.ticket,
-                        template=self.single_success_report.format(
-                            self=self, target=target, **kwargs
-                        ),
-                    )
-                )
+                description = f"[Ticket #{self.ticket.ticketgid}]({self.ticket.jumpto}): {self.single_success_report.format(self=self, target=target, **kwargs)}"
             else:
                 description = self.single_failure_report.format(
-                    self=self,
-                    target=target,
-                    state=self.state_response_map[result],
-                    **kwargs,
+                    self=self, target=target, state=self.state_response_map[result], **kwargs
                 )
             await self.ctx.reply(embed=discord.Embed(description=description))
         else:
-            targets_failed = [
-                target
-                for target, result in results.items()
-                if result is not ActionState.SUCCESS
-            ]
+            targets_failed = [target for target, result in results.items() if result is not ActionState.SUCCESS]
 
             summary_components = []
             if len(targets_failed) != len(results):
+                summary_components.append(f"[Ticket #{self.ticket.ticketgid}]({self.ticket.jumpto}):")
                 summary_components.append(
-                    "[Ticket #{ticket.ticketgid}]({ticket.jumpto}):".format(
-                        ticket=self.ticket
-                    )
-                )
-                summary_components.append(
-                    self.summary_success_report.format(
-                        self=self, count=len(results) - len(targets_failed), **kwargs
-                    )
+                    self.summary_success_report.format(self=self, count=len(results) - len(targets_failed), **kwargs)
                 )
             if targets_failed:
                 summary_components.append(
-                    self.summary_failure_report.format(
-                        self=self, count=len(targets_failed), **kwargs
-                    )
+                    self.summary_failure_report.format(self=self, count=len(targets_failed), **kwargs)
                 )
             summary = " ".join(summary_components)
 
@@ -173,14 +151,11 @@ class ModAction:
                 )
                 for target, result in results.items()
             ]
-            target_line_blocks = [
-                "\n".join(target_lines[i : i + 10])
-                for i in range(0, len(target_lines), 10)
-            ]
+            target_line_blocks = ["\n".join(target_lines[i : i + 10]) for i in range(0, len(target_lines), 10)]
             embeds = [
-                discord.Embed(
-                    description="{}```{}```".format(summary, block)
-                ).set_footer(text="Page {}/{}".format(n + 1, len(target_line_blocks)))
+                discord.Embed(description=f"{summary}```{block}```").set_footer(
+                    text=f"Page {n + 1}/{len(target_line_blocks)}"
+                )
                 for n, block in enumerate(target_line_blocks)
             ]
             await self.ctx.pager(embeds)
@@ -193,10 +168,7 @@ class ModAction:
         for user_str in user_strs:
             try:
                 member = await self.ctx.find_member(
-                    user_str.strip(),
-                    interactive=True,
-                    collection=await self.get_collection(),
-                    silent_notfound=True,
+                    user_str.strip(), interactive=True, collection=await self.get_collection(), silent_notfound=True
                 )
             except ResponseTimedOut:
                 raise ResponseTimedOut(self.resp_seeker_timed_out) from None
@@ -204,9 +176,7 @@ class ModAction:
                 raise UserCancelled(self.resp_seeker_cancelled) from None
             if member is None:
                 # No matches for this member
-                raise SafeCancellation(
-                    self.target_not_found_error.format(targetstr=user_str, self=self)
-                )
+                raise SafeCancellation(self.target_not_found_error.format(targetstr=user_str, self=self))
             targets.append(member)
         return targets
 
@@ -227,12 +197,7 @@ class ModAction:
             msg = "For display reasons, the reason must be under 1000 characters!"
             if interactive:
                 msg = await self.ctx.reply(
-                    msg,
-                    embed=discord.Embed(
-                        title="Provided reason",
-                        description=reason,
-                        colour=discord.Color.orange(),
-                    ),
+                    msg, embed=discord.Embed(title="Provided reason", description=reason, colour=discord.Color.orange())
                 )
                 asyncio.create_task(self.ctx.offer_delete(msg))
             else:

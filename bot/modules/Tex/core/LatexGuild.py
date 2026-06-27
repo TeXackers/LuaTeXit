@@ -1,4 +1,5 @@
-from ..module import latex_module as module
+from modules.Tex.module import latex_module as module
+
 from . import (
     guild_config,  # noqa
     guild_data,  # noqa
@@ -7,14 +8,7 @@ from .tex_utils import AutoTexLevel
 
 
 class LatexGuild:
-    __slots__ = (
-        "id",
-        "autotex",
-        "autotex_level",
-        "require_codeblocks",
-        "latex_channels",
-        "preamble",
-    )
+    __slots__ = ("id", "autotex", "autotex_level", "require_codeblocks", "latex_channels", "preamble")
     # Cache of all guilds the client requests
     cached_guilds = {}
 
@@ -32,9 +26,7 @@ class LatexGuild:
 
     def __init__(self, id, **kwargs):
         if self._client is None:
-            raise RuntimeError(
-                "Attempted to get a LatexGuild before data initialisation."
-            )
+            raise RuntimeError("Attempted to get a LatexGuild before data initialisation.")
 
         self.id = id
 

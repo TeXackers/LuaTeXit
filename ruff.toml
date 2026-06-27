@@ -1,0 +1,31 @@
+line-length = 120
+output-format = "grouped"
+
+exclude = [
+    "bot/main.py", # order-sensitive
+    "bot/modules/Tex/__init__.py", # order-sensitive
+    "bot/modules/Tex/core/__init__.py", # order-sensitive
+    "bot/modules/Guild_Moderation/old/**",
+    "bot/registry/**/*",
+    "bot/utils/old/**",
+    "data/migration/**",
+    "data/scripts/**",
+]
+
+[format]
+skip-magic-trailing-comma = false
+
+[lint]
+future-annotations = true
+extend-select = [
+    "I",        # import sorting
+    "UP",       # warnings wrt newer Python versions
+    "C4",       # comprehensions, dict, list, etc
+    "ISC",      # string concatenation
+    "ICN",      # import conventions
+    "RET",      # return practices
+    "SIM",      # simplification rules
+    "TID",      # import practices
+    "TC",       # enforce importing types in a TYPE_CHECKING block
+    "PTH",      # pathlib in lieu of os.path
+]

@@ -15,11 +15,7 @@ class ctxDescriptor:
 
     def __get__(self, instance, owner):
         if instance is None or not isinstance(instance, Context):
-            raise AttributeError(
-                "'{}' may only be accessed through an instance of 'Context'.".format(
-                    self.__name__
-                )
-            )
+            raise AttributeError(f"'{self.__name__}' may only be accessed through an instance of 'Context'.")
         return self.cls(instance)
 
 
@@ -35,6 +31,4 @@ class get_guild_setting:
         if not self.ctx.guild:
             raise ValueError("Attempting to access a guild setting outside a guild!")
 
-        return guild_config.settings[setting_name].get(
-            self.ctx.client, self.ctx.guild.id
-        )
+        return guild_config.settings[setting_name].get(self.ctx.client, self.ctx.guild.id)

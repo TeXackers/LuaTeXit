@@ -1,5 +1,5 @@
 import discord
-from cmdClient import cmdClient
+from cmdClient import cmdClient  # noqa
 from utils.lib import mail
 
 from .module import bot_admin_module as module
@@ -15,28 +15,18 @@ Handlers:
 """
 
 
-async def log_left_guild(client: cmdClient, guild: discord.Guild):
+async def log_left_guild(client: type[cmdClient], guild: discord.Guild):
     # Build embed
     embed = discord.Embed(
-        title="`{0.name} (ID: {0.id})`".format(guild),
-        colour=discord.Colour.red(),
-        timestamp=discord.utils.utcnow(),
+        title=f"`{guild.name} (ID: {guild.id})`", colour=discord.Colour.red(), timestamp=discord.utils.utcnow()
     )
     embed.set_author(name="Left guild!")
     embed.set_thumbnail(url=guild.icon_url)
 
     # Add more specific information about the guild
-    embed.add_field(
-        name="Owner", value="{0.name} (ID: {0.id})".format(guild.owner), inline=False
-    )
-    embed.add_field(
-        name="Members (cached)", value="{}".format(len(guild.members)), inline=False
-    )
-    embed.add_field(
-        name="Now chatting in",
-        value="{} guilds".format(len(client.guilds)),
-        inline=False,
-    )
+    embed.add_field(name="Owner", value=f"{guild.owner.name} (ID: {guild.owner.id})", inline=False)
+    embed.add_field(name="Members (cached)", value=f"{len(guild.members)}", inline=False)
+    embed.add_field(name="Now chatting in", value=f"{len(client.guilds)} guilds", inline=False)
 
     # Retrieve the guild log channel and log the event
     log_chid = client.conf.get("guild_log_ch")
@@ -44,16 +34,14 @@ async def log_left_guild(client: cmdClient, guild: discord.Guild):
         await mail(client, log_chid, embed=embed)
 
 
-async def log_joined_guild(client, guild):
+async def log_joined_guild(client: cmdClient, guild: discord.Guild):
     owner = guild.owner
     icon = guild.icon_url
 
     bots = 0
     known = 0
     unknown = 0
-    other_members = list(
-        set([mem.id for mem in client.get_all_members() if mem.guild != guild])
-    )
+    other_members: set[int] = {mem.id for mem in client.get_all_members() if mem.guild != guild}
 
     for member in guild.members:
         if member.bot:
@@ -67,31 +55,23 @@ async def log_joined_guild(client, guild):
     mem2 = "new friends" if unknown != 1 else "new friend"
     mem3 = "bots" if bots != 1 else "bot"
     mem4 = "total members"
-    known = "`{}`".format(known)
-    unknown = "`{}`".format(unknown)
-    bots = "`{}`".format(bots)
-    total = "`{}`".format(guild.member_count)
-    mem_str = "{0:<5}\t{4},\n{1:<5}\t{5},\n{2:<5}\t{6}, and\n{3:<5}\t{7}.".format(
-        known, unknown, bots, total, mem1, mem2, mem3, mem4
-    )
+    known = f"`{known}`"
+    unknown = f"`{unknown}`"
+    bots = f"`{bots}`"
+    total = f"`{guild.member_count}`"
+    mem_str = f"{known:<5}\t{mem1},\n{unknown:<5}\t{mem2},\n{bots:<5}\t{mem3}, and\n{total:<5}\t{mem4}."
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     embed = discord.Embed(
-        title="`{0.name} (ID: {0.id})`".format(guild),
-        colour=discord.Colour.green(),
-        timestamp=discord.utils.utcnow(),
+        title=f"`{guild.name} (ID: {guild.id})`", colour=discord.Colour.green(), timestamp=discord.utils.utcnow()
     )
     embed.set_author(name="Joined guild!")
     embed.set_thumbnail(url=icon)
 
-    embed.add_field(name="Owner", value="{0} (ID: {0.id})".format(owner), inline=False)
-    embed.add_field(name="Created at", value="{}".format(created), inline=False)
+    embed.add_field(name="Owner", value=f"{owner} (ID: {owner.id})", inline=False)
+    embed.add_field(name="Created at", value=f"{created}", inline=False)
     embed.add_field(name="Members", value=mem_str, inline=False)
-    embed.add_field(
-        name="Now chatting in",
-        value="{} guilds".format(len(client.guilds)),
-        inline=False,
-    )
+    embed.add_field(name="Now chatting in", value=f"{len(client.guilds)} guilds", inline=False)
 
     # Retrieve the guild log channel and log the event
     log_chid = client.conf.get("guild_log_ch")

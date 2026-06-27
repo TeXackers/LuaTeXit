@@ -3,7 +3,7 @@ import sys
 import traceback
 from io import StringIO
 
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from utils.ctx_addons import run_in_shell  # noqa
 from wards import is_master
 
@@ -27,7 +27,7 @@ Commands provided:
 
 @module.cmd("async", desc="Executes async code and displays the output.")
 @is_master()
-async def cmd_async(ctx: Context):
+async def cmd_async(ctx: type[Context]) -> None:
     """
     Usage``:
         {prefix}async <code>
@@ -40,19 +40,17 @@ async def cmd_async(ctx: Context):
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _async(ctx)
-    await ctx.reply(
+    return await ctx.reply(
         "**Async input:**\
                     \n```py\n{}\n```\
                     \n**Output {}:** \
-                    \n```py\n{}\n```".format(
-            ctx.arg_str, "error" if error else "", output
-        )
+                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output)
     )
 
 
 @module.cmd("exec", desc="Executes python code using exec and displays the output.")
 @is_master()
-async def cmd_exec(ctx: Context):
+async def cmd_exec(ctx: type[Context]) -> None:
     """
     Usage``:
         {prefix}exec <code>
@@ -65,21 +63,17 @@ async def cmd_exec(ctx: Context):
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _exec(ctx)
-    await ctx.reply(
+    return await ctx.reply(
         "**Exec input:**\
                     \n```py\n{}\n```\
                     \n**Output {}:** \
-                    \n```py\n{}\n```".format(
-            ctx.arg_str, "error" if error else "", output
-        )
+                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output)
     )
 
 
-@module.cmd(
-    "eval", desc="Executes python code using eval and displays the output.", flags=["s"]
-)
+@module.cmd("eval", desc="Executes python code using eval and displays the output.", flags=["s"])
 @is_master()
-async def cmd_eval(ctx: Context, flags):
+async def cmd_eval(ctx: type[Context], flags) -> None:
     """
     Usage``:
         {prefix}eval <code> [-s]
@@ -95,19 +89,18 @@ async def cmd_eval(ctx: Context, flags):
 
     output, error = await _eval(ctx)
     if not flags["s"] or error:
-        await ctx.reply(
+        return await ctx.reply(
             "**Eval input:**\
                         \n```py\n{}\n```\
                         \n**Output {}:** \
-                        \n```py\n{}\n```".format(
-                ctx.args, "error" if error else "", output
-            )
+                        \n```py\n{}\n```".format(ctx.args, "error" if error else "", output)
         )
+    return None
 
 
 @module.cmd("shell", desc="Runs a command in the operating environment.")
 @is_master()
-async def cmd_shell(ctx):
+async def cmd_shell(ctx: type[Context]) -> None:
     """
     Usage``:
         {prefix}shell <command>
@@ -118,11 +111,11 @@ async def cmd_shell(ctx):
         return await ctx.error_reply("You must give me something to run!")
 
     output = await ctx.run_in_shell(ctx.arg_str)
-    await ctx.reply(
-        "**Command:**\
-                    \n```sh\n{}\n```\
+    return await ctx.reply(
+        f"**Command:**\
+                    \n```sh\n{ctx.arg_str}\n```\
                     \n**Output:** \
-                    \n```\n{}\n```".format(ctx.arg_str, output)
+                    \n```\n{output}\n```"
     )
 
 
@@ -164,15 +157,12 @@ async def _async(ctx):
         result = (redirected_output.getvalue(), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
-        return result
+        return await result
     _temp_exec = env["_temp_exec"]
     try:
         returnval = await _temp_exec()
         value = redirected_output.getvalue()
-        if returnval is None:
-            result = (value, 0)
-        else:
-            result = (value + "\n" + str(returnval), 0)
+        result = (value, 0) if returnval is None else (value + "\n" + str(returnval), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
     finally:

@@ -1,21 +1,19 @@
+from __future__ import annotations
+
 import configparser as cfgp
+from pathlib import Path
 
 from paraEmoji import configEmoji
 
-
-conf = None  # type: Conf
+conf: Conf = None
 
 
 class Conf:
-    def __init__(self, configfile, section_name="DEFAULT"):
+    def __init__(self, configfile, section_name: str = "DEFAULT"):
         self.configfile = configfile
 
         self.config = cfgp.ConfigParser(
-            converters={
-                "intlist": self._getintlist,
-                "list": self._getlist,
-                "emoji": configEmoji.from_str,
-            }
+            converters={"intlist": self._getintlist, "list": self._getlist, "emoji": configEmoji.from_str}
         )
         self.config.read(configfile)
 
@@ -23,7 +21,7 @@ class Conf:
 
         self.default = self.config["DEFAULT"]
         self.section = self.config[self.section_name]
-        self.emojis = self.config["EMOJIS"] if "EMOJIS" in self.config else self.section
+        self.emojis = self.config["EMOJIS"] if "EMOJIS" in self.config else self.section  # noqa
 
         # Config file recursion, read in configuration files specified in every "ALSO_READ" key.
         more_to_read = self.section.getlist("ALSO_READ", [])
@@ -33,9 +31,7 @@ class Conf:
             read.add(to_read)
             self.config.read(to_read)
             new_paths = [
-                path
-                for path in self.section.getlist("ALSO_READ", [])
-                if path not in read and path not in more_to_read
+                path for path in self.section.getlist("ALSO_READ", []) if path not in read and path not in more_to_read
             ]
             more_to_read.extend(new_paths)
 
@@ -59,7 +55,7 @@ class Conf:
         return [item.strip() for item in value.split(",")]
 
     def write(self):
-        with open(self.configfile, "w") as conffile:
+        with Path(self.configfile).open("w") as conffile:
             self.config.write(conffile)
 
 

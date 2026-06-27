@@ -43,18 +43,14 @@ class HammerAction(ModAction):
             (
                 role
                 for role in self.mod.roles
-                if role.permissions.administrator
-                or self.required_permissions.is_subset(role.permissions)
+                if role.permissions.administrator or self.required_permissions.is_subset(role.permissions)
             ),
             default=None,
         )
         guild_modrole = self.ctx.get_guild_setting.modrole.value
         modrole = guild_modrole if guild_modrole in self.mod.roles else None
 
-        if manager_role and modrole:
-            modrole = max((manager_role, modrole))
-        else:
-            modrole = manager_role or modrole
+        modrole = max((manager_role, modrole), default=None) if manager_role or modrole else manager_role or modrole
         if not modrole:
             raise SafeCancellation(self.lack_permissions_resp.format(self=self))
 
@@ -64,33 +60,19 @@ class HammerAction(ModAction):
         ctx = self.ctx
 
         # Mute targets and gather results
-        results = await asyncio.gather(
-            *(self._single_target_action(target, **kwargs) for target in self.targets)
-        )
+        results = await asyncio.gather(*(self._single_target_action(target, **kwargs) for target in self.targets))
         member_results = dict(zip(self.targets, results))
-        successful = [
-            member.id
-            for member, result in member_results.items()
-            if result is ActionState.SUCCESS
-        ]
+        successful = [member.id for member, result in member_results.items() if result is ActionState.SUCCESS]
 
         if successful:
             # Create and post ticket
-            ticket = self.Ticket.create(
-                ctx.guild.id,
-                ctx.author.id,
-                ctx.client.user.id,
-                successful,
-                reason=self.reason,
-            )
+            ticket = self.Ticket.create(ctx.guild.id, ctx.author.id, ctx.client.user.id, successful, reason=self.reason)
             await ticket.post()
             self.ticket = ticket
 
         return member_results
 
-    async def _single_target_action(
-        self, target: discord.Member, **kwargs
-    ) -> ActionState:
+    async def _single_target_action(self, target: discord.Member, **kwargs) -> ActionState:
         raise NotImplementedError
 
 
@@ -116,9 +98,7 @@ class BanAction(HammerAction):
 
     Ticket = TicketType.BAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
-    lack_permissions_resp: str = (
-        "You don't have the required permissions to ban members here!"
-    )
+    lack_permissions_resp: str = "You don't have the required permissions to ban members here!"
     audit_reason = "Banned by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.Member, days=0, **kwargs):
@@ -126,9 +106,7 @@ class BanAction(HammerAction):
             return ActionState.YOUARE_FORBIDDEN
 
         try:
-            await target.ban(
-                reason=self.audit_reason.format(self=self), delete_message_days=days
-            )
+            await target.ban(reason=self.audit_reason.format(self=self), delete_message_days=days)
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -137,12 +115,7 @@ class BanAction(HammerAction):
             return ActionState.SUCCESS
 
 
-@module.cmd(
-    "ban",
-    desc="Permanently remove a misbehaving user from the guild.",
-    flags=["r==", "p="],
-    aliases=["bean"],
-)
+@module.cmd("ban", desc="Permanently remove a misbehaving user from the guild.", flags=["r==", "p="], aliases=["bean"])
 async def cmd_ban(ctx, flags):
     """
     Usage``:
@@ -155,9 +128,7 @@ async def cmd_ban(ctx, flags):
         ​r: (reason) Provide a reason for the ban (avoids the reason prompt).
         ​p: (purge) Number of days of messages to purge (defaults to 1).
     """
-    await BanAction(ctx, flags).run(
-        days=int(flags["p"]) if isinstance(flags["p"], str) else 1
-    )
+    await BanAction(ctx, flags).run(days=int(flags["p"]) if isinstance(flags["p"], str) else 1)
 
 
 class UnbanAction(HammerAction):
@@ -184,9 +155,7 @@ class UnbanAction(HammerAction):
 
     Ticket = TicketType.UNBAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
-    lack_permissions_resp: str = (
-        "You don't have the required permissions to unban users here!"
-    )
+    lack_permissions_resp: str = "You don't have the required permissions to unban users here!"
     audit_reason = "Unbanned by {self.mod.id}: {self.short_reason}"
 
     async def get_collection(self):
@@ -194,9 +163,7 @@ class UnbanAction(HammerAction):
 
     async def _single_target_action(self, target: discord.User, **kwargs):
         try:
-            await self.ctx.guild.unban(
-                target, reason=self.audit_reason.format(self=self)
-            )
+            await self.ctx.guild.unban(target, reason=self.audit_reason.format(self=self))
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -242,9 +209,7 @@ class KickAction(HammerAction):
 
     Ticket = TicketType.KICK.Ticket
     required_permissions: discord.Permissions = discord.Permissions(kick_members=True)
-    lack_permissions_resp: str = (
-        "You don't have the required permissions to kick members here!"
-    )
+    lack_permissions_resp: str = "You don't have the required permissions to kick members here!"
     audit_reason = "Kicked by {self.mod.id}: {self.short_reason}"
 
     async def _single_target_action(self, target: discord.User, **kwargs):
@@ -252,9 +217,7 @@ class KickAction(HammerAction):
             return ActionState.YOUARE_FORBIDDEN
 
         try:
-            await self.ctx.guild.kick(
-                target, reason=self.audit_reason.format(self=self)
-            )
+            await self.ctx.guild.kick(target, reason=self.audit_reason.format(self=self))
         except discord.Forbidden:
             return ActionState.IAM_FORBIDDEN
         except discord.HTTPException:
@@ -298,9 +261,7 @@ class PreBanAction(HammerAction):
 
     Ticket = TicketType.PREBAN.Ticket
     required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
-    lack_permissions_resp: str = (
-        "You don't have the required permissions to ban users here!"
-    )
+    lack_permissions_resp: str = "You don't have the required permissions to ban users here!"
     audit_reason = "Pre-banned by {self.mod.id}: {self.short_reason}"
 
     async def identify_targets(self):
@@ -317,9 +278,7 @@ class PreBanAction(HammerAction):
                 try:
                     user = await self.ctx.client.fetch_user(userid)
                 except discord.NotFound:
-                    raise SafeCancellation(
-                        "Couldn't find any users with id `{}`".format(user_str)
-                    )
+                    raise SafeCancellation(f"Couldn't find any users with id `{user_str}`")
             targets.append(user)
         return targets
 
@@ -334,9 +293,7 @@ class PreBanAction(HammerAction):
             return ActionState.SUCCESS
 
 
-@module.cmd(
-    "preban", desc="Preemptively ban users from the guild by user id.", flags=["r=="]
-)
+@module.cmd("preban", desc="Preemptively ban users from the guild by user id.", flags=["r=="])
 async def cmd_preban(ctx, flags):
     """
     Usage``:

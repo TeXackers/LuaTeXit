@@ -1,13 +1,15 @@
 import asyncio
+from contextlib import suppress
+
 import discord
 from cmdClient import Context
-from cmdClient.lib import UserCancelled, ResponseTimedOut
+from cmdClient.lib import ResponseTimedOut, UserCancelled
 
 from .lib import paginate_list
 
 
 @Context.util
-async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=None):
+async def listen_for(ctx: type[Context], allowed_input=None, timeout=120, lower=True, check=None):
     """
     Listen for a one of a particular set of input strings,
     sent in the current channel by `ctx.author`.
@@ -43,13 +45,10 @@ async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=Non
         allowed_input = [s.lower() for s in allowed_input]
 
         # Create the check function
-        def check(message):
+        def check(message: str) -> bool:
             result = message.author == ctx.author
             result = result and (message.channel == ctx.ch)
-            result = result and (
-                (message.content.lower() if lower else message.content) in allowed_input
-            )
-            return result
+            return result and ((message.content.lower() if lower else message.content) in allowed_input)
 
     # Wait for a matching message, catch and transform the timeout
     try:
@@ -61,9 +60,7 @@ async def listen_for(ctx, allowed_input=None, timeout=120, lower=True, check=Non
 
 
 @Context.util
-async def selector(
-    ctx, header, select_from, timeout=120, max_len=20, allow_single=True
-):
+async def selector(ctx: type[Context], header, select_from, timeout=120, max_len=20, allow_single=True):
     """
     Interactive routine to prompt the `ctx.author` to select an item from a list.
     Returns the list index that was selected.
@@ -132,14 +129,11 @@ async def selector(
         raise UserCancelled("User cancelled selection.")
 
     # The content must now be a valid index. Collect and return it.
-    index = int(result_msg.content) - 1
-    return index
+    return int(result_msg.content) - 1
 
 
 @Context.util
-async def multi_selector(
-    ctx, header, select_from, timeout=120, max_len=20, allow_single=True
-):
+async def multi_selector(ctx: type[Context], header, select_from, timeout=120, max_len=20, allow_single=True):
     """
     Interactive routine to prompt the `ctx.author` to select multiple items from a list.
     Returns a list of list indices that were selected.
@@ -191,7 +185,7 @@ async def multi_selector(
     out_msg = await ctx.pager(pages)
 
     # Listen for valid input
-    valid_num_strs = set(str(i + 1) for i in range(0, len(select_from)))
+    valid_num_strs: set = {str(i + 1) for i in range(0, len(select_from))}
 
     def _check(message):
         if not ((message.channel == ctx.ch) and (message.author == ctx.author)):
@@ -200,12 +194,7 @@ async def multi_selector(
             return False
 
         content = message.content.lower()
-        if (content == "c") or all(
-            chars.strip() in valid_num_strs for chars in content.split(",")
-        ):
-            return True
-        else:
-            return False
+        return (content == "c") or all(chars.strip() in valid_num_strs for chars in content.split(","))
 
     try:
         result_msg = await ctx.client.wait_for("message", check=_check, timeout=timeout)
@@ -213,27 +202,20 @@ async def multi_selector(
         raise ResponseTimedOut("Selector timed out waiting for a response.")
 
     # Try and delete the selector message and the user response.
-    try:
+    with suppress(discord.NotFound, discord.Forbidden):
         await out_msg.delete()
         await result_msg.delete()
-    except discord.NotFound:
-        pass
-    except discord.Forbidden:
-        pass
 
     # Handle user cancellation
     if result_msg.content in ["c", "C"]:
         raise UserCancelled("User cancelled selection.")
 
-    # The content must now be a valid set of indicies. Collect and return it.
-    index = [int(chars.strip()) - 1 for chars in result_msg.content.split(",")]
-    return index
+    # The content must now be a valid set of indices. Collect and return it.
+    return [int(chars.strip()) - 1 for chars in result_msg.content.split(",")]
 
 
 @Context.util
-async def pager(
-    ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs
-):
+async def pager(ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs):
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.
@@ -263,10 +245,7 @@ async def pager(
         raise ValueError("Pager cannot page with no pages!")
 
     # Identify sender method based on destination
-    if destination is None or destination == ctx.ch:
-        sender = ctx.reply
-    else:
-        sender = destination.send
+    sender = ctx.reply if destination is None or destination == ctx.ch else destination.send
 
     # Post first page. Method depends on whether the page is an embed or not.
     if isinstance(pages[0], discord.Embed):
@@ -276,9 +255,7 @@ async def pager(
 
     # Run the paging loop if required
     if len(pages) > 1:
-        task = asyncio.ensure_future(
-            _pager(ctx, out_msg, pages, locked, start_page=start_page)
-        )
+        task = asyncio.ensure_future(_pager(ctx, out_msg, pages, locked, start_page=start_page))
         if blocking:
             await task
 
@@ -303,35 +280,29 @@ async def _pager(ctx, out_msg, pages, locked, start_page=0):
     except discord.Forbidden:
         # We don't have permission to add paging emojis
         # Die as gracefully as we can
-        await ctx.error_reply(
-            "Cannot page results because I do not have permissions to react!"
-        )
+        await ctx.error_reply("Cannot page results because I do not have permissions to react!")
         return
 
     # Check function to determine whether a reaction is valid
     def check(reaction, user):
         result = reaction.message.id == out_msg.id
         result = result and reaction.emoji in [next_emoji, prev_emoji]
-        result = result and not (user.id == ctx.client.user.id)
-        result = result and not (locked and user != ctx.author)
-        return result
+        result = result and (user.id != ctx.client.user.id)
+
+        return result and not (locked and user != ctx.author)
 
     # Begin loop
     while True:
         # Wait for a valid reaction, break if we time out
         try:
-            reaction, user = await ctx.client.wait_for(
-                "reaction_add", check=check, timeout=300
-            )
+            reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=300)
         except asyncio.TimeoutError:
             break
         except asyncio.CancelledError:
             break
 
         # Attempt to remove the user's reaction, silently ignore errors
-        asyncio.ensure_future(
-            _safe_async_future(out_msg.remove_reaction(reaction.emoji, user))
-        )
+        asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
 
         # Change the page number
         page += 1 if reaction.emoji == next_emoji else -1
@@ -362,10 +333,8 @@ async def _safe_async_future(future):
     Waits for the given future and ignores any errors that arise.
     Use inside `asyncio.ensure_future` to silence errors.
     """
-    try:
+    with suppress(Exception):
         await future
-    except Exception:
-        pass
 
 
 @Context.util
@@ -452,10 +421,8 @@ async def ask(ctx, msg, timeout=30, use_msg=None, add_hints=True, del_on_timeout
 
     if result_msg is None:
         if del_on_timeout:
-            try:
+            with suppress(Exception):
                 await offer_msg.delete()
-            except Exception:
-                pass
         return None
     result = result_msg.content.lower()
     try:

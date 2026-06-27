@@ -1,12 +1,14 @@
 import asyncio
 import json
 import logging
+from contextlib import suppress
 from io import BytesIO
 from urllib import parse
 
 import aiohttp
 import discord
 from aiohttp import payload
+from cmdClient import Context  # noqa
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from utils.lib import emb_add_fields
 
@@ -20,9 +22,7 @@ ENDPOINT = "http://api.wolframalpha.com/v2/query?"
 WOLFRAM_ID = "2V9KQY-EYEH57A2RY"
 WEB = "https://www.wolframalpha.com/"
 # WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-small.jpg"
-WOLF_ICON = (
-    "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-med.jpg"
-)
+WOLF_ICON = "https://content.wolfram.com/uploads/sites/10/2016/12/wa-logo-stacked-med.jpg"
 WOLF_SMALL_ICON = "https://media.discordapp.net/attachments/670154440413675540/703864724122632253/a.png"
 
 DEFAULT_SEMATIC_LOCATION: str = parse.quote_plus("Melbourne, Australia")
@@ -72,7 +72,7 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
     """
 
     # build the full url
-    query_url: str = f"{ENDPOINT}appid={appid}&input={parse.quote_plus(query)}&output=json&units=metric&mag={str(DEFAULT_MAG_SIZE)}&width={str(780 / DEFAULT_MAG_SIZE)}&maxwidth=780&plotwidth=780&location={DEFAULT_SEMATIC_LOCATION}&longlat={DEFAULT_LONGLAT}&ip={DEFAULT_IP_ADDR}"
+    query_url: str = f"{ENDPOINT}appid={appid}&input={parse.quote_plus(query)}&output=json&units=metric&mag={str(DEFAULT_MAG_SIZE)}&width={str(780 / DEFAULT_MAG_SIZE)}&maxwidth=780&plotwidth=780&location={DEFAULT_SEMATIC_LOCATION}&longlat={DEFAULT_LONGLAT}&ip={DEFAULT_IP_ADDR}"  # noqa
 
     # Get the query response
     async with aiohttp.ClientSession() as session:
@@ -82,20 +82,14 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
                     # Read the response, interp as json, and return
                     data = await r.read()
                     return json.loads(data.decode("utf8"))
-                else:
-                    # If some error occurs, unintelligently fail out
-                    print(r.status, r)
-                    return None
+                # If some error occurs, unintelligently fail out
+                print(r.status, r)
+                return None
         except Exception as e:
-            raise WolframAPIError(
-                "Unable to establish connection with Wolfram Alpha's API at `get_query`",
-                e,
-            )
+            raise WolframAPIError("Unable to establish connection with Wolfram Alpha's API at `get_query`", e)
 
 
-async def assemble_pod_image(
-    atoms: list[dict], dimensions: tuple[int, int]
-) -> Image.Image:
+async def assemble_pod_image(atoms: list[dict], dimensions: tuple[int, int]) -> Image.Image:
     """
     Draws the given atoms onto a canvas of the given dimensions.
     Arguments:
@@ -120,9 +114,7 @@ async def assemble_pod_image(
     return im
 
 
-async def glue_pods(
-    flat_pods: list[tuple[str | None, Image.Image | None, int]],
-) -> list[Image.Image]:
+async def glue_pods(flat_pods: list[tuple[str | None, Image.Image | None, int]]) -> list[Image.Image]:
     """
     Turns a complete list of flattened pods into a list of images, split appropriately.
     Arguments:
@@ -156,14 +148,10 @@ async def glue_pods(
             max_width = max(text_width + indent + 2 * margin, max_width)
         if pod[1]:
             y_coord += image_border
-            atoms.append(
-                {"coord": (margin + indent + indent_width, y_coord), "image": pod[1]}
-            )
+            atoms.append({"coord": (margin + indent + indent_width, y_coord), "image": pod[1]})
             y_coord += pod[1].height
             y_coord += image_border
-            max_width = max(
-                pod[1].width + indent + indent_width + image_border + margin, max_width
-            )
+            max_width = max(pod[1].width + indent + indent_width + image_border + margin, max_width)
     splits.append((atoms, (max_width, y_coord)))
     split_images = []
     for split in splits:
@@ -172,10 +160,7 @@ async def glue_pods(
 
 
 async def flatten_pods(
-    pod_data: list[dict],
-    level: int = 0,
-    text: bool = False,
-    text_field: str = "plaintext",
+    pod_data: list[dict], level: int = 0, text: bool = False, text_field: str = "plaintext"
 ) -> list[tuple[str | None, Image.Image | None, int]]:
     """
     Takes the list of pods formatted as in wolf ouptut.
@@ -190,9 +175,7 @@ async def flatten_pods(
         elif "title" in pod:
             flat_pods.append((pod["title"], None, level))
         if "subpods" in pod:
-            flat_pods.extend(
-                await flatten_pods(pod["subpods"], level=level + 1, text=text)
-            )
+            flat_pods.extend(await flatten_pods(pod["subpods"], level=level + 1, text=text))
     return flat_pods
 
 
@@ -207,11 +190,8 @@ async def handle_image(image_data):
             async with session.get(target, allow_redirects=False) as resp:
                 response = await resp.read()
         except Exception as e:
-            raise WolframAPIError(
-                "Unable to establish API connection at `handle_image`", e
-            )
-    image = Image.open(BytesIO(response))
-    return image
+            raise WolframAPIError("Unable to establish API connection at `handle_image`", e)
+    return Image.open(BytesIO(response))
     # return smart_trim(image, border=10)
 
 
@@ -219,8 +199,7 @@ def smart_trim(im, border=0):
     bg = Image.new(im.mode, im.size, border)
     diff = ImageChops.difference(im, bg)
     bbox = diff.getbbox()
-    if bbox:
-        return im.crop(bbox)
+    return im.crop(bbox) if bbox else im
 
 
 async def pods_to_filedata(pod_data):
@@ -246,43 +225,34 @@ async def pods_to_textdata(pod_data):
     for title, text, level in flat_pods:
         if level == 0:
             if current_lines:
-                fields.append(
-                    (
-                        current_name if current_name else "Pod",
-                        "\n".join(current_lines),
-                        0,
-                    )
-                )
+                fields.append((current_name if current_name else "Pod", "\n".join(current_lines), 0))
             current_name = title
             current_lines = []
         elif title:
-            current_lines.append("{}**{}**".format(tab * level, title))
+            current_lines.append(f"{tab * level}**{title}**")
         if text:
-            current_lines.append("{}{}".format(tab * (level + 1), text))
+            current_lines.append(f"{tab * (level + 1)}{text}")
     return fields
 
 
 def triage_pods(pod_list):
     if "primary" in pod_list[0] and pod_list[0]["primary"]:
         return ([pod_list[0]], pod_list[1:])
-    else:
-        important = [pod_list[0]]
-        important.extend(
-            [pod for pod in pod_list if ("primary" in pod and pod["primary"])]
-        )
-        if len(important) == 1 and len(pod_list) > 1:
-            important.append(pod_list[1])
-        extra = [pod for pod in pod_list[1:] if pod not in important]
-        return (important, extra)
+    important = [pod_list[0]]
+    important.extend([pod for pod in pod_list if ("primary" in pod and pod["primary"])])
+    if len(important) == 1 and len(pod_list) > 1:
+        important.append(pod_list[1])
+    extra = [pod for pod in pod_list[1:] if pod not in important]
+    return (important, extra)
 
 
 @module.cmd(
     "query",
-    desc="Query the [Wolfram Alpha computation engine]({}).".format(WEB),
+    desc=f"Query the [Wolfram Alpha computation engine]({WEB}).",
     flags=["text"],
     aliases=["ask", "wolf", "wa", "?w"],
 )
-async def cmd_query(ctx, flags):
+async def cmd_query(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}ask [query] [--text]
@@ -296,7 +266,7 @@ async def cmd_query(ctx, flags):
     if ctx.alias == "w":
         true_args = ctx.msg.content.strip()[len(ctx.prefix) :].strip()[1:]
         if not true_args or true_args[0] not in (" ", "\n"):
-            return
+            return None
 
     # Preload the required emojis
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
@@ -306,8 +276,7 @@ async def cmd_query(ctx, flags):
     # Handle no arguments
     if not ctx.args:
         return await ctx.error_reply(
-            "Please submit a valid query! "
-            "For example, `{}ask differentiate x+y^2 with respect to x`.".format(prefix)
+            f"Please submit a valid query! For example, `{prefix}ask differentiate x+y^2 with respect to x`."
         )
 
     # Send the temporary loading message.
@@ -329,8 +298,7 @@ async def cmd_query(ctx, flags):
     except WolframAPIError as e:
         temp_msg = await ctx.safe_delete_msgs(temp_msg)
         ctx.client.log(
-            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
-            level=logging.ERROR,
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
         )
         embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
         embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -343,8 +311,7 @@ async def cmd_query(ctx, flags):
         except WolframAPIError as e:
             temp_msg = await ctx.safe_delete_msgs(temp_msg)
             ctx.client.log(
-                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
-                level=logging.ERROR,
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
             )
             embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
             embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -359,14 +326,12 @@ async def cmd_query(ctx, flags):
     if not result:
         await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
-            "Failed to get a response from Wolfram Alpha.\n"
-            "If the problem persists, please contact support."
+            "Failed to get a response from Wolfram Alpha.\nIf the problem persists, please contact support."
         )
     if "queryresult" not in result:
         await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
-            "Did not get a valid response from Wolfram Alpha.\n"
-            "If the problem persists, please contact support."
+            "Did not get a valid response from Wolfram Alpha.\nIf the problem persists, please contact support."
         )
 
     # link = "[Click here to refine your query online]({})".format(
@@ -382,13 +347,12 @@ async def cmd_query(ctx, flags):
                         "Couldn't send your query!\n"
                         "**Error:** Invalid Wolfram Alpha `AppID`!\n"
                         "Please ask a guild admin to re-configure the `wolfram_id`.\n"
-                        "(See `{}config wofram_id` for more information.)"
-                    ).format(ctx.best_prefix())
+                        f"(See `{ctx.best_prefix()}config wofram_id` for more information.)"
+                    )
                 else:
-                    desc = (
-                        "An unknown error occurred querying the WolframAlpha API!\n"
-                        "**ERROR:** {}\t{}"
-                    ).format(error["code"], error["msg"])
+                    desc = ("An unknown error occurred querying the WolframAlpha API!\n**ERROR:** {}\t{}").format(
+                        error["code"], error["msg"]
+                    )
             else:
                 desc = (
                     "There was an unhandled error querying the WolframAlpha API!\n"
@@ -396,45 +360,35 @@ async def cmd_query(ctx, flags):
                     "[our support team]({})."
                 ).format(ctx.client.app_info["support_guild"])
         else:
-            desc = (
-                "Wolfram Alpha doesn't understand your query!\n"
-                "Perhaps try rephrasing your question?"
-            )
-        embed = discord.Embed(
-            description=desc, colour=discord.Colour.from_str("#DD1100")
-        )
-        embed.set_footer(icon_url=ctx.author.avatar.url, text="{}".format(ctx.author))
+            desc = "Wolfram Alpha doesn't understand your query!\nPerhaps try rephrasing your question?"
+        embed = discord.Embed(description=desc, colour=discord.Colour.from_str("#DD1100"))
+        embed.set_footer(icon_url=ctx.author.avatar.url, text=f"{ctx.author}")
         await ctx.safe_delete_msgs(temp_msg)
         await ctx.offer_delete(await ctx.reply(embed=embed))
-        return
+        return None
 
     if flags["text"]:
         try:
             fields = await pods_to_textdata(result["queryresult"]["pods"])
             # might be good to wrap the results in codeblock to avoid funny rendering
             for i in range(len(fields)):
-                fields[i] = (
-                    fields[i][0],
-                    "```mathematica\n{}\n```".format(fields[i][1]),
-                    fields[i][2],
-                )
+                fields[i] = (fields[i][0], f"```mathematica\n{fields[i][1]}\n```", fields[i][2])
         except WolframAPIError as e:
             temp_msg = await ctx.safe_delete_msgs(temp_msg)
             ctx.client.log(
-                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
-                level=logging.ERROR,
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
             )
             embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
             embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
             return await ctx.reply(embed=embed)
 
         embed = discord.Embed(description="", colour=discord.Colour.from_str("#DD1100"))
-        embed.set_footer(icon_url=ctx.author.avatar.url, text="{}".format(ctx.author))
+        embed.set_footer(icon_url=ctx.author.avatar.url, text=f"{ctx.author}")
         emb_add_fields(embed, fields)
         await ctx.safe_delete_msgs(temp_msg)
         out_msg = await ctx.reply(embed=embed)
         await ctx.offer_delete(out_msg)
-        return
+        return None
 
     important, extra = triage_pods(result["queryresult"]["pods"])
 
@@ -444,8 +398,7 @@ async def cmd_query(ctx, flags):
     except WolframAPIError as e:
         temp_msg = await ctx.safe_delete_msgs(temp_msg)
         ctx.client.log(
-            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
-            level=logging.ERROR,
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
         )
         embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
         embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -453,13 +406,9 @@ async def cmd_query(ctx, flags):
 
     embed = discord.Embed(description="", colour=discord.Colour.dark_red())
     embed.set_author(
-        name="Results provided by WolframAlpha",
-        icon_url=WOLF_SMALL_ICON,
-        url="http://www.wolframalpha.com/pro/",
+        name="Results provided by WolframAlpha", icon_url=WOLF_SMALL_ICON, url="http://www.wolframalpha.com/pro/"
     )
-    embed.set_footer(
-        icon_url=ctx.author.avatar.url, text="Requested by {}".format(ctx.author)
-    )
+    embed.set_footer(icon_url=ctx.author.avatar.url, text=f"Requested by {ctx.author}")
     # embed.set_thumbnail(url=WOLF_ICON)
     embed.set_image(url="attachment://wolf.png")
     # embed.set_image(url="https://content.wolfram.com/uploads/sites/10/2016/12/WolframAlphaLogo_Web_sanstagline-med.jpg")
@@ -482,9 +431,7 @@ async def cmd_query(ctx, flags):
                 reaction, user = await ctx.client.wait_for(
                     "reaction_add",
                     check=lambda reaction, user: (
-                        user == ctx.author
-                        and reaction.message == out_msg
-                        and reaction.emoji == more_emoji
+                        user == ctx.author and reaction.message == out_msg and reaction.emoji == more_emoji
                     ),
                     timeout=300,
                 )
@@ -495,17 +442,13 @@ async def cmd_query(ctx, flags):
                     pass
                 except Exception:
                     pass
-                return
-            temp_msg = await ctx.reply(
-                "Processing results, please wait. {}".format(loading_emoji)
-            )
+                return None
+            temp_msg = await ctx.reply(f"Processing results, please wait. {loading_emoji}")
 
             output_data[0].seek(0)
             output_data.extend(await pods_to_filedata(extra))
-            try:
+            with suppress(discord.NotFound):
                 await ctx.safe_delete_msgs(temp_msg, out_msg)
-            except discord.NotFound:
-                pass
 
             # prepare ctx.args (they might contain newlines etc) for markdown
             ctx.args = discord.utils.escape_markdown(ctx.args).replace("\n", " ")
@@ -524,3 +467,5 @@ async def cmd_query(ctx, flags):
 
     for output in output_data:
         output.close()
+
+    return None

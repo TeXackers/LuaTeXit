@@ -1,11 +1,15 @@
 import asyncio
+from typing import TYPE_CHECKING
 
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from constants import sorted_cats
 from utils import ctx_addons  # noqa
 from utils.lib import prop_tabulate
 from wards import is_manager
+
+if TYPE_CHECKING:
+    from bot.modules import Module
 
 from .module import meta_module as module
 
@@ -21,7 +25,7 @@ Commands provided:
 
 
 @module.cmd("help", desc="Bot and command usage information.", aliases=["h", "man"])
-async def cmd_help(ctx: Context):
+async def cmd_help(ctx: type[Context]):
     """
     Usage``:
         {prefix}help [command name]
@@ -50,13 +54,11 @@ async def cmd_help(ctx: Context):
         help_embed = ctx.client.app_info.get("help_embed", None)
 
         await ctx.dm_reply(help_msg, file=help_file, embed=help_embed)
-        if not ctx.ch.type == discord.ChannelType.private:
+        if ctx.ch.type != discord.ChannelType.private:
             await ctx.reply(
                 "A brief description and guide on how to use me was sent to your DMs!\n"
-                "Please use `{prefix}list` to see a list of all my commands, "
-                "and `{prefix}help cmd` to get detailed help on a command!".format(
-                    prefix=ctx.best_prefix()
-                )
+                f"Please use `{ctx.best_prefix()}list` to see a list of all my commands, "
+                f"and `{ctx.best_prefix()}help cmd` to get detailed help on a command!"
             )
     else:
         # Send specific command help
@@ -67,40 +69,30 @@ async def cmd_help(ctx: Context):
             if ctx.args == "cmd":
                 return await ctx.reply(
                     "~~You really shouldn't take it literally :upside_down:.~~ "
-                    "Please type `{prefix}help ping`, for example!\n"
-                    "The full command list may be found using `{prefix}list`.".format(
-                        prefix=ctx.best_prefix()
-                    )
+                    f"Please type `{ctx.best_prefix()}help ping`, for example!\n"
+                    f"The full command list may be found using `{ctx.best_prefix()}list`."
                 )
-            else:
-                # If this was triggered by the `h` alias, don't respond unless there's a space afterwards
-                if ctx.alias == "h":
-                    true_args = ctx.msg.content.strip()[len(ctx.prefix) :].strip()[1:]
-                    if not true_args or true_args[0] not in (" ", "\n"):
-                        return
+            # If this was triggered by the `h` alias, don't respond unless there's a space afterwards
+            if ctx.alias == "h":
+                true_args = ctx.msg.content.strip()[len(ctx.prefix) :].strip()[1:]
+                if not true_args or true_args[0] not in (" ", "\n"):
+                    return None
 
-                return await ctx.error_reply(
-                    "Command `{command}` not found!\n"
-                    "Use the `{prefix}list` command without arguments to see a list of commands.".format(
-                        command=ctx.arg_str, prefix=ctx.best_prefix()
-                    )
-                )
+            return await ctx.error_reply(
+                f"Command `{ctx.arg_str}` not found!\n"
+                f"Use the `{ctx.best_prefix()}list` command without arguments to see a list of commands."
+            )
 
         help_fields = command.long_help.copy()
         help_map = {field_name: i for i, (field_name, _) in enumerate(help_fields)}
 
         if not help_map:
-            return await ctx.reply(
-                "No documentation has been written for this command yet!"
-            )
+            return await ctx.reply("No documentation has been written for this command yet!")
 
         for name, pos in help_map.items():
             if name.endswith("``"):
                 # Handle codeline help fields
-                help_fields[pos] = (
-                    name.strip("`"),
-                    "`{}`".format("`\n`".join(help_fields[pos][1].splitlines())),
-                )
+                help_fields[pos] = (name.strip("`"), "`{}`".format("`\n`".join(help_fields[pos][1].splitlines())))
             elif name.endswith(":"):
                 # Handle property/value help fields
                 lines = help_fields[pos][1].splitlines()
@@ -115,35 +107,23 @@ async def cmd_help(ctx: Context):
                 help_fields[pos] = (name.strip(":"), prop_tabulate(names, values))
             elif name == "Related":
                 # Handle the related field
-                names = [
-                    cmd_name.strip() for cmd_name in help_fields[pos][1].split(",")
-                ]
+                names = [cmd_name.strip() for cmd_name in help_fields[pos][1].split(",")]
                 names.sort(key=len)
-                values = [
-                    getattr(ctx.client.cmd_names.get(cmd_name, None), "desc", "")
-                    for cmd_name in names
-                ]
+                values = [getattr(ctx.client.cmd_names.get(cmd_name, None), "desc", "") for cmd_name in names]
                 help_fields[pos] = (name, prop_tabulate(names, values))
 
         # Create command alias string for title
         aliases = getattr(command, "aliases", [])
-        alias_str = (
-            "(Alias{} `{}`.)".format(
-                "es" if len(aliases) > 1 else "", "`, `".join(aliases)
-            )
-            if aliases
-            else ""
-        )
+        alias_str = "(Alias{} `{}`.)".format("es" if len(aliases) > 1 else "", "`, `".join(aliases)) if aliases else ""
 
         # Build the help embed
         embed = discord.Embed(
-            title="`{}` command documentation. {}".format(command.name, alias_str),
-            colour=discord.Colour(0x9B59B6),
+            title=f"`{command.name}` command documentation. {alias_str}", colour=discord.Colour(0x9B59B6)
         )
         out_msg = None
 
         if (
-            not ctx.alias.lower() == "man"
+            ctx.alias.lower() != "man"
             and len(help_fields) > 2
             and sum(len(field[1].splitlines()) for field in help_fields) > 15
             and (
@@ -156,15 +136,13 @@ async def cmd_help(ctx: Context):
         ):
             # Show a "short" version of the help with a `MORE` reaction.
             more_emoji = ctx.client.conf.emojis.getemoji("more")
-            embed.description = ("{}").format(command.desc)
+            embed.description = f"{command.desc}"
 
             for fieldname, fieldvalue in help_fields:
                 if fieldname in ["Usage"]:
                     # Format the field
                     fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
-                    fieldvalue += "\n\nClick {} to show more information.".format(
-                        more_emoji
-                    )
+                    fieldvalue += f"\n\nClick {more_emoji} to show more information."
 
                     embed.add_field(name=fieldname, value=fieldvalue, inline=False)
             out_msg = await ctx.reply(embed=embed)
@@ -173,22 +151,15 @@ async def cmd_help(ctx: Context):
             try:
                 await ctx.client.wait_for(
                     "reaction_add",
-                    check=lambda r, u: (
-                        r.emoji == more_emoji
-                        and r.message == out_msg
-                        and u != ctx.client.user
-                    ),
+                    check=lambda r, u: r.emoji == more_emoji and r.message == out_msg and u != ctx.client.user,
                     timeout=300,
                 )
             except asyncio.TimeoutError:
-                return
+                return None
             finally:
                 # Clean up
                 try:
-                    if (
-                        ctx.guild
-                        and ctx.ch.permissions_for(ctx.guild.me).manage_messages
-                    ):
+                    if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                         await out_msg.clear_reaction(more_emoji)
                     else:
                         await out_msg.remove_reaction(more_emoji, ctx.client.user)
@@ -208,25 +179,21 @@ async def cmd_help(ctx: Context):
         # Add the support guild invite
         embed.add_field(
             name="Have more questions?",
-            value="Visit our support server [here]({}) to speak to our friendly support team!".format(
-                ctx.client.app_info["support_guild"]
-            ),
+            value=f"Visit our support server [here]({ctx.client.app_info['support_guild']}) to speak to our friendly support team!",
         )
 
-        embed.set_footer(
-            text="[optional] and <required> denote optional and required arguments, respectively."
-        )
+        embed.set_footer(text="[optional] and <required> denote optional and required arguments, respectively.")
 
         # Post the embed
         if out_msg:
-            await out_msg.edit(embed=embed)
-        else:
-            await ctx.offer_delete(await ctx.reply(embed=embed))
+            return await out_msg.edit(embed=embed)
+        return await ctx.offer_delete(await ctx.reply(embed=embed))
         # await ctx.offer_delete(await ctx.reply(embed=embed))
+    return None
 
 
 @module.cmd("list", desc="Lists all my commands!", aliases=["ls"])
-async def cmd_list(ctx: Context):
+async def cmd_list(ctx: type[Context]) -> None:
     """
     Usage``:
         {prefix}list [module]
@@ -240,19 +207,14 @@ async def cmd_list(ctx: Context):
         help
     """
     # Flag for whether we display hidden modules in the list or not
-    show_hidden = await is_manager.run(ctx)
-    modules = [
-        module
-        for module in ctx.client.modules
-        if module.enabled and (show_hidden or not module.hidden)
+    show_hidden: bool = await is_manager.run(ctx)
+    modules: list[type[Module]] = [
+        module for module in ctx.client.modules if module.enabled and (show_hidden or not module.hidden)
     ]
 
     if ctx.alias.lower() == "ls":
         # Make the cats (category/module command lists)
-        cats = {
-            cat.name.lower(): sorted(cat.cmds, key=lambda cmd: cmd.name)
-            for cat in modules
-        }
+        cats = {cat.name.lower(): sorted(cat.cmds, key=lambda cmd: cmd.name) for cat in modules}
 
         # Build brief listing embed
         embed = discord.Embed(title="My commands!", color=discord.Colour.green())
@@ -262,17 +224,16 @@ async def cmd_list(ctx: Context):
                 embed.add_field(
                     name=cat,
                     value=", ".join(
-                        "~~`{}`~~".format(cmd.name)
-                        if cmd.disabled
-                        else "`{}`".format(cmd.name)
+                        f"~~`{cmd.name}`~~" if cmd.disabled else f"`{cmd.name}`"
                         for cmd in cats[cat.lower()]
                         if (show_hidden or not cmd.hidden)
                     ),
                     inline=False,
                 )
         embed.set_footer(
-            text="Use '{0}help' or '{0}help cmd' for detailed help, "
-            "or get support with {0}support.".format(ctx.best_prefix())
+            text="Use '{0}help' or '{0}help cmd' for detailed help, or get support with {0}support.".format(
+                ctx.best_prefix()
+            )
         )
 
         # Send the command list
@@ -292,15 +253,7 @@ async def cmd_list(ctx: Context):
             cat.name: (
                 cat,
                 [
-                    (
-                        cmd.name,
-                        getattr(
-                            cmd,
-                            "desc",
-                            "See `{0}help {1}`.".format(ctx.best_prefix(), cmd.name),
-                        ),
-                        cmd,
-                    )
+                    (cmd.name, getattr(cmd, "desc", f"See `{ctx.best_prefix()}help {cmd.name}`."), cmd)
                     for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
                     if (show_hidden or not cmd.hidden)
                 ],
@@ -311,9 +264,7 @@ async def cmd_list(ctx: Context):
 
         if not groups:
             return await ctx.error_reply(
-                "No matching modules! See `{}ls` for a list of modules and their commands.".format(
-                    ctx.best_prefix()
-                )
+                f"No matching modules! See `{ctx.best_prefix()}ls` for a list of modules and their commands."
             )
 
         # Sort the command groups based on sorted_cats and extract the required data
@@ -345,11 +296,7 @@ async def cmd_list(ctx: Context):
             if current_page_len + len(new_field[1]) > 1000:
                 # Flush to a new page
                 # Create the embed
-                embed = discord.Embed(
-                    description=help_str,
-                    colour=discord.Colour(0x9B59B6),
-                    title=help_title,
-                )
+                embed = discord.Embed(description=help_str, colour=discord.Colour(0x9B59B6), title=help_title)
                 for name, field in current_page_fields:
                     embed.add_field(name=name, value=field, inline=False)
 
@@ -367,9 +314,7 @@ async def cmd_list(ctx: Context):
         # If there is anything left, add it as the last page
         if current_page_fields:
             # Create the embed
-            embed = discord.Embed(
-                description=help_str, colour=discord.Colour(0x9B59B6), title=help_title
-            )
+            embed = discord.Embed(description=help_str, colour=discord.Colour(0x9B59B6), title=help_title)
             for name, field in current_page_fields:
                 embed.add_field(name=name, value=field, inline=False)
 
@@ -378,7 +323,8 @@ async def cmd_list(ctx: Context):
 
         # Add the page numbers
         for i, embed in enumerate(help_embeds):
-            embed.set_footer(text="Page {}/{}".format(i + 1, len(help_embeds)))
+            embed.set_footer(text=f"Page {i + 1}/{len(help_embeds)}")
 
         # Send the embeds
-        await ctx.offer_delete(await ctx.pager(help_embeds))
+        return await ctx.offer_delete(await ctx.pager(help_embeds))
+    return None

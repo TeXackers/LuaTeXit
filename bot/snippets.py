@@ -13,7 +13,7 @@ def snip(name):
 async def snip_serverlist(ctx):
     servs = [(s.name, s.owner.name) for s in ctx.bot.servers]
     servs.sort(key=lambda tup: tup[1].lower())
-    servlist = ["{:^25} - {:^15}".format(st[0], st[1]) for st in servs]
+    servlist = [f"{st[0]:^25} - {st[1]:^15}" for st in servs]
     await ctx.reply("```" + "\n".join(servlist) + "```", split=True, code=True)
 
 
@@ -29,9 +29,7 @@ async def snip_user_lookup(ctx, in_server=False, greedy=False, func=None):
     if not ctx.arg_str or (in_server and not ctx.server):
         ctx.objs["found_user"] = None
         return None
-    content = (
-        func(ctx) if func is not None else (ctx.arg_str if greedy else ctx.params[0])
-    )
+    content = func(ctx) if func is not None else (ctx.arg_str if greedy else ctx.params[0])
     ctx.objs["found_user"] = await ctx.find_user(content, in_server, interactive=True)
     return ctx.objs["found_user"]
 

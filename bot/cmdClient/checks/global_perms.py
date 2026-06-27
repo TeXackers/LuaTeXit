@@ -1,4 +1,4 @@
-from ..Check import check
+from bot.cmdClient.Check import check
 
 
 @check(name="IS_OWNER", msg="You need to be a bot owner to use this command!")

@@ -1,42 +1,26 @@
-# pylint:ignore=C901
-
-import os
 import re
+from pathlib import Path
 
 import discord
+from cmdClient import Context, cmdClient  # noqa
 from cmdClient.lib import ResponseTimedOut
 from utils import interactive  # noqa
 from utils.lib import substitute_ranges
 
 from .core.LatexGuild import LatexGuild
-from .core.preamble_utils import (
-    confirm,
-    preamblelog,
-    resolve_pending_preamble,
-    submit_preamble,
-    view_preamble,
-)
+from .core.preamble_utils import confirm, preamblelog, resolve_pending_preamble, submit_preamble, view_preamble
 from .module import latex_module as module
 from .resources import default_preamble
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+__location__: str = str(Path(__file__).resolve().parent)
 
 
 @module.cmd(
     "preamble",
     desc="View or modify your LaTeX preamble.",
-    flags=[
-        "reset",
-        "retract",
-        "add",
-        "remove",
-        "revert",
-        "usepackage",
-        "replace",
-        "preset",
-    ],
+    flags=["reset", "retract", "add", "remove", "revert", "usepackage", "replace", "preset"],
 )
-async def cmd_preamble(ctx, flags):
+async def cmd_preamble(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}preamble
@@ -93,8 +77,8 @@ async def cmd_preamble(ctx, flags):
     # Get the whitelisted packages
     # in resources/whitelisted_packages.txt
     whitelisted_packages = []
-    whitelist_file_loc = os.path.join(__location__, "resources/whitelist.txt")
-    with open(whitelist_file_loc) as f:
+    whitelist_file_loc = Path(__location__) / "resources" / "whitelist.txt"
+    with Path.open(whitelist_file_loc) as f:
         for line in f:
             whitelisted_packages.append(line.strip())
 
@@ -106,35 +90,24 @@ async def cmd_preamble(ctx, flags):
 
         # Ask the user if they are sure, handling timeout and negative response
         try:
-            resp = await ctx.ask(
-                "Are you sure you want to reset your preamble to the default?",
-                timeout=60,
-            )
+            resp = await ctx.ask("Are you sure you want to reset your preamble to the default?", timeout=60)
         except ResponseTimedOut:
             return await ctx.error_reply(
                 "Preamble preset timed out waiting for a response, your preamble was not modified."
             )
         if not resp:
-            return await ctx.error_reply(
-                "Cancelling preamble reset, your preamble was not modified."
-            )
+            return await ctx.error_reply("Cancelling preamble reset, your preamble was not modified.")
 
         # Now reset the preamble
         preamble_data.insert(
-            allow_replace=True,
-            userid=ctx.author.id,
-            preamble=None,
-            previous_preamble=current_preamble["preamble"],
+            allow_replace=True, userid=ctx.author.id, preamble=None, previous_preamble=current_preamble["preamble"]
         )
 
         # Logging
         await preamblelog(ctx, "Preamble has been reset to the default")
 
         # Notify the user, notifying them about their pending preamble if required
-        response = (
-            "Your preamble has been reset to the default! "
-            "Use `{prefix}preamble --revert` to restore it."
-        )
+        response = "Your preamble has been reset to the default! Use `{prefix}preamble --revert` to restore it."
         if pending_preamble and not flags["retract"]:
             response += "\nUse `{prefix}preamble --retract` to also retract your pending preamble request"
 
@@ -143,22 +116,18 @@ async def cmd_preamble(ctx, flags):
     # Handle retracting a preamble request
     if flags["retract"]:
         if not pending_preamble:
-            return await ctx.error_reply(
-                "You don't have a pending preamble request to retract!"
-            )
+            return await ctx.error_reply("You don't have a pending preamble request to retract!")
 
         pending_preamble_data.delete_where(userid=ctx.author.id)
 
-        await resolve_pending_preamble(
-            ctx, ctx.author.id, "Request retracted", colour=discord.Colour.red()
-        )
+        await resolve_pending_preamble(ctx, ctx.author.id, "Request retracted", colour=discord.Colour.red())
         await preamblelog(ctx, "Preamble request was retracted")
 
         await ctx.reply("Your pending preamble request has been retracted!")
 
     if flags["reset"] or flags["retract"]:
         # Return if we have handled these flags
-        return
+        return None
 
     # Handle reverting to the previous version of the preamble
     if flags["revert"]:
@@ -168,18 +137,13 @@ async def cmd_preamble(ctx, flags):
 
         # Ask for confirmation, handle timeout and negative response
         try:
-            resp = await ctx.ask(
-                "Are you sure you want to revert your preamble to the previous version?",
-                timeout=60,
-            )
+            resp = await ctx.ask("Are you sure you want to revert your preamble to the previous version?", timeout=60)
         except ResponseTimedOut:
             return await ctx.error_reply(
                 "Preamble revert timed out waiting for a response, your preamble was not modified."
             )
         if not resp:
-            return await ctx.error_reply(
-                "Cancelling preamble revert, your preamble was not modified."
-            )
+            return await ctx.error_reply("Cancelling preamble revert, your preamble was not modified.")
 
         # Revert the preamble
         preamble_data.insert(
@@ -192,10 +156,9 @@ async def cmd_preamble(ctx, flags):
         # Logging
         await preamblelog(ctx, "Preamble has been reverted.")
         await ctx.reply(
-            "Your preamble has been reverted to the previous version. "
-            "Use `{}preamble --revert` again to undo.".format(ctx.best_prefix())
+            f"Your preamble has been reverted to the previous version. Use `{ctx.best_prefix()}preamble --revert` again to undo."
         )
-        return
+        return None
 
     # Get any input, including the contents of any attached files if they exist
     if ctx.msg.attachments:
@@ -203,16 +166,12 @@ async def cmd_preamble(ctx, flags):
 
         # If the file is over 1MB, it probably isn't a valid preamble.
         if attachment.size >= 1000000:
-            return await ctx.error_reply(
-                "Attached file is too large to process (over `1MB`)."
-            )
+            return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
 
         try:
             args = str(await attachment.read(), encoding="utf-8", errors="strict")
         except UnicodeError:
-            return await ctx.error_reply(
-                "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
-            )
+            return await ctx.error_reply("Couldn't decode the attached file, please ensure it uses the `utf-8` codec.")
     else:
         args = ctx.args
 
@@ -229,9 +188,7 @@ async def cmd_preamble(ctx, flags):
         # If arguments were given, search the current preamble for this string
         if args:
             if args not in preamble:
-                return await ctx.error_reply(
-                    "The requested text doesn't appear in your preamble! Nothing to remove."
-                )
+                return await ctx.error_reply("The requested text doesn't appear in your preamble! Nothing to remove.")
             if "\n" in args:
                 # If the requested string has multiple lines and appears, just remove all of them
                 new_preamble = preamble.replace(args, "")
@@ -241,9 +198,7 @@ async def cmd_preamble(ctx, flags):
         else:
             # If we aren't given anything to remove, prompt the user for which lines they want to remove
             # Generate a version of the current preamble with line numbers
-            lined_preamble = "\n".join(
-                ("{:>2}. {}".format(i + 1, line) for i, line in enumerate(lines))
-            )
+            lined_preamble = "\n".join((f"{i + 1:>2}. {line}" for i, line in enumerate(lines)))
 
             # Show this to the user and prompt them
             prompt = (
@@ -257,22 +212,15 @@ async def cmd_preamble(ctx, flags):
             try:
                 response = await ctx.input(prompt_msg)
             except ResponseTimedOut:
-                return await ctx.error_reply(
-                    "Prompt timed out. Your preamble was not updated."
-                )
+                return await ctx.error_reply("Prompt timed out. Your preamble was not updated.")
             if response.lower() == "c":
-                return await ctx.error_reply(
-                    "Preamble modification cancelled. Your preamble was not updated."
-                )
+                return await ctx.error_reply("Preamble modification cancelled. Your preamble was not updated.")
 
             # Parse provided selection
             parse_failure = False
 
             # First sanity check input
-            if not all(
-                (char.isdigit() or not char.strip() or char in ("-", ","))
-                for char in response
-            ):
+            if not all((char.isdigit() or not char.strip() or char in ("-", ",")) for char in response):
                 parse_failure = True
 
             # Replace ranges
@@ -310,45 +258,28 @@ async def cmd_preamble(ctx, flags):
             prompt = "Are you sure you want to remove the following lines from your preamble?"
             try:
                 result = await confirm(
-                    ctx,
-                    prompt,
-                    for_removal,
-                    footer="Reply with y/n to confirm your preamble request.",
+                    ctx, prompt, for_removal, footer="Reply with y/n to confirm your preamble request."
                 )
             except ResponseTimedOut:
-                return await ctx.error_reply(
-                    "Prompt timed out, your preamble was not modified."
-                )
+                return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
             if not result:
-                return await ctx.error_reply(
-                    "Cancelled preamble modification, your preamble was not modified."
-                )
+                return await ctx.error_reply("Cancelled preamble modification, your preamble was not modified.")
 
-            new_preamble = "\n".join(
-                [line for i, line in enumerate(lines) if i not in to_remove]
-            )
+            new_preamble = "\n".join([line for i, line in enumerate(lines) if i not in to_remove])
 
         # Finally save the new preamble
         if new_preamble is not None:
             preamble_data.insert(
-                allow_replace=True,
-                userid=ctx.author.id,
-                preamble=new_preamble,
-                previous_preamble=preamble,
+                allow_replace=True, userid=ctx.author.id, preamble=new_preamble, previous_preamble=preamble
             )
             await ctx.reply("Your preamble has been updated!")
-            await preamblelog(
-                ctx,
-                "Material was removed from the preamble. New preamble below.",
-                source=new_preamble,
-            )
-        return
+            await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
+        return None
 
     # Handle setting the preamble to a preset
     if flags["preset"]:
         return await ctx.error_reply(
-            "Preamble presets have been temporarily disabled!\n"
-            "Please check back in a few days."
+            "Preamble presets have been temporarily disabled!\nPlease check back in a few days."
         )
         #       # Get the name of the preset to use
         #       if not ctx.args:
@@ -377,7 +308,7 @@ async def cmd_preamble(ctx, flags):
 
         #       # Confirm that the user wishes to overwrite their current preamble with the preset
         #       prompt = "Are you sure you want to overwrite your current LaTeX preamble with the following preset?"
-        #       result = await confirm(ctx, prompt, preset)
+        #       result = await confirm(ctx: type[Context], prompt, preset)
 
         #       # Handle empty results
         #       if result is None:
@@ -394,8 +325,8 @@ async def cmd_preamble(ctx, flags):
 
         #       await ctx.reply("The preset has been applied!\
         #                       \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
-        #       await preamblelog(ctx, "Preamble preset {} was applied".format(selected))
-        return
+        #       await preamblelog(ctx: type[Context], "Preamble preset {} was applied".format(selected))
+        return None
 
     # At this point, the user wants to view, replace, or add to their preamble.
 
@@ -411,13 +342,9 @@ async def cmd_preamble(ctx, flags):
             try:
                 new_submission = await ctx.input(prompt, timeout=600)
             except ResponseTimedOut:
-                return await ctx.error_reply(
-                    "Query timed out, your preamble was not modified."
-                )
+                return await ctx.error_reply("Query timed out, your preamble was not modified.")
             if new_submission.lower() == "c":
-                return await ctx.error_reply(
-                    "Preamble replacement cancelled, your preamble was not modified."
-                )
+                return await ctx.error_reply("Preamble replacement cancelled, your preamble was not modified.")
         else:
             new_submission = args
 
@@ -428,30 +355,19 @@ async def cmd_preamble(ctx, flags):
         prompt = "Please confirm you want to replace your preamble with the following."
         try:
             result = await confirm(
-                ctx,
-                prompt,
-                new_submission,
-                footer="Reply with y/n to confirm your preamble request.",
+                ctx, prompt, new_submission, footer="Reply with y/n to confirm your preamble request."
             )
         except ResponseTimedOut:
-            return await ctx.error_reply(
-                "Prompt timed out, your preamble was not modified."
-            )
+            return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
         if not result:
-            return await ctx.error_reply(
-                "Preamble replacement cancelled, your preamble was not modified."
-            )
+            return await ctx.error_reply("Preamble replacement cancelled, your preamble was not modified.")
 
-        await submit_preamble(
-            ctx, ctx.author, new_submission, "User wishes to replace their preamble"
-        )
+        await submit_preamble(ctx, ctx.author, new_submission, "User wishes to replace their preamble")
         return await ctx.reply(
             "Your preamble request has been sent to my managers for review.\n"
             "You will be messaged when your request is reviewed "
             "(usually around `1`-`2` hours, depending on availability).\n"
-            "If you wish to retract your submission, please use `{}preamble --retract`.".format(
-                ctx.best_prefix()
-            )
+            f"If you wish to retract your submission, please use `{ctx.best_prefix()}preamble --retract`."
         )
 
     # Handle a request to add material to the preamble
@@ -467,57 +383,41 @@ async def cmd_preamble(ctx, flags):
             try:
                 response = await ctx.input(prompt, timeout=600)
             except ResponseTimedOut:
-                return await ctx.error_reply(
-                    "Query timed out, your preamble was not modified."
-                )
+                return await ctx.error_reply("Query timed out, your preamble was not modified.")
             if response.lower() == "n":
-                return await ctx.error_reply(
-                    "Query cancelled, your preamble was not modified."
-                )
+                return await ctx.error_reply("Query cancelled, your preamble was not modified.")
 
         if not args:
             # Prompt the user for the material they wish to add, handle cancellations and timeout
             prompt = (
                 "Please enter the material you wish to add to your preamble, or `c` to cancel.\n"
-                "**If you wish to *replace* your preamble, please rerun with `{}preamble --replace`.**\n"
-            ).format(ctx.best_prefix())
+                f"**If you wish to *replace* your preamble, please rerun with `{ctx.best_prefix()}preamble --replace`.**\n"
+            )
             try:
                 args = await ctx.input(prompt, timeout=600)
             except ResponseTimedOut:
-                return await ctx.error_reply(
-                    "Query timed out, your preamble was not modified."
-                )
+                return await ctx.error_reply("Query timed out, your preamble was not modified.")
             if args.lower() == "c":
-                return await ctx.error_reply(
-                    "Query cancelled, your preamble was not modified."
-                )
+                return await ctx.error_reply("Query cancelled, your preamble was not modified.")
 
-        new_submission = "{}\n{}".format(preamble, args)
+        new_submission = f"{preamble}\n{args}"
 
         # Check if the addition is a one line usepackage containing whitelisted packages
         args = args.strip()
         args = re.sub("(```)(tex|latex)*", "", args, flags=re.I)
         if "\n" not in args and args.startswith("\\usepackage"):
             packages = args[11:].strip(" {}").split(",")
-            if all(
-                not package.strip() or (package.strip() in whitelisted_packages)
-                for package in packages
-            ):
+            if all(not package.strip() or (package.strip() in whitelisted_packages) for package in packages):
                 # All the requested packages are whitelisted
                 # Update the preamble, log the changes, and notify the user
                 preamble_data.insert(
-                    allow_replace=True,
-                    userid=ctx.author.id,
-                    preamble=new_submission,
-                    previous_preamble=preamble,
+                    allow_replace=True, userid=ctx.author.id, preamble=new_submission, previous_preamble=preamble
                 )
                 await ctx.reply("Your preamble has been updated!")
                 await preamblelog(
-                    ctx,
-                    "Whitelisted packages were added to the preamble. New preamble below.",
-                    source=new_submission,
+                    ctx, "Whitelisted packages were added to the preamble. New preamble below.", source=new_submission
                 )
-                return
+                return None
 
         # Set various warnings
         nonmatching_brackets = False
@@ -532,9 +432,7 @@ async def cmd_preamble(ctx, flags):
             if len(line) > 5:
                 if line in unique_lines:
                     duplicate_count += 1
-                    if not duplicate_packages and line.strip().startswith(
-                        "\\usepackage"
-                    ):
+                    if not duplicate_packages and line.strip().startswith("\\usepackage"):
                         duplicate_packages = True
                 else:
                     unique_lines.add(line)
@@ -545,9 +443,7 @@ async def cmd_preamble(ctx, flags):
         )
         warnings = []
         if nonmatching_brackets:
-            warnings.append(
-                "Number of opening and closing brackets and parenthesis do not match!"
-            )
+            warnings.append("Number of opening and closing brackets and parenthesis do not match!")
         if duplicate_packages:
             warnings.append("Duplicate package imports detected!")
         if many_duplicates:
@@ -566,43 +462,25 @@ async def cmd_preamble(ctx, flags):
                 footer="Reply with y/n to confirm your preamble request.",
             )
         except ResponseTimedOut:
-            return await ctx.error_reply(
-                "Prompt timed out, your preamble was not modified."
-            )
+            return await ctx.error_reply("Prompt timed out, your preamble was not modified.")
         if not result:
-            return await ctx.error_reply(
-                "Preamble extension cancelled, your preamble was not modified."
-            )
+            return await ctx.error_reply("Preamble extension cancelled, your preamble was not modified.")
 
         await submit_preamble(
-            ctx,
-            ctx.author,
-            new_submission,
-            "User wishes to add {} lines to their preamble".format(
-                len(args.splitlines())
-            ),
+            ctx, ctx.author, new_submission, f"User wishes to add {len(args.splitlines())} lines to their preamble"
         )
         return await ctx.reply(
             "Your preamble request has been sent to my review team.\n"
             "You will be messaged when your request is reviewed "
             "(usually around `1`-`2` hours, depending on availability).\n"
-            "If you wish to retract your submission, please use `{}preamble --retract`.".format(
-                ctx.best_prefix()
-            )
+            f"If you wish to retract your submission, please use `{ctx.best_prefix()}preamble --retract`."
         )
 
     # If the user doesn't want to edit their preamble, they must just want to view it
 
-    title = "Your current preamble. Use {}texconfig to see the other LaTeX config options!".format(
-        ctx.best_prefix()
-    )
-    await ctx.offer_delete(
+    title = f"Your current preamble. Use {ctx.best_prefix()}texconfig to see the other LaTeX config options!"
+    return await ctx.offer_delete(
         await view_preamble(
-            ctx,
-            preamble,
-            title,
-            header=header,
-            file_react=True,
-            file_message="Current Preamble for {}".format(ctx.author),
+            ctx, preamble, title, header=header, file_react=True, file_message=f"Current Preamble for {ctx.author}"
         )
     )

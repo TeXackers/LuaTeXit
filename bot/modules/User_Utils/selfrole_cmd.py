@@ -1,5 +1,5 @@
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from utils import interactive, seekers  # noqa
 from wards import in_guild
@@ -17,7 +17,7 @@ from .module import utils_module as module
     flags=["add", "remove", "list"],
 )
 @in_guild()
-async def cmd_giveme(ctx: Context, flags):
+async def cmd_giveme(ctx: type[Context], flags: dict):
     """
     Usage``:
         {prefix}giveme
@@ -61,18 +61,12 @@ async def cmd_giveme(ctx: Context, flags):
 
     # My top role with manage_roles
     my_max_role = max(
-        (
-            role
-            for role in ctx.guild.me.roles
-            if role.permissions.manage_roles or role.permissions.administrator
-        ),
+        (role for role in ctx.guild.me.roles if role.permissions.manage_roles or role.permissions.administrator),
         key=lambda r: r.position,
         default=None,
     )
     if my_max_role is None:
-        return await ctx.error_reply(
-            "I don't have enough permissions to manage your selfroles!"
-        )
+        return await ctx.error_reply("I don't have enough permissions to manage your selfroles!")
 
     # Handle administration flags
     if flags["add"] or flags["remove"]:
@@ -80,16 +74,9 @@ async def cmd_giveme(ctx: Context, flags):
         modrole_pos = None
         if ctx.author == ctx.guild.owner:
             modrole_pos = len(ctx.guild.roles)
-        elif (
-            ctx.author.guild_permissions.manage_guild
-            and ctx.author.guild_permissions.manage_roles
-        ):
+        elif ctx.author.guild_permissions.manage_guild and ctx.author.guild_permissions.manage_roles:
             modrole_pos = max(
-                (
-                    role
-                    for role in ctx.author.roles
-                    if role.permissions.manage_roles or role.permissions.administrator
-                ),
+                (role for role in ctx.author.roles if role.permissions.manage_roles or role.permissions.administrator),
                 key=lambda r: r.position,
             ).position
 
@@ -101,26 +88,16 @@ async def cmd_giveme(ctx: Context, flags):
             )
 
         if flags["add"] and flags["remove"]:
-            return await ctx.error_reply(
-                "Do you want me to add selfroles or remove them? One action at a time please!"
-            )
+            return await ctx.error_reply("Do you want me to add selfroles or remove them? One action at a time please!")
 
         if flags["add"]:
             # Handle adding without arguments
             if not ctx.args:
-                return await ctx.error_reply(
-                    "**Usage:** `{}{} --add role1, role2, role3`".format(
-                        ctx.best_prefix(), ctx.alias
-                    )
-                )
+                return await ctx.error_reply(f"**Usage:** `{ctx.best_prefix()}{ctx.alias} --add role1, role2, role3`")
 
             roles = [
                 await ctx.find_role(
-                    rolestr,
-                    interactive=True,
-                    collection=select_from,
-                    create=True,
-                    allow_notfound=False,
+                    rolestr, interactive=True, collection=select_from, create=True, allow_notfound=False
                 )
                 for rolestr in rolestrs
             ]
@@ -134,11 +111,9 @@ async def cmd_giveme(ctx: Context, flags):
                     "`{}`".format("`, `".join(r.name for r in too_high_roles))
                 )
 
-            too_high_for_me_roles = [
-                role for role in roles if role.position >= my_max_role.position
-            ]
+            too_high_for_me_roles = [role for role in roles if role.position >= my_max_role.position]
             if too_high_for_me_roles:
-                await ctx.error_reply(
+                return await ctx.error_reply(
                     "**Warning:** The following roles are equal or above my top role with the `manage_role` permission."
                     " I will not be able to give them to requesting members!\n"
                     "`{}`".format("`, `".join(r.name for r in too_high_for_me_roles))
@@ -146,91 +121,67 @@ async def cmd_giveme(ctx: Context, flags):
 
             if any(role is None for role in roles):
                 # This shouldn't happen due to the `allow_notfound=False` in `find_role`.
-                return
+                return None
 
             # Set roles
             selfrole_config.value = list(set(selfroles + roles))
 
             return await ctx.reply("The requested selfroles have been added!")
-        elif flags["remove"]:
+        if flags["remove"]:
             # Check if there's nothing to remove
             if not selfroles:
-                return await ctx.error_reply(
-                    "This guild has no selfroles! Nothing to remove."
-                )
+                return await ctx.error_reply("This guild has no selfroles! Nothing to remove.")
 
             # If we don't have arguments we will need to select some selfroles
             if not ctx.args:
                 try:
-                    results = await ctx.multi_selector(
-                        "Please select the selfroles to remove.", select_from
-                    )
+                    results = await ctx.multi_selector("Please select the selfroles to remove.", select_from)
                 except ResponseTimedOut:
-                    raise ResponseTimedOut(
-                        "Selfrole selector timed out, no roles were removed"
-                    ) from None
+                    raise ResponseTimedOut("Selfrole selector timed out, no roles were removed") from None
                 except UserCancelled:
-                    raise UserCancelled(
-                        "Selfrole selector cancelled, no roles were removed."
-                    ) from None
+                    raise UserCancelled("Selfrole selector cancelled, no roles were removed.") from None
                 roles = [select_from[i] for i in results]
             else:
                 roles = [
-                    await ctx.find_role(
-                        rolestr,
-                        interactive=True,
-                        collection=select_from,
-                        allow_notfound=False,
-                    )
+                    await ctx.find_role(rolestr, interactive=True, collection=select_from, allow_notfound=False)
                     for rolestr in rolestrs
                 ]
 
             # Remove the selfroles
             selfrole_config.value = [role for role in selfroles if role not in roles]
-            await ctx.reply("The requested selfroles have been removed.")
-            return
+            return await ctx.reply("The requested selfroles have been removed.")
     # End of administrator mode handling
 
     # Handle list flag
     if flags["list"]:
         if selfroles:
-            role_list = "```css\n{}\n```".format(
-                ", ".join([role.name for role in selfroles])
-            )
+            role_list = "```css\n{}\n```".format(", ".join([role.name for role in selfroles]))
             msg = (
                 "**Self assignable roles for this guild**:\n"
-                "{roles}"
-                "Use `{prefix}iam role1, role2, ...` to assign yourself roles.\n"
-                "Use `{prefix}iamnot role1, role2, ...` to remove the roles."
-            ).format(roles=role_list, prefix=ctx.best_prefix())
+                f"{role_list}"
+                f"Use `{ctx.best_prefix()}iam role1, role2, ...` to assign yourself roles.\n"
+                f"Use `{ctx.best_prefix()}iamnot role1, role2, ...` to remove the roles."
+            )
         else:
             msg = (
                 "No self assignable roles have been set for this guild. "
-                "See `{}help selfroles` for more information about creating selfroles."
-            ).format(ctx.best_prefix())
+                f"See `{ctx.best_prefix()}help selfroles` for more information about creating selfroles."
+            )
 
         return await ctx.reply(msg)
 
     # All flags have been handled, now check the alias and parse or request user input
-    add_alias = not (ctx.alias.lower() == "iamnot")
+    add_alias = ctx.alias.lower() != "iamnot"
 
     if ctx.args:
         # Parse arguments
         roles = []
         for rolestr in rolestrs:
             try:
-                role = await ctx.find_role(
-                    rolestr,
-                    interactive=True,
-                    collection=select_from,
-                    allow_notfound=False,
-                )
+                role = await ctx.find_role(rolestr, interactive=True, collection=select_from, allow_notfound=False)
             except SafeCancellation:
                 return await ctx.error_reply(
-                    "No selfroles matching `{}`.\n"
-                    "See `{}selfroles --list` for the list of valid selfroles.".format(
-                        rolestr, ctx.best_prefix()
-                    )
+                    f"No selfroles matching `{rolestr}`.\nSee `{ctx.best_prefix()}selfroles --list` for the list of valid selfroles."
                 )
 
             roles.append(role)
@@ -264,42 +215,25 @@ async def cmd_giveme(ctx: Context, flags):
     else:
         # Case for empty arguments
         if add_alias:
-            offer_str = (
-                "Please select the desired selfroles! "
-                "(Use `{}iamnot` to remove your current selfroles.)".format(
-                    ctx.best_prefix()
-                )
-            )
+            offer_str = f"Please select the desired selfroles! (Use `{ctx.best_prefix()}iamnot` to remove your current selfroles.)"
             select_from = [role for role in selfroles if role not in ctx.author.roles]
             if not select_from:
                 return await ctx.error_reply(
-                    "You have all the selfroles! (Use `{}iamnot` to remove them).".format(
-                        ctx.best_prefix()
-                    )
+                    f"You have all the selfroles! (Use `{ctx.best_prefix()}iamnot` to remove them)."
                 )
         else:
             offer_str = "Please select the selfroles to remove."
             select_from = [role for role in selfroles if role in ctx.author.roles]
             if not select_from:
-                return await ctx.error_reply(
-                    "You don't have any selfroles! Use `{}iam` to get some.".format(
-                        ctx.best_prefix()
-                    )
-                )
+                return await ctx.error_reply(f"You don't have any selfroles! Use `{ctx.best_prefix()}iam` to get some.")
 
         # Request roles to toggle
         try:
-            results = await ctx.multi_selector(
-                offer_str, select_from, allow_single=True
-            )
+            results = await ctx.multi_selector(offer_str, select_from, allow_single=True)
         except ResponseTimedOut:
-            raise ResponseTimedOut(
-                "Selfrole selector timed out, your roles were not updated."
-            ) from None
+            raise ResponseTimedOut("Selfrole selector timed out, your roles were not updated.") from None
         except UserCancelled:
-            raise UserCancelled(
-                "Selfrole selector cancelled, your roles were not updated."
-            ) from None
+            raise UserCancelled("Selfrole selector cancelled, your roles were not updated.") from None
 
         roles = [select_from[i] for i in results]
 
@@ -331,9 +265,7 @@ async def cmd_giveme(ctx: Context, flags):
     # Handle adding roles
     if roles_to_add:
         try:
-            await ctx.author.add_roles(
-                *roles_to_add, reason="User requested selfroles."
-            )
+            await ctx.author.add_roles(*roles_to_add, reason="User requested selfroles.")
             actually_added = roles_to_add
         except discord.Forbidden:
             perm_failed += roles_to_add
@@ -343,9 +275,7 @@ async def cmd_giveme(ctx: Context, flags):
     # Handle removing roles
     if roles_to_remove:
         try:
-            await ctx.author.remove_roles(
-                *roles_to_remove, reason="User requested selfrole removal."
-            )
+            await ctx.author.remove_roles(*roles_to_remove, reason="User requested selfrole removal.")
             actually_removed = roles_to_remove
         except discord.Forbidden:
             perm_failed += roles_to_remove
@@ -356,26 +286,18 @@ async def cmd_giveme(ctx: Context, flags):
     msg_components = []
     if actually_added:
         if len(actually_added) == 1:
-            msg_components.append(
-                "Gave you the `{}` selfrole.".format(actually_added[0].name)
-            )
+            msg_components.append(f"Gave you the `{actually_added[0].name}` selfrole.")
         else:
             msg_components.append(
-                "Gave you the following selfroles: `{}`".format(
-                    "`, `".join(r.name for r in actually_added)
-                )
+                "Gave you the following selfroles: `{}`".format("`, `".join(r.name for r in actually_added))
             )
 
     if actually_removed:
         if len(actually_removed) == 1:
-            msg_components.append(
-                "Removed the `{}` role from you.".format(actually_removed[0].name)
-            )
+            msg_components.append(f"Removed the `{actually_removed[0].name}` role from you.")
         else:
             msg_components.append(
-                "Removed the following selfroles from you: `{}`".format(
-                    "`, `".join(r.name for r in actually_removed)
-                )
+                "Removed the following selfroles from you: `{}`".format("`, `".join(r.name for r in actually_removed))
             )
 
     if perm_failed:
@@ -399,4 +321,4 @@ async def cmd_giveme(ctx: Context, flags):
             )
         )
 
-    await ctx.reply("\n".join(msg_components))
+    return await ctx.reply("\n".join(msg_components))

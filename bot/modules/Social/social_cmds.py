@@ -43,18 +43,16 @@ async def cmd_profile(ctx):
     given_rep = await ctx.data.users.get(user.id, "given_rep")
 
     embed = discord.Embed(type="rich", color=user.colour).set_author(
-        name="{user} ({user.id})".format(user=user), icon_url=user.avatar_url
+        name=f"{user} ({user.id})", icon_url=user.avatar_url
     )
     if badges:
         embed.add_field(name="Badges", value=badges, inline=False)
 
     embed.add_field(name="Level", value="(Coming Soon!)", inline=True).add_field(
         name="XP", value="(Coming Soon!)", inline=True
-    ).add_field(
-        name="Reputation",
-        value="{} Received | {} Given".format(rep, given_rep),
-        inline=True,
-    ).add_field(name="Premium", value="No", inline=True)
+    ).add_field(name="Reputation", value=f"{rep} Received | {given_rep} Given", inline=True).add_field(
+        name="Premium", value="No", inline=True
+    )
     tz = await ctx.data.users.get(user.id, "tz")
     if tz:
         try:
@@ -65,17 +63,9 @@ async def cmd_profile(ctx):
             )
             return
         timestr = "%I:%M %p on %a, %d/%m/%Y"
-        timestr = (
-            iso8601.parse_date(datetime.datetime.now(datetime.UTC).isoformat())
-            .astimezone(TZ)
-            .strftime(timestr)
-        )
-        embed.add_field(name="Current Time", value="{}".format(timestr), inline=False)
-    embed.add_field(
-        name="Created at",
-        value="{} ({} ago)".format(created, created_ago),
-        inline=False,
-    )
+        timestr = iso8601.parse_date(datetime.datetime.now(datetime.UTC).isoformat()).astimezone(TZ).strftime(timestr)
+        embed.add_field(name="Current Time", value=f"{timestr}", inline=False)
+    embed.add_field(name="Created at", value=f"{created} ({created_ago} ago)", inline=False)
     await ctx.reply(embed=embed)
 
 
@@ -97,19 +87,15 @@ async def cmd_rep(ctx):
 
     if ctx.arg_str == "" or ctx.arg_str.strip() == "stats":
         if last_rep is None:
-            await ctx.reply(
-                "You have not yet given any reputation!\nStart giving reputation using `rep <user>`!"
-            )
+            await ctx.reply("You have not yet given any reputation!\nStart giving reputation using `rep <user>`!")
             return
         last_rep = int(last_rep)
         given_ago = now_timestamp - last_rep
         if ctx.arg_str == "":
             can_give_in = cooldown - given_ago
             if can_give_in > 0:
-                can_give_str = ctx.strfdelta(
-                    datetime.timedelta(seconds=can_give_in), sec=True
-                )
-                msg = "You may give reputation in {}.".format(can_give_str)
+                can_give_str = ctx.strfdelta(datetime.timedelta(seconds=can_give_in), sec=True)
+                msg = f"You may give reputation in {can_give_str}."
             else:
                 msg = "You may now give reputation!"
         else:
@@ -120,36 +106,31 @@ async def cmd_rep(ctx):
             )
         await ctx.reply(msg)
         return
-    else:
-        user = await ctx.find_user(ctx.arg_str, in_server=True, interactive=True)
-        if ctx.cmd_err[0] == -1:
+    user = await ctx.find_user(ctx.arg_str, in_server=True, interactive=True)
+    if ctx.cmd_err[0] == -1:
+        return
+    if not user:
+        await ctx.reply("I couldn't find that user in this server sorry.")
+        return
+    if user == ctx.author:
+        await ctx.reply("You can't give yourself reputation!")
+        return
+    if user == ctx.me:
+        await ctx.reply("Aww thanks!")
+    elif user.bot:
+        await ctx.reply("Bots don't need reputation points!")
+        return
+    if last_rep is not None:
+        given_ago = now_timestamp - int(last_rep)
+        if given_ago < cooldown:
+            msg = f"Cool down! You may give reputation in {ctx.strfdelta(datetime.timedelta(seconds=(cooldown - given_ago)), sec=True)}."
+            await ctx.reply(msg)
             return
-        if not user:
-            await ctx.reply("I couldn't find that user in this server sorry.")
-            return
-        if user == ctx.author:
-            await ctx.reply("You can't give yourself reputation!")
-            return
-        if user == ctx.me:
-            await ctx.reply("Aww thanks!")
-        elif user.bot:
-            await ctx.reply("Bots don't need reputation points!")
-            return
-        if last_rep is not None:
-            given_ago = now_timestamp - int(last_rep)
-            if given_ago < cooldown:
-                msg = "Cool down! You may give reputation in {}.".format(
-                    ctx.strfdelta(
-                        datetime.timedelta(seconds=(cooldown - given_ago)), sec=True
-                    )
-                )
-                await ctx.reply(msg)
-                return
-        rep = await ctx.data.users.get(user.id, "rep")
-        rep = int(rep) + 1 if rep else 1
-        await ctx.data.users.set(user.id, "rep", str(rep))
-        given_rep = await ctx.data.users.get(ctx.authid, "given_rep")
-        given_rep = int(given_rep) + 1 if given_rep else 1
-        await ctx.data.users.set(ctx.authid, "given_rep", str(given_rep))
-        await ctx.data.users.set(ctx.authid, "last_rep_time", str(now.strftime("%s")))
-        await ctx.reply("You have given a reputation point to {}".format(user.mention))
+    rep = await ctx.data.users.get(user.id, "rep")
+    rep = int(rep) + 1 if rep else 1
+    await ctx.data.users.set(user.id, "rep", str(rep))
+    given_rep = await ctx.data.users.get(ctx.authid, "given_rep")
+    given_rep = int(given_rep) + 1 if given_rep else 1
+    await ctx.data.users.set(ctx.authid, "given_rep", str(given_rep))
+    await ctx.data.users.set(ctx.authid, "last_rep_time", str(now.strftime("%s")))
+    await ctx.reply(f"You have given a reputation point to {user.mention}")

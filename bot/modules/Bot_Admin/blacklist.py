@@ -8,11 +8,7 @@ from wards import is_master
 from .module import bot_admin_module as module
 
 
-@module.cmd(
-    "blacklist",
-    desc="Add or remove a user from the blacklist.",
-    flags=["add", "remove"],
-)
+@module.cmd("blacklist", desc="Add or remove a user from the blacklist.", flags=["add", "remove"])
 @is_master()
 async def blacklist_cmd(ctx, flags):
     """
@@ -39,32 +35,26 @@ async def blacklist_cmd(ctx, flags):
 
         if flags["add"]:
             blacklist_interface.insert_many(
-                *((userid, ctx.author.id) for userid in userids),
-                insert_keys=("userid", "added_by"),
+                *((userid, ctx.author.id) for userid in userids), insert_keys=("userid", "added_by")
             )
             ctx.client.objects["user_blacklist"].update(userids)
-            await ctx.reply("Users blacklisted.")
-        elif flags["remove"]:
+            return await ctx.reply("Users blacklisted.")
+        if flags["remove"]:
             blacklist_interface.delete_where(userid=userids)
             ctx.client.objects["user_blacklist"].difference_update(userids)
-            await ctx.reply("Users removed from the blacklist.")
+            return await ctx.reply("Users removed from the blacklist.")
     else:
         blacklist = blacklist_interface.select_where()
         if not blacklist:
             return await ctx.reply("No users blacklisted.")
 
-        blacklist_strs = [
-            "{} by {}".format(buser["userid"], buser["added_by"]) for buser in blacklist
-        ]
-        await ctx.pager(
-            paginate_list(blacklist_strs, title="User blacklist"), locked=False
-        )
+        blacklist_strs = [f"{buser['userid']} by {buser['added_by']}" for buser in blacklist]
+        return await ctx.pager(paginate_list(blacklist_strs, title="User blacklist"), locked=False)
+    return None
 
 
 def refresh_blacklist(client):
-    client.objects["user_blacklist"] = set(
-        (buser["userid"] for buser in client.data.admin_user_blacklist.select_where())
-    )
+    client.objects["user_blacklist"] = {buser["userid"] for buser in client.data.admin_user_blacklist.select_where()}
 
 
 async def autorefresher(client):
@@ -93,7 +83,4 @@ schema = tableSchema(
 # Attach data interface
 @module.data_init_task
 def attach_user_blacklist_data(client):
-    client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema),
-        "admin_user_blacklist",
-    )
+    client.data.attach_interface(tableInterface.from_schema(client.data, client.app, schema), "admin_user_blacklist")

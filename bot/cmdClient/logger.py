@@ -1,5 +1,5 @@
-from typing import Callable
 import logging
+from collections.abc import Callable  # noqa
 
 logger = logging.getLogger()
 

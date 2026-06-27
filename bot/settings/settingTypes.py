@@ -1,10 +1,12 @@
-from enum import Enum
-from typing import Any, List, Optional
+from enum import Enum  # noqa
+from typing import Any
 
 import discord
-from cmdClient import Context, cmdClient
+from cmdClient import Context, cmdClient  # noqa
 from cmdClient.lib import SafeCancellation
 from utils import seekers  # noqa
+
+from settings.GuildSetting import GuildSetting  # noqa
 
 from .errors import BadUserInput
 
@@ -27,28 +29,28 @@ class SettingType:
 
     # Raw converters
     @classmethod
-    def _data_from_value(cls, client: cmdClient, guildid: int, value, **kwargs):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value, **kwargs):
         """
         Convert a high-level setting value to internal data.
         """
         raise NotImplementedError
 
     @classmethod
-    def _data_to_value(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         """
         Convert internal data to high-level setting value.
         """
         raise NotImplementedError
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Parse user provided input into internal data.
         """
         raise NotImplementedError
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
         """
         Convert internal data into a formatted user-readable string.
         """
@@ -77,9 +79,7 @@ class Boolean(SettingType):
     _outputs = {True: "On", False: "Off"}
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: bool | None, **kwargs):
         """
         Both data and value are of type Optional[bool].
         Directly return the provided value as data.
@@ -87,9 +87,7 @@ class Boolean(SettingType):
         return value
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[bool], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: bool | None, **kwargs):
         """
         Both data and value are of type Optional[bool].
         Directly return the internal data as the value.
@@ -97,7 +95,7 @@ class Boolean(SettingType):
         return data
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Looks up the provided string in the truthy and falsey tables.
         """
@@ -106,13 +104,12 @@ class Boolean(SettingType):
             return None
         if _userstr in cls._truthy:
             return True
-        elif _userstr in cls._falsey:
+        if _userstr in cls._falsey:
             return False
-        else:
-            raise BadUserInput("Unknown boolean type `{}`".format(userstr))
+        raise BadUserInput(f"Unknown boolean type `{userstr}`")
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: bool, **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: bool, **kwargs):
         """
         Pass the provided value through the outputs map.
         """
@@ -137,9 +134,7 @@ class Integer(SettingType):
     _max = 4096
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[bool], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: bool | None, **kwargs):
         """
         Both data and value are of type Optional[int].
         Directly return the provided value as data.
@@ -147,9 +142,7 @@ class Integer(SettingType):
         return value
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[bool], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: bool | None, **kwargs):
         """
         Both data and value are of type Optional[int].
         Directly return the internal data as the value.
@@ -157,7 +150,7 @@ class Integer(SettingType):
         return data
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Relies on integer casting to convert the user string
         """
@@ -171,22 +164,19 @@ class Integer(SettingType):
 
         if num > cls._max:
             raise BadUserInput("Provided integer was too large!")
-        elif num < cls._min:
+        if num < cls._min:
             raise BadUserInput("Provided integer was too small!")
 
         return num
 
     @classmethod
-    def _format_data(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Return the string version of the data.
         """
         if data is None:
             return None
-        else:
-            return str(data)
+        return str(data)
 
 
 class String(SettingType):
@@ -213,25 +203,21 @@ class String(SettingType):
     _quote: bool = True
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[str], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: str | None, **kwargs):
         """
         Return the provided value string as the data string.
         """
         return value
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[str], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: str | None, **kwargs):
         """
         Return the provided data string as the value string.
         """
         return data
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Check that the user-entered string is of the correct length.
         Accept "None" to unset.
@@ -239,31 +225,21 @@ class String(SettingType):
         if userstr.lower() == "none":
             # Unsetting case
             return None
-        elif cls._maxlen is not None and len(userstr) > cls._maxlen:
-            raise BadUserInput(
-                "Provided string was too long! Maximum length is `{}`".format(
-                    cls._maxlen
-                )
-            )
-        elif cls._options is not None and userstr.lower() not in cls._options:
-            raise BadUserInput(
-                "Invalid option! Valid options are `{}`".format(
-                    "`, `".join(cls._options)
-                )
-            )
-        else:
-            return userstr
+        if cls._maxlen is not None and len(userstr) > cls._maxlen:
+            raise BadUserInput(f"Provided string was too long! Maximum length is `{cls._maxlen}`")
+        if cls._options is not None and userstr.lower() not in cls._options:
+            raise BadUserInput("Invalid option! Valid options are `{}`".format("`, `".join(cls._options)))
+        return userstr
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: str, **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: str, **kwargs):
         """
         Wrap the string in backtics for formatting.
         Handle the special case where the string is empty.
         """
         if data:
-            return "`{}`".format(data) if cls._quote else str(data)
-        else:
-            return None
+            return f"`{data}`" if cls._quote else str(data)
+        return None
 
 
 class IntegerEnum(SettingType):
@@ -280,53 +256,48 @@ class IntegerEnum(SettingType):
     accepts = "A valid option."
 
     # Enum to use for mapping values
-    _enum: Enum = None
+    _enum: type[Enum] = None
 
     # Custom map to format the value. If None, uses the enum names.
     _output_map = None
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[Any], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: Any | None, **kwargs):
         """
         Return the value corresponding to the enum member
         """
         if value is not None:
             return value.value
+        return None
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Return the enum member corresponding to the provided integer
         """
         if data is not None:
             return cls._enum(data)
+        return None
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Find the corresponding enum member's value to the provided user input.
         Accept "None" to unset.
         """
         userstr = userstr.lower()
 
-        options = {
-            name.lower(): mem.value for name, mem in cls._enum.__members__.items()
-        }
+        options = {name.lower(): mem.value for name, mem in cls._enum.__members__.items()}
 
         if userstr == "none":
             # Unsetting case
             return None
-        elif userstr not in options:
+        if userstr not in options:
             raise BadUserInput("Invalid option!")
-        else:
-            return options[userstr]
+        return options[userstr]
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: int, **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: int, **kwargs):
         """
         Format the data using either the `_enum` or the provided output map.
         """
@@ -334,8 +305,8 @@ class IntegerEnum(SettingType):
             value = cls._enum(data)
             if cls._output_map:
                 return cls._output_map[value]
-            else:
-                return value.name
+            return value.name
+        return None
 
 
 class Member(SettingType):
@@ -352,18 +323,14 @@ class Member(SettingType):
     accepts = "Member mention/id/name. Use 'None' to clear the setting."
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[discord.Member], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: discord.Member | None, **kwargs):
         """
         Returns the member id.
         """
         return value.id if value is not None else None
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Uses the client to look up the guild and member.
         Returns the Member if found, otherwise None.
@@ -381,31 +348,26 @@ class Member(SettingType):
         return member
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Pass to the member seeker utility to find the requested member.
         Handle `0` and variants of `None` to unset.
         """
         if userstr.lower() in ("0", "none"):
             return None
-        else:
-            member = await ctx.find_member(userstr, interactive=True)
-            if member is None:
-                raise SafeCancellation
-            else:
-                return member.id
+        member = await ctx.find_member(userstr, interactive=True)
+        if member is None:
+            raise SafeCancellation
+        return member.id
 
     @classmethod
-    def _format_data(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Retrieve an artifically created user mention.
         """
         if data is None:
             return None
-        else:
-            return "<@!{}>".format(data)
+        return f"<@!{data}>"
 
 
 class Role(SettingType):
@@ -428,18 +390,14 @@ class Role(SettingType):
     _strict = True
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, value: Optional[discord.Role], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: discord.Role | None, **kwargs):
         """
         Returns the role id.
         """
         return value.id if value is not None else None
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Uses the client to look up the guild and role id.
         Returns the role if found, otherwise returns a `discord.Object` with the id set,
@@ -457,40 +415,34 @@ class Role(SettingType):
 
         if role is not None:
             return role
-        elif not cls._strict:
+        if not cls._strict:
             return discord.Object(id=data)
-        else:
-            return None
+        return None
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Pass to the role seeker utility to find the requested role.
         Handle `0` and variants of `None` to unset.
         """
         if userstr.lower() in ("0", "none"):
             return None
-        else:
-            role = await ctx.find_role(userstr, create=True, interactive=True)
-            if role is None:
-                raise SafeCancellation
-            else:
-                return role.id
+        role = await ctx.find_role(userstr, create=True, interactive=True)
+        if role is None:
+            raise SafeCancellation
+        return role.id
 
     @classmethod
-    def _format_data(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Retrieve the role name if found, otherwise the role id or None depending on `_strict`.
         """
         role = cls._data_to_value(client, guildid, data, **kwargs)
         if role is None:
             return None
-        elif isinstance(role, discord.Role):
+        if isinstance(role, discord.Role):
             return role.mention
-        else:
-            return "`{}`".format(role.id)
+        return f"`{role.id}`"
 
 
 class Channel(SettingType):
@@ -507,22 +459,14 @@ class Channel(SettingType):
     accepts = "Channel mention/id/name, or 'None' to unset"
 
     @classmethod
-    def _data_from_value(
-        cls,
-        client: cmdClient,
-        guildid: int,
-        value: Optional[discord.abc.GuildChannel],
-        **kwargs,
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: discord.abc.GuildChannel | None, **kwargs):
         """
         Returns the channel id.
         """
         return value.id if value is not None else None
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Uses the client to look up the channel id.
         Returns the Channel if found, otherwise None.
@@ -534,32 +478,27 @@ class Channel(SettingType):
         return client.get_channel(data)
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Pass to the channel seeker utility to find the requested channel.
         Handle `0` and variants of `None` to unset.
         """
         if userstr.lower() in ("0", "none"):
             return None
-        else:
-            channel = await ctx.find_channel(userstr, interactive=True)
-            if channel is None:
-                raise SafeCancellation
-            else:
-                return channel.id
+        channel = await ctx.find_channel(userstr, interactive=True)
+        if channel is None:
+            raise SafeCancellation
+        return channel.id
 
     @classmethod
-    def _format_data(
-        cls, client: cmdClient, guildid: int, data: Optional[int], **kwargs
-    ):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: int | None, **kwargs):
         """
         Retrieve an artifically created channel mention.
         If the channel does not exist, this will show up as invalid-channel.
         """
         if data is None:
             return None
-        else:
-            return "<#{}>".format(data)
+        return f"<#{data}>"
 
 
 class Emoji(SettingType):
@@ -585,15 +524,10 @@ class Emoji(SettingType):
         else:
             # TODO: Check whether this is a valid emoji
             return discord.PartialEmoji(emojistr)
+        return None
 
     @classmethod
-    def _data_from_value(
-        cls,
-        client: cmdClient,
-        guildid: int,
-        value: Optional[discord.PartialEmoji],
-        **kwargs,
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, value: discord.PartialEmoji | None, **kwargs):
         """
         Both data and value are of type Optional[discord.PartialEmoji].
         Directly return the provided value as data.
@@ -601,13 +535,7 @@ class Emoji(SettingType):
         return value
 
     @classmethod
-    def _data_to_value(
-        cls,
-        client: cmdClient,
-        guildid: int,
-        data: Optional[discord.PartialEmoji],
-        **kwargs,
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: discord.PartialEmoji | None, **kwargs):
         """
         Both data and value are of type Optional[discord.PartialEmoji].
         Directly return the internal data as the value.
@@ -615,31 +543,23 @@ class Emoji(SettingType):
         return data
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Pass to the emoji string parser to get the emoji.
         Handle `0` and variants of `None` to unset.
         """
         if userstr.lower() in ("0", "none"):
             return None
-        else:
-            return cls._parse_emoji(userstr)
+        return cls._parse_emoji(userstr)
 
     @classmethod
-    def _format_data(
-        cls,
-        client: cmdClient,
-        guildid: int,
-        data: Optional[discord.PartialEmoji],
-        **kwargs,
-    ):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: discord.PartialEmoji | None, **kwargs):
         """
         Return a string form of the partial emoji, which generally displays the emoji.
         """
         if data is None:
             return None
-        else:
-            return str(data)
+        return str(data)
 
 
 # TODO: append and remove methods?
@@ -661,82 +581,67 @@ class SettingList(SettingType):
     """
 
     # Base setting type to make the list from
-    _setting = None  # type: Union[SettingType, GuildSetting]
+    _setting: type[SettingType | GuildSetting] = None
 
     # Whether 'None' values are filtered out of the data when creating values
-    _allow_null_values = False  # type: Bool
+    _allow_null_values: bool = False
 
     # Whether duplicate data values should be filtered out
-    _force_unique = False
+    _force_unique: bool = False
 
     @classmethod
-    def _data_from_value(
-        cls, client: cmdClient, guildid: int, values: Optional[List[Any]], **kwargs
-    ):
+    def _data_from_value(cls, client: type[cmdClient], guildid: int, values: list[Any] | None, **kwargs):
         """
         Returns the setting type data for each value in the value list
         """
         if values is None:
             # Special behaviour here, store an empty list instead of None
             return []
-        else:
-            return [
-                cls._setting._data_from_value(client, guildid, value)
-                for value in values
-            ]
+        return [cls._setting._data_from_value(client, guildid, value) for value in values]
 
     @classmethod
-    def _data_to_value(
-        cls, client: cmdClient, guildid: int, data: Optional[List[Any]], **kwargs
-    ):
+    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: list[Any] | None, **kwargs):
         """
         Returns the setting type value for each entry in the data list
         """
         if data is None:
             return []
-        else:
-            values = [
-                cls._setting._data_to_value(client, guildid, entry) for entry in data
-            ]
+        values = [cls._setting._data_to_value(client, guildid, entry) for entry in data]
 
-            # Filter out null values if required
-            if not cls._allow_null_values:
-                values = [value for value in values if value is not None]
-            return values
+        # Filter out null values if required
+        if not cls._allow_null_values:
+            values = [value for value in values if value is not None]
+        return values
 
     @classmethod
-    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
         """
         Splits the user string across `,` to break up the list.
         Handle `0` and variants of `None` to unset.
         """
         if userstr.lower() in ("0", "none"):
             return []
-        else:
-            data = []
-            for item in userstr.split(","):
-                data.append(
-                    await cls._setting._parse_userstr(ctx, guildid, item.strip())
-                )
+        data = []
+        for item in userstr.split(","):
+            data.append(await cls._setting._parse_userstr(ctx, guildid, item.strip()))
 
-            if cls._force_unique:
-                data = list(set(data))
-            return data
+        if cls._force_unique:
+            data = list(set(data))
+        return data
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: List[Any], **kwargs):
+    def _format_data(cls, client: type[cmdClient], guildid: int, data: list[Any], **kwargs):
         """
         Format the list by adding `,` between each formatted item
         """
         if not data:
             return None
-        else:
-            formatted_items = []
-            for item in data:
-                formatted_item = cls._setting._format_data(client, guildid, item)
-                if formatted_item is not None:
-                    formatted_items.append(formatted_item)
-            return ", ".join(formatted_items)
+        formatted_items = []
+        for item in data:
+            formatted_item = cls._setting._format_data(client, guildid, item)
+            if formatted_item is not None:
+                formatted_items.append(formatted_item)
+        return ", ".join(formatted_items)
 
 
 class ChannelList(SettingList):

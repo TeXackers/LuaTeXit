@@ -16,10 +16,7 @@ class guild_prefix(ColumnData, String, GuildSetting):
     name = "prefix"
     desc = "Custom guild prefix."
 
-    long_desc = (
-        "Command prefix to use instead of the default one. "
-        "Mentions and custom user prefixes will still apply."
-    )
+    long_desc = "Command prefix to use instead of the default one. Mentions and custom user prefixes will still apply."
 
     _maxlen = 10
 
@@ -48,14 +45,9 @@ class guild_prefix(ColumnData, String, GuildSetting):
         Load the custom guild prefixes into cache.
         """
         rows = client.data.guild_prefixes.select_where()
-        client.objects["guild_prefix_cache"] = {
-            row["guildid"]: row["prefix"] for row in rows
-        }
+        client.objects["guild_prefix_cache"] = {row["guildid"]: row["prefix"] for row in rows}
 
-        client.log(
-            f"r     |--custom prefixes: {len(rows)}",
-            context="Guild Admin",
-        )
+        client.log(f"r     |--custom prefixes: {len(rows)}", context="Guild Admin")
 
 
 # Define data schema
@@ -71,6 +63,5 @@ schema = tableSchema(
 @module.data_init_task
 def attach_prefix_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False),
-        "guild_prefixes",
+        tableInterface.from_schema(client.data, client.app, schema, shared=False), "guild_prefixes"
     )

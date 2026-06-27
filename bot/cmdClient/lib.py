@@ -66,9 +66,7 @@ def flag_parser(args: str, flags: list[str] = []) -> tuple[dict[str, str | bool]
     params: list[str] = re.split(r"(\S+)", args)
 
     final_flags: dict[str, str | bool] = {flag.strip("="): False for flag in flags}
-    indexes: list[
-        tuple[int, str]
-    ] = []  # Indices in the params list where the flags appear
+    indexes: list[tuple[int, str]] = []  # Indices in the params list where the flags appear
     end_params: list[str] = []  # The tail of the parameter list, after -- appears
 
     # Handle appearance of the flag terminator
@@ -96,10 +94,7 @@ def flag_parser(args: str, flags: list[str] = []) -> tuple[dict[str, str | bool]
 
     # Build the parameters and flag arguments
     final_params: list[str] = []
-    if len(indexes) > 0:
-        final_params = params[0 : indexes[0][0]]
-    else:
-        final_params = params.copy()
+    final_params = params[0 : indexes[0][0]] if len(indexes) > 0 else params.copy()
 
     for i, (index, flag) in enumerate(indexes):
         # Get the parameters between this flag and the next, or the end
@@ -112,10 +107,7 @@ def flag_parser(args: str, flags: list[str] = []) -> tuple[dict[str, str | bool]
             final_flags[clean_flag] = "".join(flag_params).strip()
         elif flag.endswith("="):
             # Find the first non-whitespace param, if it exists
-            j, arg = next(
-                ((j, arg) for j, arg in enumerate(flag_params) if arg.strip()),
-                (len(flag_params), None),
-            )
+            j, arg = next(((j, arg) for j, arg in enumerate(flag_params) if arg.strip()), (len(flag_params), None))
 
             final_flags[clean_flag] = arg or ""
 

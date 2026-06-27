@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import traceback
+from collections.abc import Callable  # noqa
 
 import discord
 from cmdClient import Context, Module, cmdClient
@@ -24,8 +25,8 @@ class paraModule(Module):
 
         self.guild_settings = []
 
-        self.hidden: bool = False
-        self.disabled: bool = False
+        self.baseCommand.hidden = False
+        self.baseCommand.disabled = False
 
     def guild_setting(self, cls):
         """
@@ -36,14 +37,11 @@ class paraModule(Module):
         log(f"+     |-/{cls.attr_name}", context=self.name)
         return cls
 
-    def initialise(self, client):
+    def initialise(self, client: type[cmdClient]):
         if self.guild_settings and not self.initialised:
             log("guild", context=self.name)
             for setting in self.guild_settings:
-                log(
-                    f"+     |--{setting.attr_name}",
-                    context=self.name,
-                )
+                log(f"+     |--{setting.attr_name}", context=self.name)
                 guild_config.attach_setting(setting)
                 setting.initialise(client)
 
@@ -55,20 +53,26 @@ class paraModule(Module):
 
         super().initialise(client)
 
-    async def pre_command(self, ctx):
+    async def pre_command(self, ctx: type[Context]):
         if ctx.guild:
             disabled = ctx.client.objects["disabled_guild_commands"]
-            if ctx.guild.id in disabled and ctx.cmd.name in disabled[ctx.guild.id]:
-                if not ctx.author.guild_permissions.administrator:
-                    raise SafeCancellation
+            if (
+                ctx.guild.id in disabled
+                and ctx.cmd.name in disabled[ctx.guild.id]
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise SafeCancellation
 
             # Handle blacklisted guild channels
             disabled = ctx.client.objects["disabled_guild_channels"]
-            if ctx.guild.id in disabled and ctx.ch.id in disabled[ctx.guild.id]:
-                if not ctx.author.guild_permissions.administrator:
-                    raise SafeCancellation
+            if (
+                ctx.guild.id in disabled
+                and ctx.ch.id in disabled[ctx.guild.id]
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise SafeCancellation
 
-    def data_init_task(self, func):
+    def data_init_task(self, func: Callable[[type[cmdClient]], None]) -> Callable[[type[cmdClient]], None]:
         """
         Decorator which adds a data initialisation task.
         These tasks accept a client,
@@ -76,13 +80,10 @@ class paraModule(Module):
         The primary purpose is to attach the data interfaces for each module.
         """
         self.data_init_tasks.append(func)
-        log(
-            f"a     |--{func.__name__}",
-            context=self.name,
-        )
+        log(f"a     |--{func.__name__}", context=self.name)
         return func
 
-    def initialise_data(self, client):
+    def initialise_data(self, client: type[cmdClient]):
         """
         Data initialise hook.
         """
@@ -90,20 +91,14 @@ class paraModule(Module):
             log("data init", context=self.name)
 
             for task in self.data_init_tasks:
-                log(
-                    f"t     |--[task] {task.__name__}",
-                    context=self.name,
-                )
+                log(f"t     |--[task] {task.__name__}", context=self.name)
                 task(client)
 
             self.data_initialised = True
         else:
-            log(
-                "s     |--[skip]",
-                context=self.name,
-            )
+            log("s     |--[skip]", context=self.name)
 
-    async def on_exception(self, ctx: Context, exception: Exception):
+    async def on_exception(self, ctx: type[Context], exception: Exception):
         try:
             raise exception
         except (FailedCheck, SafeCancellation):
@@ -116,9 +111,7 @@ class paraModule(Module):
             # Unknown uncaught Forbidden
             try:
                 # Attempt a general error reply
-                await ctx.error_reply(
-                    "I don't have enough permissions here to complete the command!"
-                )
+                await ctx.error_reply("I don't have enough permissions here to complete the command!")
             except discord.Forbidden:
                 # We can't send anything at all. Exit quietly, but log.
                 full_traceback = traceback.format_exc()
@@ -130,24 +123,18 @@ class paraModule(Module):
                         f"in guild '{ctx.msg.guild}' (gid:{ctx.msg.guild.id if ctx.msg.guild else None}) "
                         f"in channel '{ctx.msg.channel}' (cid:{ctx.msg.channel.id}).\n"
                         "Message Content:\n"
-                        f"{
-                            '\n'.join(
-                                '\t' + line for line in ctx.msg.content.splitlines()
-                            )
-                        }\n"
+                        f"{'\n'.join('\t' + line for line in ctx.msg.content.splitlines())}\n"
                         f"{full_traceback}\n\n"
                         f"{ctx.flatten()}"
                     ),
-                    context="mid:{}".format(ctx.msg.id),
+                    context=f"mid:{ctx.msg.id}",
                     level=logging.WARNING,
                 )
 
         except Exception as e:
             # Unknown exception!
             full_traceback = traceback.format_exc()
-            only_error = "".join(
-                traceback.TracebackException.from_exception(e).format_exception_only()
-            )
+            only_error = "".join(traceback.TracebackException.from_exception(e).format_exception_only())
             # Handle the error message being too long to display in the embed
             # Discord can throw error messages over the embed field limit
             if len(only_error) > 2000:

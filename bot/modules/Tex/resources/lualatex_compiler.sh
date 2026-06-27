@@ -8,9 +8,8 @@ if grep -o '<a\?:[a-zA-Z0-9_]\{2,\}:[0-9]\+>' $1.tex >$1.emotes; then
     sed -i 's/<a\?:\([a-zA-Z0-9_]\{2,\}\):\([0-9]\+\)>/{\\texitemote{\1}{}{\2.png}}/g' $1.tex
 fi
 
-timeout --kill-after=2m 1m lualatex \
+timeout --kill-after=2m 1m lualatex -no-shell-escape \
     -interaction=nonstopmode -halt-on-error \
-    -cnf-line 'opening_any=p' -cnf-line 'openout_any=p'\
     "$1.tex" > $1.log #2>&1
 
 RET=$?
@@ -23,7 +22,6 @@ then
     printf '%s\n' '\usepackage{fontspec}\setmainfont{DIN Condensed}' '\begin{document}' '\MakeUppercase{Недостаточно часов}' '\end{document}' >> failed.tex
     timeout 10 \
         lualatex -no-shell-escape \
-            -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
             failed.tex >> /dev/null
     cp failed.pdf "$1.pdf"
     if [ ! -f "$1.pdf" ];

@@ -3,8 +3,8 @@ from .module import latex_module as module
 
 async def latex_exthelp(ctx):
     await ctx.reply(
-        "Please see `{}help tex` for help with the `tex` command. "
-        "Extended documentation on LaTeX usage coming soon!".format(ctx.best_prefix())
+        f"Please see `{ctx.best_prefix()}help tex` for help with the `tex` command. "
+        "Extended documentation on LaTeX usage coming soon!"
     )
 
 

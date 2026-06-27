@@ -3,7 +3,7 @@ import urllib
 
 import aiohttp
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 
 from .module import fun_module as module
 
@@ -26,11 +26,9 @@ Commands provided:
 
 
 @module.cmd(
-    "image",
-    desc="Searches Pixabay for images matching the specified text.",
-    aliases=["imagesearch", "images", "img"],
+    "image", desc="Searches Pixabay for images matching the specified text.", aliases=["imagesearch", "images", "img"]
 )
-async def cmd_image(ctx: Context):
+async def cmd_image(ctx: type[Context]):
     """
     Usage``:
         {prefix}image <image text>
@@ -45,39 +43,30 @@ async def cmd_image(ctx: Context):
     if not ctx.arg_str:
         return await ctx.reply("Please enter something to search for.")
     search_for = urllib.parse.quote_plus(ctx.arg_str)
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get(
-            "https://pixabay.com/api/?key={}&q={}&image_type=photo".format(
-                API_KEY, search_for
-            )
-        ) as r:
-            if r.status == 200:
-                js = await r.json()
-                hits = js["hits"] if "hits" in js else None
-                if not hits:
-                    return await ctx.reply("Didn't get any results for this query!")
-                hit_pages = []
-                for hit in [random.choice(hits) for i in range(20)]:
-                    embed = discord.Embed(
-                        title="Here you go!", color=discord.Colour.light_grey()
-                    )
-                    if "webformatURL" in hit:
-                        embed.set_image(url=hit["webformatURL"])
-                    else:
-                        continue
-                    embed.set_footer(text="Images thanks to the free Pixabay API!")
-                    hit_pages.append(embed)
-                await ctx.offer_delete(await ctx.pager(hit_pages))
-            else:
-                return await ctx.error_reply(
-                    "An error occurred while fetching images. Please try again later."
-                )
+    async with (
+        aiohttp.ClientSession() as sess,
+        sess.get(f"https://pixabay.com/api/?key={API_KEY}&q={search_for}&image_type=photo") as r,
+    ):
+        if r.status == 200:
+            js = await r.json()
+            hits = js.get("hits") if "hits" in js else None
+            if not hits:
+                return await ctx.reply("Didn't get any results for this query!")
+            hit_pages = []
+            for hit in [random.choice(hits) for i in range(20)]:
+                embed = discord.Embed(title="Here you go!", color=discord.Colour.light_grey())
+                if "webformatURL" in hit:
+                    embed.set_image(url=hit["webformatURL"])
+                else:
+                    continue
+                embed.set_footer(text="Images thanks to the free Pixabay API!")
+                hit_pages.append(embed)
+            return await ctx.offer_delete(await ctx.pager(hit_pages))
+        return await ctx.error_reply("An error occurred while fetching images. Please try again later.")
 
 
-@module.cmd(
-    "dog", desc="Sends a random dog image", aliases=["doge", "pupper", "doggo", "woof"]
-)
-async def cmd_dog(ctx: Context):
+@module.cmd("dog", desc="Sends a random dog image", aliases=["doge", "pupper", "doggo", "woof"])
+async def cmd_dog(ctx: type[Context]):
     """
     Usage``:
         {prefix}dog
@@ -85,30 +74,22 @@ async def cmd_dog(ctx: Context):
         Replies with a random dog image!
     """
     BASE_URL = "http://random.dog/"
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get("http://random.dog/woof") as r:
-            if r.status == 200:
-                dog = await r.text()
-                embed = discord.Embed(
-                    description="[Woof!]({})".format(BASE_URL + dog),
-                    color=discord.Colour.light_grey(),
-                )
-                try:
-                    embed.set_image(url=BASE_URL + dog)
-                except Exception:
-                    return await ctx.error_reply(
-                        "The file returned was an invalid format. Please try again."
-                    )
-                else:
-                    await ctx.reply(embed=embed)
+    async with aiohttp.ClientSession() as sess, sess.get("http://random.dog/woof") as r:
+        if r.status == 200:
+            dog = await r.text()
+            embed = discord.Embed(description=f"[Woof!]({BASE_URL + dog})", color=discord.Colour.light_grey())
+            try:
+                embed.set_image(url=BASE_URL + dog)
+            except Exception:
+                return await ctx.error_reply("The file returned was an invalid format. Please try again.")
             else:
-                return await ctx.error_reply(
-                    "An error occurred while fetching dogs. Please try again later."
-                )
+                await ctx.reply(embed=embed)
+        else:
+            return await ctx.error_reply("An error occurred while fetching dogs. Please try again later.")
 
 
 @module.cmd("duck", desc="Sends a random duck image", aliases=["quack"], flags=["gif"])
-async def cmd_duck(ctx: Context, flags):
+async def cmd_duck(ctx: type[Context], flags):
     """
     Usage``:
         {prefix}duck [-gif]
@@ -118,31 +99,19 @@ async def cmd_duck(ctx: Context, flags):
         gif: Force the response to be in GIF format.
     """
     img_type = "gif" if flags["gif"] else random.choice(["gif", "jpg"])
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get(
-            "http://random-d.uk/api/v1/quack?type={}".format(img_type)
-        ) as r:
-            if r.status == 200:
-                js = await r.json()
-                embed = discord.Embed(
-                    description="[Quack!]({})".format(js["url"]),
-                    color=discord.Colour.light_grey(),
-                )
-                embed.set_image(url=js["url"])
-                await ctx.reply(embed=embed)
-            else:
-                return await ctx.error_reply(
-                    "An error occurred while fetching ducks. Please try again later."
-                )
+    async with aiohttp.ClientSession() as sess, sess.get(f"http://random-d.uk/api/v1/quack?type={img_type}") as r:
+        if r.status == 200:
+            js = await r.json()
+            embed = discord.Embed(description="[Quack!]({})".format(js["url"]), color=discord.Colour.light_grey())
+            embed.set_image(url=js["url"])
+            return await ctx.reply(embed=embed)
+        return await ctx.error_reply("An error occurred while fetching ducks. Please try again later.")
 
 
 @module.cmd(
-    "cat",
-    desc="Sends a random cat image",
-    aliases=["meow", "purr", "pussy"],
-    flags=["t==", "c==", "cc=", "cs="],
+    "cat", desc="Sends a random cat image", aliases=["meow", "purr", "pussy"], flags=["t==", "c==", "cc=", "cs="]
 )
-async def cmd_cat(ctx: Context, flags):
+async def cmd_cat(ctx: type[Context], flags):
     """
     Usage``:
         {prefix}cat
@@ -171,18 +140,10 @@ async def cmd_cat(ctx: Context, flags):
         else:
             caption = False
 
-        if flags["cc"]:
-            if flags["cs"]:
-                colour = "&color={}".format(flags["cc"])
-            else:
-                colour = "?color={}".format(flags["cc"])
-        else:
-            colour = False
-
-        if flags["cs"]:
-            size = "?size={}".format(flags["cs"])
-        else:
-            size = False
+        colour: str | bool = (
+            f"&color={flags['cc']}" if flags["cs"] else f"?color={flags['cc']}" if flags["cc"] else False
+        )
+        size: str | bool = f"?size={flags['cs']}" if flags["cs"] else False
 
         async with sess.get(FINAL_URL) as r:
             if r.status == 200:
@@ -195,7 +156,7 @@ async def cmd_cat(ctx: Context, flags):
                     return await ctx.error_reply("No images with that tag were found.")
                 cid = cat["id"]
                 # If a caption is provided, append it to the URL.
-                url = BASE_URL + "cat/{}".format(cid)
+                url = BASE_URL + f"cat/{cid}"
                 if caption:
                     url += caption
 
@@ -205,42 +166,28 @@ async def cmd_cat(ctx: Context, flags):
                 if colour:
                     url += colour
 
-                embed = discord.Embed(
-                    description="[Meow!]({})".format(url),
-                    color=discord.Colour.light_grey(),
-                )
+                embed = discord.Embed(description=f"[Meow!]({url})", color=discord.Colour.light_grey())
                 embed.set_image(url=url)
                 # If the image has tags, list them in the footer.
                 if cat["tags"]:
-                    embed.set_footer(
-                        text="Tags: {}".format(", ".join(ct for ct in cat["tags"]))
-                    )
-                await ctx.reply(embed=embed)
-            else:
-                return await ctx.error_reply(
-                    "An error occurred while fetching cats. Please try again later."
-                )
+                    embed.set_footer(text="Tags: {}".format(", ".join(ct for ct in cat["tags"])))
+                return await ctx.reply(embed=embed)
+            return await ctx.error_reply("An error occurred while fetching cats. Please try again later.")
 
 
 @module.cmd("holo", desc="Holo")
-async def cmd_holo(ctx: Context):
+async def cmd_holo(ctx: type[Context]):
     """
     Usage``:
         {prefix}holo
     Image:
         Sends a picture of holo, and a random quote
     """
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get("http://images.thewisewolf.dev/random") as r:
-            if r.status == 200:
-                js = await r.json()
-                quote = '"{}"'.format(js["quote"])
-                embed = discord.Embed(
-                    description=quote, color=discord.Colour.light_grey()
-                )
-                embed.set_image(url=js["image"])
-                await ctx.reply(embed=embed)
-            else:
-                return await ctx.error_reply(
-                    "Holo isn't available right now, please come back later"
-                )
+    async with aiohttp.ClientSession() as sess, sess.get("http://images.thewisewolf.dev/random") as r:
+        if r.status == 200:
+            js = await r.json()
+            quote = '"{}"'.format(js["quote"])
+            embed = discord.Embed(description=quote, color=discord.Colour.light_grey())
+            embed.set_image(url=js["image"])
+            return await ctx.reply(embed=embed)
+        return await ctx.error_reply("Holo isn't available right now, please come back later")

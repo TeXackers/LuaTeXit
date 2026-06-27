@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-HELP_FILE = os.path.join(__location__, "help.md")
+__location__ = Path(__file__).parent.resolve()
+HELP_FILE = __location__ / "help.md"
 
-with open(HELP_FILE, "r") as help_file:
+with Path.open(HELP_FILE) as help_file:
     help_str = help_file.read()
 
 
@@ -47,16 +47,12 @@ def load_into(client):
         if module.name in disabled_modules:
             module.enabled = False
         else:
-            module.cmds = [
-                cmd for cmd in module.cmds if cmd.name not in disabled_commands
-            ]
+            module.cmds = [cmd for cmd in module.cmds if cmd.name not in disabled_commands]
 
     client.update_cmdnames()
 
     latex_module = [module for module in client.modules if module.name == "LaTeX"][0]
 
     latex_module.LatexGuild.defaults["autotex"] = True
-    latex_setting = [
-        setting for setting in latex_module.guild_settings if setting.name == "latex"
-    ][0]
+    latex_setting = [setting for setting in latex_module.guild_settings if setting.name == "latex"][0]
     latex_setting._default = True

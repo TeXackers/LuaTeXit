@@ -93,7 +93,7 @@ class Column(tableElement):
             self.col_type.in_mysql,
             " NOT NULL" if self.required else "",
             " AUTO_INCREMENT " if self.autoincrement else "",
-            " DEFAULT {}".format(self.default) if self.default is not None else "",
+            f" DEFAULT {self.default}" if self.default is not None else "",
             " ON UPDATE CURRENT_TIMESTAMP" if self.update_timestamp else "",
         )
 
@@ -104,7 +104,7 @@ class Column(tableElement):
             self.col_type.in_sqlite,
             " NOT NULL" if self.required else "",
             " PRIMARY KEY AUTOINCREMENT " if self.autoincrement else "",
-            " DEFAULT {}".format(self.default) if self.default is not None else "",
+            f" DEFAULT {self.default}" if self.default is not None else "",
         )
 
 
@@ -128,9 +128,7 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value)
-            if self.on_delete is not None
-            else "",
+            f" ON DELETE {self.on_delete.value}" if self.on_delete is not None else "",
         )
 
     @property
@@ -139,9 +137,7 @@ class ForeignKey(tableElement):
             self.local_keys,
             self.foreign_table,
             self.foreign_keys,
-            " ON DELETE {}".format(self.on_delete.value)
-            if self.on_delete is not None
-            else "",
+            f" ON DELETE {self.on_delete.value}" if self.on_delete is not None else "",
         )
 
 
@@ -153,15 +149,11 @@ class Index(tableElement):
 
     @property
     def for_mysql(self):
-        return "CREATE INDEX {} ON {}({});".format(
-            self.name, self.table, ",".join(self.keys)
-        )
+        return "CREATE INDEX {} ON {}({});".format(self.name, self.table, ",".join(self.keys))
 
     @property
     def for_sqlite(self):
-        return "CREATE INDEX {} ON {}({});".format(
-            self.name, self.table, ",".join(self.keys)
-        )
+        return "CREATE INDEX {} ON {}({});".format(self.name, self.table, ",".join(self.keys))
 
 
 class RawElement(tableElement):

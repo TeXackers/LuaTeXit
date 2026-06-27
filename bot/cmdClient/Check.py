@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from functools import wraps
+from typing import TYPE_CHECKING
 
-from typing import Awaitable, Callable
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
-from .Context import Context
+    from .Context import Context
 
 
-class Check(object):
+class Check:
     """
     A `check` to be executed during or before command execution.
 
@@ -54,7 +56,7 @@ class Check(object):
 
         def decorator(func):
             @wraps(func)
-            async def wrapper(ctx: Context, *fargs, **fkargs):
+            async def wrapper(ctx: type[Context], *fargs, **fkargs):
                 result: bool = await self.run(ctx, *args, **kwargs)
                 if not result:
                     raise FailedCheck(self)
@@ -65,7 +67,7 @@ class Check(object):
 
         return decorator
 
-    async def run(self, ctx: Context, *args, **kwargs) -> bool:
+    async def run(self, ctx: type[Context], *args, **kwargs) -> bool:
         """
         Executes this check and returns `True` if it passes or `False` if it fails.
         """

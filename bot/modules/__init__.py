@@ -1,11 +1,10 @@
 from .Bot_Admin import *
 from .Fun import *
+from .Github import *
 from .Guild_Admin import *
 from .Guild_Logging import *
 from .Guild_Moderation import *
 from .Info import *
-
-from .Github import *
 from .Maths import *
 from .Meta import *
 from .Plugins import *

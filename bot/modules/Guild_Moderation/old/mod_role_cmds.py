@@ -1,9 +1,8 @@
 import asyncio
+
 import discord
-
+from mod_utils import multi_action, role_finder, role_result
 from paraCH import paraCH
-
-from mod_utils import role_finder, role_result, multi_action
 
 cmds = paraCH()
 
@@ -19,12 +18,7 @@ async def giverole(ctx, role, **kwargs):
     return 0
 
 
-@cmds.cmd(
-    "giverole",
-    category="Moderation",
-    short_help="Give role(s) to a member",
-    aliases=["gr"],
-)
+@cmds.cmd("giverole", category="Moderation", short_help="Give role(s) to a member", aliases=["gr"])
 @cmds.require("in_server")
 @cmds.require("in_server_has_mod")
 @cmds.execute("user_lookup", in_server=True)
@@ -47,13 +41,7 @@ async def cmd_giverole(ctx):
         await ctx.reply("No users matching that criteria were found.")
         return
     await multi_action(
-        ctx,
-        ctx.params[1:],
-        giverole,
-        role_finder,
-        role_result,
-        "Adding Roles to `{}`...\n".format(user.name),
-        user=user,
+        ctx, ctx.params[1:], giverole, role_finder, role_result, f"Adding Roles to `{user.name}`...\n", user=user
     )
 
 
@@ -129,58 +117,38 @@ async def cmd_rolemod(ctx):
             started = False
             if i >= len(real_users):
                 started = True
-                user_lines.append("\tIdentifying `{}`".format(users[i]))
-                await ctx.bot.edit_message(
-                    out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines)
-                )
+                user_lines.append(f"\tIdentifying `{users[i]}`")
+                await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
                 user = await ctx.find_user(users[i], in_server=True, interactive=True)
                 real_users.append(user)
                 if user is None:
                     if ctx.cmd_err[0] != -1:
-                        user_lines[i] = "\t🚨 Couldn't find user `{}`, skipping".format(
-                            users[i]
-                        )
+                        user_lines[i] = f"\t🚨 Couldn't find user `{users[i]}`, skipping"
                     else:
-                        user_lines[i] = (
-                            "\t🗑 User selection aborted for `{}`, skipping".format(
-                                users[i]
-                            )
-                        )
+                        user_lines[i] = f"\t🗑 User selection aborted for `{users[i]}`, skipping"
                         ctx.cmd_err = (0, "")
-                    await ctx.bot.edit_message(
-                        out_msg,
-                        "{}{}{}".format(intro, "\n".join(user_lines), error_lines),
-                    )
+                    await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
                     continue
             if real_users[i] is None:
                 continue
             user = real_users[i]
             if started:
-                user_lines[i] = "\tModified user `{}` with: ".format(user)
+                user_lines[i] = f"\tModified user `{user}` with: "
             try:
                 if role[0] > 0:
                     await ctx.bot.add_roles(user, role[1])
-                    user_lines[i] += "{}`+{}`".format(
-                        "" if started else ", ", role[1].name
-                    )
+                    user_lines[i] += "{}`+{}`".format("" if started else ", ", role[1].name)
                 else:
                     await ctx.bot.remove_roles(user, role[1])
-                    user_lines[i] += "{}`-{}`".format(
-                        "" if started else ", ", role[1].name
-                    )
+                    user_lines[i] += "{}`-{}`".format("" if started else ", ", role[1].name)
             except discord.Forbidden:
                 if not error_lines:
                     error_lines = "\nErrors:\n"
                 error_lines += "\tI don't have permissions to {} `{}`!\n".format(
-                    "add role `{}` to".format(role[1].name)
-                    if role[0] > 0
-                    else "remove role `{}` from".format(role[1].name),
-                    user,
+                    f"add role `{role[1].name}` to" if role[0] > 0 else f"remove role `{role[1].name}` from", user
                 )
                 await asyncio.sleep(1)
-            await ctx.bot.edit_message(
-                out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines)
-            )
+            await ctx.bot.edit_message(out_msg, "{}{}{}".format(intro, "\n".join(user_lines), error_lines))
 
 
 def load_into(bot):

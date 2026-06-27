@@ -1,42 +1,26 @@
 import re
 
 import discord
-from github.Repository import Repository
+from github.Repository import Repository  # noqa
 from utils.lib import split_text
 
 from .GithubColours import GITHUB_LANG2COLOUR
 
 
-async def _gh_pagination(
-    text,
-    basetitle="",
-    header=None,
-    colour=discord.Color.from_str("#0FBF3E"),
-    syntax="latex",
-):
-    blocks: list[str] = []
-    if text:
-        blocks = split_text(text, 1000, code=True, syntax=syntax)
-    else:
-        blocks = [""]
+async def _gh_pagination(text, basetitle="", header=None, colour=discord.Color.from_str("#0FBF3E"), syntax="latex"):
+    blocks: list[str] = split_text(text, 1000, code=True, syntax=syntax) if text else [""]
     embeds = []
 
     if len(blocks) == 1:
         block = blocks[0] if blocks[0] else ""
-        if header:
-            desc = f"{header}\n\n{block or ''}"
-        else:
-            desc = block if block else None
+        desc = f"{header}\n\n{block or ''}" if header else block if block else None
 
         embed = discord.Embed(title=basetitle, colour=colour, description=desc)
         embeds.append(embed)
 
     elif len(blocks) > 1:
         for i, block in enumerate(blocks):
-            if header:
-                desc = f"{header}\n\n{block or ''}"
-            else:
-                desc = block if block else None
+            desc = f"{header}\n\n{block or ''}" if header else block if block else None
 
             embed = discord.Embed(title=basetitle, colour=colour, description=desc)
             embed.set_footer(text=f"{i + 1} / {len(blocks)}")
@@ -50,7 +34,7 @@ async def gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
 
     msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
-    return msg
+    return await msg
 
 
 async def _syntax_selection(filename) -> str:
@@ -122,7 +106,7 @@ async def sanitise_image(text: str) -> str:
     comment_pattern = r"<!--.*?-->"
     text = re.sub(comment_pattern, "", text)
 
-    return text
+    return await text
 
 
 async def grab_image(text: str) -> list[str] | None:

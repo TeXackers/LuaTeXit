@@ -1,7 +1,7 @@
 import asyncio
 
 import discord
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import ChannelList, GuildSetting, ListData
 from wards import guild_manager
@@ -11,12 +11,10 @@ from .module import guild_admin_module as module
 
 # Define setting command
 @module.cmd(
-    "autoclean",
-    desc="Automatic deletion of messages in the current channel.",
-    aliases=["cleanch", "autodelete"],
+    "autoclean", desc="Automatic deletion of messages in the current channel.", aliases=["cleanch", "autodelete"]
 )
 @guild_manager()
-async def cmd_autoclean(ctx: Context):
+async def cmd_autoclean(ctx: type[Context]):
     """
     Usage``:
         {prefix}autoclean
@@ -46,26 +44,20 @@ async def cmd_autoclean(ctx: Context):
     if cleaned_channels.data and ctx.ch.id in cleaned_channels.data:
         # Remove the channel
         cleaned_channels.remove_channel(ctx.ch.id)
-        await ctx.reply("This channel will no longer be automatically cleaned.")
-    else:
-        # Add the channel
-        delay = cleaned_channels.default_delay
-        if ctx.args:
-            if not ctx.args.isdigit():
-                return await ctx.error_reply(ctx.format_usage())
+        return await ctx.reply("This channel will no longer be automatically cleaned.")
+    # Add the channel
+    delay = cleaned_channels.default_delay
+    if ctx.args:
+        if not ctx.args.isdigit():
+            return await ctx.error_reply(ctx.format_usage())
 
-            delay = int(ctx.args)
-            if not 0 <= delay <= 3600:
-                return await ctx.error_reply(
-                    "Provided `delay` must be less than an hour."
-                )
-        cleaned_channels.add_channel(ctx.ch.id, delay=delay)
-        await ctx.reply(
-            "Messages in this channel will now be "
-            "automatically deleted after `{}` seconds if they are not pinned.".format(
-                delay
-            )
-        )
+        delay = int(ctx.args)
+        if not 0 <= delay <= 3600:
+            return await ctx.error_reply("Provided `delay` must be less than an hour.")
+    cleaned_channels.add_channel(ctx.ch.id, delay=delay)
+    return await ctx.reply(
+        f"Messages in this channel will now be automatically deleted after `{delay}` seconds if they are not pinned."
+    )
 
 
 # Define guild setting
@@ -89,9 +81,7 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
 
     def add_channel(self, channelid, delay=None):
         table = self._get_table_interface(self.client)  # type: tableInterface
-        table.insert(
-            allow_replace=True, guildid=self.guildid, channelid=channelid, delay=delay
-        )
+        table.insert(allow_replace=True, guildid=self.guildid, channelid=channelid, delay=delay)
 
         # Update cache
         current = self.client.objects["cleaned_guild_channels"].get(self.guildid, {})
@@ -103,9 +93,7 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
         table.delete_where(channelid=channelid)
 
         # Update cache
-        self.client.objects["cleaned_guild_channels"].get(self.guildid, {}).pop(
-            channelid, None
-        )
+        self.client.objects["cleaned_guild_channels"].get(self.guildid, {}).pop(channelid, None)
 
     def write(self, **kwargs):
         """
@@ -117,9 +105,7 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
 
         # Update cleaned channel cache for the current guild
         current = self.client.objects["cleaned_guild_channels"].get(self.guildid, {})
-        current.update(
-            {chid: self.default_delay for chid in self.data if chid not in current}
-        )
+        current.update({chid: self.default_delay for chid in self.data if chid not in current})
         to_remove = [chid for chid in current if chid not in self.data]
         for chid in to_remove:
             current.pop(chid)
@@ -142,10 +128,7 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
             channel_counter += 1
 
         client.objects["cleaned_guild_channels"] = cleaned_channels
-        client.log(
-            f"r     |--Cleaned {len(cleaned_channels)} guilds (total: {channel_counter})",
-            context="Guild Admin",
-        )
+        client.log(f"r     |--Cleaned {len(cleaned_channels)} guilds (total: {channel_counter})", context="Guild Admin")
 
 
 # Define event handler
@@ -176,9 +159,7 @@ schema = tableSchema(
     Column("app", ColumnType.SHORTSTRING, primary=True, required=True),
     Column("guildid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("channelid", ColumnType.SNOWFLAKE, primary=True, required=True),
-    Column(
-        "delay", ColumnType.INT, required=True, default=cleaned_channels.default_delay
-    ),
+    Column("delay", ColumnType.INT, required=True, default=cleaned_channels.default_delay),
 )
 
 
@@ -186,6 +167,5 @@ schema = tableSchema(
 @module.data_init_task
 def attach_cleanedchannel_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False),
-        "guild_cleaned_channels",
+        tableInterface.from_schema(client.data, client.app, schema, shared=False), "guild_cleaned_channels"
     )

@@ -3,24 +3,14 @@ import discord
 
 def load_into(bot):
     @bot.util
-    async def find_user(
-        ctx,
-        user_str,
-        in_server=False,
-        interactive=False,
-        limit=20,
-        collection=None,
-        is_member=True,
-    ):
+    async def find_user(ctx, user_str, in_server=False, interactive=False, limit=20, collection=None, is_member=True):
         if user_str == "":
             return None
         maybe_user_id = user_str.strip("<@!> ")
         if is_member:
 
             def is_user(member):
-                return (user_str.lower() in member.display_name.lower()) or (
-                    user_str.lower() in str(member).lower()
-                )
+                return (user_str.lower() in member.display_name.lower()) or (user_str.lower() in str(member).lower())
 
         else:
 
@@ -28,9 +18,7 @@ def load_into(bot):
                 return user_str.lower() in str(member).lower()
 
         collection = (
-            collection
-            if collection is not None
-            else (ctx.server.members if in_server else ctx.bot.get_all_members())
+            collection if collection is not None else (ctx.server.members if in_server else ctx.bot.get_all_members())
         )
         collection = list(collection)
         if maybe_user_id.isdigit():
@@ -47,29 +35,19 @@ def load_into(bot):
             if is_member:
                 names = [
                     "{} {} {}".format(
-                        user.nick
-                        if user.nick
-                        else (
-                            user if collection_names.count(user.name) > 1 else user.name
-                        ),
-                        ("<{}>".format(user)) if user.nick else "",
-                        ("<{}>".format(user.id)) if not in_server else "",
+                        user.nick if user.nick else (user if collection_names.count(user.name) > 1 else user.name),
+                        (f"<{user}>") if user.nick else "",
+                        (f"<{user.id}>") if not in_server else "",
                     )
                     for user in users
                 ]
             else:
-                names = ["{} ({})".format(user, user.id) for user in users]
-            selected = await ctx.selector(
-                "Multiple users found matching `{}`! Please select one.".format(
-                    user_str
-                ),
-                names,
-            )
+                names = [f"{user} ({user.id})" for user in users]
+            selected = await ctx.selector(f"Multiple users found matching `{user_str}`! Please select one.", names)
             if selected is None:
                 return None
             return users[selected]
-        else:
-            return discord.utils.find(is_user, collection)
+        return discord.utils.find(is_user, collection)
 
     @bot.util
     async def offer_create_role(ctx, input, timeout=30):
@@ -80,11 +58,9 @@ def load_into(bot):
             # TODO: Lots of fancy stuff, move this out to an interactive create role utility
             role = await ctx.bot.create_role(ctx.server, name=input)
         except discord.Forbidden:
-            await ctx.reply(
-                "Sorry, it seems I don't have permissions to create a role!"
-            )
+            await ctx.reply("Sorry, it seems I don't have permissions to create a role!")
             return None
-        await ctx.reply("You have created the role `{}`!".format(input))
+        await ctx.reply(f"You have created the role `{input}`!")
         return role
 
     @bot.util
@@ -114,10 +90,7 @@ def load_into(bot):
                 role = None
             else:
                 selected = await ctx.selector(
-                    "Multiple roles found matching `{}`! Please select one.".format(
-                        userstr
-                    ),
-                    [role.name for role in roles],
+                    f"Multiple roles found matching `{userstr}`! Please select one.", [role.name for role in roles]
                 )
                 if selected is None:
                     return None
@@ -136,23 +109,20 @@ def load_into(bot):
             role = discord.utils.find(is_role, collection)
         if role:
             return role
-        else:
-            msg = await ctx.reply("Couldn't find a role matching `{}`!".format(userstr))
-            if create:
-                role = await ctx.offer_create_role(userstr)
-                if not role:
-                    ctx.cmd_err = (1, "Aborting...")
-                    await ctx.bot.delete_message(msg)
-                    return None
+        msg = await ctx.reply(f"Couldn't find a role matching `{userstr}`!")
+        if create:
+            role = await ctx.offer_create_role(userstr)
+            if not role:
+                ctx.cmd_err = (1, "Aborting...")
                 await ctx.bot.delete_message(msg)
-                role = discord.utils.get(ctx.server.roles, id=role.id)
-                return role
-            return None
+                return None
+            await ctx.bot.delete_message(msg)
+            role = discord.utils.get(ctx.server.roles, id=role.id)
+            return role
+        return None
 
     @bot.util
-    async def find_channel(
-        ctx, userstr, create=False, interactive=False, collection=None
-    ):
+    async def find_channel(ctx, userstr, create=False, interactive=False, collection=None):
         if not ctx.server:
             ctx.cmd_err = (1, "This is not valid outside of a server!")
             return None
@@ -168,22 +138,15 @@ def load_into(bot):
         if interactive:
 
             def check(channel):
-                return (channel.id == channelid) or (
-                    userstr.lower() in channel.name.lower()
-                )
+                return (channel.id == channelid) or (userstr.lower() in channel.name.lower())
 
             channels = list(filter(check, collection))
             if len(channels) == 0:
                 channel = None
             else:
                 selected = await ctx.selector(
-                    "Multiple channels found matching `{}`! Please select one.".format(
-                        userstr
-                    ),
-                    [
-                        "{} ({})".format(channel.name, tv[str(channel.type)])
-                        for channel in channels
-                    ],
+                    f"Multiple channels found matching `{userstr}`! Please select one.",
+                    [f"{channel.name} ({tv[str(channel.type)]})" for channel in channels],
                 )
                 if selected is None:
                     return None
@@ -202,6 +165,5 @@ def load_into(bot):
             channel = discord.utils.find(is_channel, collection)
         if channel:
             return channel
-        else:
-            await ctx.reply("Couldn't find a channel matching `{}`!".format(userstr))
-            return None
+        await ctx.reply(f"Couldn't find a channel matching `{userstr}`!")
+        return None

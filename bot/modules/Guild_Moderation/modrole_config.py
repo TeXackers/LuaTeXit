@@ -41,6 +41,5 @@ schema = tableSchema(
 @module.data_init_task
 def attach_modrole_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True),
-        "guild_modroles",
+        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_modroles"
     )

@@ -1,12 +1,14 @@
-import datetime
 import platform
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
-# from datetime import datetime
+if TYPE_CHECKING:
+    import datetime
+
 import discord
 import psutil
-from cmdClient import Context
+from cmdClient import Context  # noqa
 from utils.ctx_addons import best_prefix  # noqa
 from utils.lib import prop_tabulate
 
@@ -29,7 +31,7 @@ Commands provided:
 
 
 @module.cmd("stat", desc="Hardware Stats and Load.")
-async def cmd_curr_load(ctx: Context) -> None:
+async def cmd_curr_load(ctx: type[Context]) -> None:
     table_fields: list = []
 
     # separate for MacOS vs linux
@@ -42,21 +44,11 @@ async def cmd_curr_load(ctx: Context) -> None:
 
         # CPU Name
         table_fields.append(
-            (
-                "CPU",
-                subprocess.check_output(
-                    ["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]
-                )
-                .strip()
-                .decode(),
-            )
+            ("CPU", subprocess.check_output(["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]).strip().decode())
         )
         # CPU
         table_fields.append(
-            (
-                "CPU Load",
-                f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)",
-            )
+            ("CPU Load", f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)")
         )
     else:
         # OS Name
@@ -69,9 +61,7 @@ async def cmd_curr_load(ctx: Context) -> None:
     # Memory
     mem_total: int = psutil.virtual_memory().total >> 20
     mem_used: int = psutil.virtual_memory().used >> 20
-    table_fields.append(
-        ("Memory", f"{mem_used}/{mem_total} MiB ({mem_used / mem_total * 100:.1f}%)")
-    )
+    table_fields.append(("Memory", f"{mem_used}/{mem_total} MiB ({mem_used / mem_total * 100:.1f}%)"))
 
     # Versions
     py_version: str = platform.python_version()
@@ -79,15 +69,7 @@ async def cmd_curr_load(ctx: Context) -> None:
     compiler: str = platform.python_compiler()
     table_fields.append(("Py Version", f"{py_version} ({py_build})"))
 
-    table_fields.append(
-        (
-            "Lua Version",
-            subprocess.check_output(["lua", "-v"])
-            .decode()
-            .split("  ")[0]
-            .replace("Lua ", ""),
-        )
-    )
+    # luatex version
     table_fields.append(
         (
             "LuaTeX Version",
@@ -102,14 +84,13 @@ async def cmd_curr_load(ctx: Context) -> None:
     # Example output:
     # XeTeX 3.141592653-2.6-0.999996 (TeX Live 2024/Arch Linux)
     table_fields.append(
-        (
-            "XeTeX Version",
-            subprocess.check_output(["xetex", "--version"])
-            .decode()
-            .split("\n")[0]
-            .split(" ")[1],
-        )
+        ("XeTeX Version", subprocess.check_output(["xetex", "--version"]).decode().split("\n")[0].split(" ")[1])
     )
+    # Typst version
+    table_fields.append(
+        ("Typst Version", subprocess.check_output(["typst", "--version"]).decode().split("\n")[0].split(" ")[1])
+    )
+    # Compiler version
     table_fields.append(("Compiler", compiler))
 
     # Tabulate
@@ -125,7 +106,7 @@ async def cmd_curr_load(ctx: Context) -> None:
 
 
 @module.cmd("about", desc="Shard status and bot statistics.")
-async def cmd_about(ctx: Context):
+async def cmd_about(ctx: type[Context]):
     """
     Usage``:
         {prefix}about
@@ -136,60 +117,38 @@ async def cmd_about(ctx: Context):
 
     # Current developers
     current_devs = ctx.client.app_info["dev_list"]
-    dev_str = ", ".join(
-        str(ctx.client.get_user(devid) or devid) for devid in current_devs
-    )
+    dev_str = ", ".join(str(ctx.client.get_user(devid) or devid) for devid in current_devs)
     table_fields.append(("Developers", dev_str))
 
     # Shards, guilds, and members
     if ctx.client.shard_count > 1:
-        shard_str = "{} of {}".format(ctx.client.shard_id, ctx.client.shard_count)
+        shard_str = f"{ctx.client.shard_id} of {ctx.client.shard_count}"
         table_fields.append(("Shard", shard_str))
 
-        guild_str = "{} (~{} total)".format(
-            len(ctx.client.guilds), ctx.client.shard_count * len(ctx.client.guilds)
-        )
+        guild_str = f"{len(ctx.client.guilds)} (~{ctx.client.shard_count * len(ctx.client.guilds)} total)"
         table_fields.append(("Shard guilds", guild_str))
 
-        member_str = "{} (~{} total)".format(
-            len(list(ctx.client.get_all_members())),
-            ctx.client.shard_count * len(list(ctx.client.get_all_members())),
-        )
+        member_str = f"{len(list(ctx.client.get_all_members()))} (~{ctx.client.shard_count * len(list(ctx.client.get_all_members()))} total)"
         table_fields.append(("Shard members", member_str))
     else:
         table_fields.append(("Guilds", len(ctx.client.guilds)))
         table_fields.append(("Members", len(list(ctx.client.get_all_members()))))
 
     # Commands
-    table_fields.append(
-        (
-            "Commands",
-            "{}, with {} command keywords".format(
-                len(ctx.client.cmds), len(ctx.client.cmd_names)
-            ),
-        )
-    )
+    table_fields.append(("Commands", f"{len(ctx.client.cmds)}, with {len(ctx.client.cmd_names)} command keywords"))
 
     # Memory
     mem = psutil.virtual_memory()
-    mem_str = "{0:.2f}GB used out of {1:.2f}GB ({2:.1f}%)".format(
-        mem.used / (1024**3), mem.total / (1024**3), mem.used / mem.total * 100
-    )
+    mem_str = f"{mem.used / (1024**3):.1f} GiB used out of {mem.total / (1024**3):.1f} GiB ({mem.used / mem.total * 100:.1f}%)"
     table_fields.append(("Memory", mem_str))
 
     # CPU Usage
-    table_fields.append(("CPU Usage", "{}%".format(psutil.cpu_percent())))
-
-    # API version
-    table_fields.append(
-        ("API version", "{} ({})".format(discord.__version__, discord.version_info[3]))
-    )
-
+    table_fields.append(("CPU Usage", f"{psutil.cpu_percent()}%"))
     # Python version
-    table_fields.append(("Py version", sys.version.split("\n")[0]))
+    table_fields.append(("Python", f"{sys.version.split('\n')[0].split('(')[0]} (discord.py: {discord.__version__})"))
 
     # Platform
-    table_fields.append(("Platform", platform.platform()))
+    table_fields.append(("Platform", platform.platform(terse=True)))
 
     # Tabulate
     fields, values = zip(*table_fields)
@@ -207,17 +166,15 @@ async def cmd_about(ctx: Context):
     )
 
     # Build embed
-    desc = "{}\n{}\n{}".format(info, table, links)
-    embed = discord.Embed(
-        title="About Me", color=discord.Colour.red(), description=desc
-    )
+    desc = f"{info}\n{table}\n{links}"
+    embed = discord.Embed(title="About Me", color=discord.Colour.red(), description=desc)
 
     # Finally, send embed
     await ctx.reply(embed=embed)
 
 
 @module.cmd("ping", desc="Check heartbeat and API latency.", aliases=["pong"])
-async def cmd_ping(ctx: Context):
+async def cmd_ping(ctx: type[Context]):
     """
     Usage``:
         {prefix}ping
@@ -227,20 +184,16 @@ async def cmd_ping(ctx: Context):
     """
     # Edit a message and see how long it takes
     msg = await ctx.reply("Beep")
-    maketime: datetime.datetime = datetime.datetime.now()
+    maketime: datetime.datetime = discord.utils.utcnow()
     await msg.edit(content="Boop")
-    edittime: datetime.datetime = datetime.datetime.now()
+    edittime: datetime.datetime = discord.utils.utcnow()
     latency = (edittime - maketime).microseconds // 1000
 
-    await msg.edit(
-        content="Ping: `{}`ms.\nHeartbeat: `{:.0f}`ms.".format(
-            latency, ctx.client.latency * 1000
-        )
-    )
+    await msg.edit(content=f"Ping: `{latency}`ms.\nHeartbeat: `{ctx.client.latency * 1000:.0f}`ms.")
 
 
 @module.cmd("invite", desc="Sends the bot's invite link", aliases=["inv"])
-async def cmd_invite(ctx: Context):
+async def cmd_invite(ctx: type[Context]):
     """
     Usage``:
         {prefix}invite
@@ -260,6 +213,4 @@ async def cmd_support(ctx):
     Description:
         Sends the invite link to my support guild.
     """
-    await ctx.reply(
-        "Join my support server: {}".format(ctx.client.app_info["support_guild"])
-    )
+    await ctx.reply("Join my support server: {}".format(ctx.client.app_info["support_guild"]))

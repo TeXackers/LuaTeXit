@@ -2,6 +2,7 @@ import json
 
 import aiohttp
 import discord
+from cmdClient import Context  # noqa
 
 from .module import maths_module as module
 
@@ -13,7 +14,7 @@ API_ADDR = "http://api.mathjs.org/v4/"
 
 
 @module.cmd("calc", desc="Calculate short mathematical expressions.")
-async def cmd_calc(ctx):
+async def cmd_calc(ctx: type[Context]):
     """
     Usage``:
         {prefix}calc <expr>
@@ -31,18 +32,15 @@ async def cmd_calc(ctx):
     """
     if not ctx.args:
         return await ctx.error_reply(
-            "Please give me something to evaluate.\n"
-            "See `{}help calc` for usage details.".format(ctx.best_prefix())
+            f"Please give me something to evaluate.\nSee `{ctx.best_prefix()}help calc` for usage details."
         )
     exprs = ctx.args.split("\n")
     request = {"expr": exprs, "precision": 14}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(API_ADDR, data=json.dumps(request)) as resp:
-            answer = await resp.json()
+    async with aiohttp.ClientSession() as session, session.post(API_ADDR, data=json.dumps(request)) as resp:
+        answer = await resp.json()
     if "error" not in answer or "result" not in answer:
         return await ctx.error_reply(
-            "Sorry, could not complete your request.\n"
-            "An unknown error occurred during calculation!"
+            "Sorry, could not complete your request.\nAn unknown error occurred during calculation!"
         )
     if answer["error"]:
         await ctx.reply(
@@ -50,8 +48,8 @@ async def cmd_calc(ctx):
                 discord.utils.escape_mentions(answer["error"])
             )
         )
-        return
-    await ctx.reply(
+        return None
+    return await ctx.reply(
         "Result{}:\n```\n{}\n```\n-# Requested by: {}".format(
             "s" if len(exprs) > 1 else "", "\n".join(answer["result"]), ctx.author
         )

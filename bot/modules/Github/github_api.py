@@ -5,14 +5,14 @@ Provides a quick and easy way to display github issues and pull requests for LaT
 
 import discord
 import github
-from github.Repository import Repository
 from cmdClient import Context
 from github import Auth, Github
+from github.Repository import Repository
 
 from .GithubColours import GithubColour
 from .GithubLayouts import GithubEmbed
 from .module import github_module as module
-from .util import grab_image, sanitise_image, lang2colour
+from .util import grab_image, lang2colour, sanitise_image
 
 
 def is_alnum_with_hyphen(s: str) -> bool:
@@ -94,43 +94,49 @@ async def cmd_github_lookup(ctx: Context, flags):
     github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
     repo: Repository = github_api.get_repo(f"{org}/{reponame}")
 
-    try:
-        _ = repo.full_name
-    except github.UnknownObjectException as e:
-        match e.status:
-            case 302:
-                (reason := "it has been moved permanently [302].")
-            case 304:
-                (reason := "it has not been modified since the last request [304].")
-            case 403:
-                (reason := "access to the repository is forbidden [403].")
-            case 404:
-                (reason := "it does not exist [404].")
-            case _:
-                (
-                    reason
-                    := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
-                        e.status
-                    )
-                )
-
-        await out_msg.delete()
-        return await ctx.error_reply(
-            f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n"
-        )
-
     if not query_issue:
         try:
-            repo.get_contents("README.md")
-        except github.UnknownObjectException:
-            pass
+            _ = repo.updated_at
+        except github.UnknownObjectException as e:
+            match e.status:
+                case 302:
+                    (reason := "it has been moved permanently [302].")
+                case 304:
+                    (reason := "it has not been modified since the last request [304].")
+                case 403:
+                    (reason := "access to the repository is forbidden [403].")
+                case 404:
+                    (reason := "it does not exist [404].")
+                case _:
+                    (
+                        reason
+                        := "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
+                            e.status
+                        )
+                    )
+
+            await out_msg.delete()
+            return await ctx.error_reply(
+                f"\n Could not find `{org}/{reponame}`\n\nThis may be because {reason}\n"
+            )
 
         await out_msg.delete()
 
         desc_text = f"{repo.description if repo.description else 'No description provided.'}\n\n\n"
+        # determine licence display: prefer SPDX id, if NOASSERTION use license name
+        licence_value = "None"
+        if repo.license:
+            if (
+                getattr(repo.license, "spdx_id", None)
+                and repo.license.spdx_id != "NOASSERTION"
+            ):
+                licence_value = repo.license.spdx_id
+            elif getattr(repo.license, "name", None):
+                licence_value = repo.license.name
+
         # add fields
         desc_fields: dict[str, str | int] = {
-            "licence": repo.license.spdx_id if repo.license else "None",
+            "licence": licence_value,
             "stars": repo.stargazers_count,
             "forks": repo.forks,
             "watches": repo.subscribers_count,
@@ -138,11 +144,13 @@ async def cmd_github_lookup(ctx: Context, flags):
         }
 
         # format
-        desc_text += "\n".join(f"`{key:>8}:` {value:<}" for key, value in desc_fields.items())
+        desc_text += "\n".join(
+            f"`{key:>8}:` {value:<}" for key, value in desc_fields.items()
+        )
 
         return await ctx.reply(
             content="",
-            view = GithubEmbed(
+            view=GithubEmbed(
                 title=f"{repo.name}",
                 url=repo.html_url,
                 description=desc_text,
@@ -155,7 +163,7 @@ async def cmd_github_lookup(ctx: Context, flags):
                 created_at=repo.created_at,
                 footer_text=f"Last updated: {discord.utils.format_dt(repo.updated_at, 'R')} | Requested by: {ctx.author.display_name}",
                 images=None,
-            )
+            ),
         )
     else:
         try:

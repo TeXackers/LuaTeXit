@@ -1,4 +1,5 @@
 import github
+from cmdClient import Context
 from github import Auth, Github
 from github.ContentFile import ContentFile
 
@@ -23,7 +24,7 @@ Provides a quick and easy way to display github issues and pull requests for `ta
     aliases=["tblr"],
     flags=["file", "list"],
 )
-async def cmd_tabularray(ctx, flags):
+async def cmd_tabularray(ctx: Context, flags):
     """
     Usage``:
         {prefix}tblr <issue/PR number>
@@ -56,98 +57,83 @@ async def cmd_tabularray(ctx, flags):
             )
 
         _gh_issue_num = int(query)
+
+        _issue = __tabularray.get_issue(_gh_issue_num)
         try:
-            _issue = __tabularray.get_issue(_gh_issue_num)
-            try:
-                __test_title = _issue.title
-            except github.UnknownObjectException as e:
-                reason: str = ""
-                match e.status:
-                    case 301:
-                        reason = "it has been moved permanently [304]."
-                    case 403:
-                        reason = "access to the issue/PR is forbidden [403]."
-                    case 404:
-                        reason = "it does not exist [404]."
-                    case 410:
-                        reason = "it has been deleted [410]."
-                    case 422:
-                        reason = (
-                            "validation failed, or the endpoint has been spammed [422]."
-                        )
-                    case 503:
-                        reason = "GitHub is currently unavailable [503]."
-                    case _:
-                        reason = "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
-                            e.status
-                        )
-                await out_msg.delete()
-                return await ctx.error_reply(
-                    f"Could not find issue/PR #{_gh_issue_num}, because {reason}"
-                )
-
-            # change embed colour based on the state of the issue/PR
-            match _issue.state, _issue.state_reason:
-                case "open", _:
-                    _embed_colour = GithubColour.github_green
-                    _state_msg = "Open"
-                case "closed", "completed":
-                    _embed_colour = GithubColour.copilot_purple
-                    _state_msg = "Completed"
-                case "closed", "not_planned":
-                    _embed_colour = GithubColour.primary.grey4
-                    _state_msg = "Not Planned"
-                case "open", "reopened":
-                    _embed_colour = GithubColour.primary.green4
-                    _state_msg = "Reopened"
-                case _, _:
-                    _embed_colour = GithubColour.security_blue
-                    _state_msg = "Unknown State"
-
-            # do image-sanitisation and thumbnail grabbing concurrently
-            _sanitised_body = (
-                await sanitise_image(_issue.body)
-                if _issue.body
-                else "No description provided."
-            )
-            _thumbnail_url = await grab_image(_issue.body) if _issue.body else None
-
+            _ = _issue.created_at
+        except Exception as e:
+            reason: str = ""
+            match int(e.status):
+                case 301:
+                    reason = "it has been moved permanently [304]."
+                case 403:
+                    reason = "access to the issue/PR is forbidden [403]."
+                case 404:
+                    reason = "it does not exist [404]."
+                case 410:
+                    reason = "it has been deleted [410]."
+                case 422:
+                    reason = (
+                        "validation failed, or the endpoint has been spammed [422]."
+                    )
+                case 503:
+                    reason = "GitHub is currently unavailable [503]."
+                case _:
+                    reason = "an undocumented (by GitHub) error occurred [Unknown Status Code: {}].".format(
+                        e.status
+                    )
             await out_msg.delete()
-            return await ctx.reply(
-                view=GithubEmbed(
-                    title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
-                    url=_issue.html_url,
-                    description=_sanitised_body[:2000],
-                    colour=_embed_colour,
-                    author={
-                        "name": _issue.user.login,
-                        "url": _issue.user.html_url,
-                        "icon_url": f"https://avatars.githubusercontent.com/u/{_issue.user.id}?v=4",
-                    },
-                    footer_text=f"Status: {_state_msg}",
-                    images=_thumbnail_url if _thumbnail_url else None,
-                )
+            return await ctx.error_reply(f"Could not find \#{query}, because {reason}")
+
+        # change embed colour based on the state of the issue/PR
+
+        match _issue.state, _issue.state_reason:
+            case "open", _:
+                _embed_colour = GithubColour.github_green
+                _state_msg = "Open"
+            case "closed", "completed":
+                _embed_colour = GithubColour.copilot_purple
+                _state_msg = "Completed"
+            case "closed", "not_planned":
+                _embed_colour = GithubColour.primary.grey4
+                _state_msg = "Not Planned"
+            case "open", "reopened":
+                _embed_colour = GithubColour.primary.green4
+                _state_msg = "Reopened"
+            case _, _:
+                _embed_colour = GithubColour.security_blue
+                _state_msg = "Unknown State"
+
+        # do image-sanitisation and thumbnail grabbing
+        _sanitised_body = (
+            await sanitise_image(_issue.body)
+            if _issue.body
+            else "No description provided."
+        )
+        _thumbnail_url = await grab_image(_issue.body) if _issue.body else None
+
+        await out_msg.delete()
+        return await ctx.reply(
+            view=GithubEmbed(
+                title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
+                url=_issue.html_url,
+                description=_sanitised_body[:2000],
+                colour=_embed_colour,
+                author={
+                    "name": _issue.user.login,
+                    "url": _issue.user.html_url,
+                    "icon_url": f"https://avatars.githubusercontent.com/u/{_issue.user.id}?v=4",
+                },
+                footer_text=f"Status: {_state_msg}",
+                images=_thumbnail_url if _thumbnail_url else None,
+                created_at=_issue.created_at,
             )
-            # gh_embed = discord.Embed(
-            #     title=f"{'Issue' if not _issue.pull_request else 'Pull Request'} #{_issue.number}: {_issue.title}",
-            #     url=_issue.html_url,
-            #     description=_issue.body[:2000],
-            #     color=_embed_colour,
-            # )
-            # gh_embed.set_author(
-            #     name=_issue.user.login,
-            #     url=_issue.user.html_url,
-            #     icon_url="https://avatars.githubusercontent.com/u/{}?v=4".format(_issue.user.id),
-            # )
-            # gh_embed.set_footer(
-            #     text=f"Status: {_state_msg}",
-            # )
-            # return await out_msg.edit(content="", embed=gh_embed)
-        except github.UnknownObjectException:
-            await out_msg.delete()
-            return await ctx.error_reply(
-                f"Something went wrong while fetching the issue/PR #{_gh_issue_num}. Please try again later."
-            )
+        )
+        # except github.UnknownObjectException:
+        #     await out_msg.delete()
+        #     return await ctx.error_reply(
+        #         f"Something went wrong while fetching the issue/PR #{_gh_issue_num}. Please try again later."
+        #     )
 
     elif flags["file"]:
         query = ctx.args.strip()

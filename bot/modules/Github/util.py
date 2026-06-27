@@ -1,8 +1,9 @@
 import re
 
 import discord
-from utils.lib import split_text
 from github.Repository import Repository
+from utils.lib import split_text
+
 from .GithubColours import GITHUB_LANG2COLOUR
 
 
@@ -79,7 +80,6 @@ async def _syntax_selection(filename) -> str:
             return ""
 
 
-
 def lang2colour(repo: Repository) -> discord.Colour:
     """Outputs a colour to be rendered for the layout view depending on the language field in the returned JSON of github API object
 
@@ -91,6 +91,7 @@ def lang2colour(repo: Repository) -> discord.Colour:
     """
     language: str = repo.language
     return GITHUB_LANG2COLOUR.get(language, discord.Color.from_str("#0FBF3E"))
+
 
 async def sanitise_image(text: str) -> str:
     """
@@ -116,6 +117,10 @@ async def sanitise_image(text: str) -> str:
     # pattern for ![image](URL)
     markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
     text = re.sub(markdown_img_pattern, r"\1", text)
+
+    # finally, purge html/markdown comments
+    comment_pattern = r"<!--.*?-->"
+    text = re.sub(comment_pattern, "", text)
 
     return text
 

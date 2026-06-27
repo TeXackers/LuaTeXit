@@ -50,10 +50,8 @@ class disabled_channels(ListData, ChannelList, GuildSetting):
 
         client.objects["disabled_guild_channels"] = disabled_channels
         client.log(
-            "Read {} guilds with a total of {} disabled channels.".format(
-                len(disabled_channels), channel_counter
-            ),
-            context="LOAD_DISABLED_CHANNELS",
+            f"r     |--disabled: {len(disabled_channels)} guilds (total: {channel_counter})",
+            context="Guild Admin",
         )
 
 

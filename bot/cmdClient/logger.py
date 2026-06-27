@@ -1,18 +1,19 @@
+from typing import Callable
 import logging
 
 logger = logging.getLogger()
 
 
-def _log(message, context="Global".center(20, " "), level=logging.INFO):
+def _log(message: str, context: str = "Global", level: int = logging.INFO) -> None:
     for line in message.split("\n"):
-        logger.log(level, "[{}] {}".format(str(context).center(22, " "), line))
+        logger.log(level, f"[{str(context).center(22, ' ')}] {line}")
 
 
 def log(*args, **kwargs):
     _log(*args, **kwargs)
 
 
-def cmd_log_handler(func):
+def cmd_log_handler(func: Callable[..., None]) -> Callable[..., None]:
     global _log
     _log = func
     return func

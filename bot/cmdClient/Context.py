@@ -1,37 +1,71 @@
-import asyncio  # noqa
-import datetime
-from collections import namedtuple
+from __future__ import annotations
+
+from asyncio import Task
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, NamedTuple, Type, cast
 
 import discord
-
-# from .logger import log
-from . import (
-    cmdClient,  # noqa
-    lib,
-)
-from .Command import Command  # noqa
-from .Layouts import ErrorEmbedView  # noqa
-
-FlatContext = namedtuple(
-    "FlatContext",
-    (
-        "msg",
-        "ch",
-        "guild",
-        "server",
-        "arg_str",
-        "cmd",
-        "alias",
-        "author",
-        "prefix",
-        "cleanup_on_edit",
-        "reparse_on_edit",
-        "sent_messages",
-    ),
+from discord import (
+    DMChannel,
+    ForumChannel,
+    GroupChannel,
+    Message,
+    MessageReference,
+    PartialMessageable,
+    StageChannel,
+    TextChannel,
+    Thread,
+    VoiceChannel,
 )
 
+if TYPE_CHECKING:
+    from .cmdClient import cmdClient
+    from .Command import Command
 
-class Context(object):
+from .Layouts import DebugEmbedView, ErrorEmbedView
+
+
+class FlatContext(NamedTuple):
+    """A flat version of the Context object, for caching or debugging.
+
+    Args:
+        message_id (int | None): The ID of the message that triggered the command.
+        channel_id (int | None): The ID of the channel where the command was triggered.
+        guild_id (int | None): The ID of the guild where the command was triggered.
+        server_id (int | None): The ID of the server where the command was triggered.
+        arg_str (str | None): The argument string passed to the command.
+        cmd (str | None): The name of the command that was triggered.
+        alias (str | None): The alias used to trigger the command, if any.
+        prefix (str | None): The prefix used to trigger the command, if any.
+        cleanup_on_edit (bool): Whether to clean up messages on edit.
+        reparse_on_edit (bool): Whether to reparse messages on edit.
+        sent_messages (tuple[int, ...]): A tuple of IDs of messages sent in this context.
+    """
+
+    msg: int | None
+    ch: int | None
+    guild: int | None
+    server: int | None
+    arg_str: str | None
+    cmd: str | None
+    alias: str | None
+    prefix: str | None
+    cleanup_on_edit: bool
+    reparse_on_edit: bool
+    sent_messages: tuple[int, ...]
+
+
+class Context:
+    """Metadata (context) relevant to a command.
+
+    Parameters
+    ----------
+    client: cmdClient
+        The command client instance.
+    message: Message | None
+        Message from which a command was triggered.
+    ch:
+    """
+
     __slots__ = (
         "client",
         "msg",
@@ -52,51 +86,59 @@ class Context(object):
     )
 
     def __init__(self, client, **kwargs):
-        self.client = client  # type: cmdClient.cmdClient
+        self.client: cmdClient = client
 
-        self.msg: discord.Message = kwargs.pop("message", None)
+        self.msg: Message | None = kwargs.pop("message", None)
 
-        self.ch: discord.abc.Messageable | None = (
+        self.ch: (
+            TextChannel
+            | VoiceChannel
+            | ForumChannel
+            | DMChannel
+            | GroupChannel
+            | Thread
+            | PartialMessageable
+            | StageChannel
+        )
+        self.ch = (
             self.msg.channel if self.msg is not None else kwargs.pop("channel", None)
         )
         self.guild: discord.Guild | None = (
             self.msg.guild if self.msg is not None else kwargs.pop("guild", None)
         )
         self.server: discord.Guild | None = self.guild
-        self.author: discord.User | discord.Member = (
+        self.author: discord.User | discord.Member | None = (
             self.msg.author if self.msg is not None else kwargs.pop("author", None)
         )
 
-        self.arg_str = kwargs.pop("arg_str", None)  # type: str
-        self.cmd: discord.ext.commands.Command | None = kwargs.pop("cmd", None)
-        self.alias = kwargs.pop("alias", None)  # type: str
+        self.arg_str: str | None = kwargs.pop("arg_str", None)
+        self.cmd: Command | None = kwargs.pop("cmd", None)
+        self.alias: str | None = kwargs.pop("alias", None)
         self.prefix: str | None = kwargs.pop("prefix", None)
 
-        self.cleanup_on_edit = kwargs.pop(
+        self.cleanup_on_edit: bool = kwargs.pop(
             "cleanup_on_edit", self.cmd.handle_edits if self.cmd is not None else True
         )
 
-        self.reparse_on_edit = kwargs.pop(
+        self.reparse_on_edit: bool = kwargs.pop(
             "reparse_on_edit", self.cmd.handle_edits if self.cmd is not None else True
         )
 
-        # Argument string, intended to be overriden by argument parsers
-        self.args = self.arg_str  # type:str
+        self.args: str = self.arg_str or ""
 
-        # Cache of messages sent in this context.
-        self.sent_messages = []  # type: List[discord.Message]
+        self.sent_messages: list[Message] = []
 
         # Context tasks, including for the final wrapped command
-        self.tasks = []  # type: List[asyncio.Task]
+        self.tasks: list[Task] = []
 
     @classmethod
-    def util(cls, util_func):
+    def util(cls: Type[Context], util_func: Callable[..., Awaitable]) -> None:
         """
         Decorator to make a utility function available as a Context instance method
         """
         setattr(cls, util_func.__name__, util_func)
 
-    def flatten(self):
+    def flatten(self) -> FlatContext:
         """
         Returns a flat version of the current context for debugging or caching.
         Does not store `objects`.
@@ -110,7 +152,6 @@ class Context(object):
             arg_str=self.arg_str,
             cmd=self.cmd.name if self.cmd else None,
             alias=self.alias,
-            author=self.author.id if self.author else None,
             prefix=self.prefix,
             cleanup_on_edit=self.cleanup_on_edit,
             reparse_on_edit=self.reparse_on_edit,
@@ -119,38 +160,75 @@ class Context(object):
 
 
 @Context.util
-async def reply(ctx, content=None, reference: discord.MessageReference | None = None, allowed_mentions = discord.AllowedMentions.none(), **kwargs) -> discord.Message:
+async def reply(
+    ctx: Context,
+    content: str | None = None,
+    reference: MessageReference | None = None,
+    allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
+    **kwargs,
+) -> Message:
     """
     Helper function to reply in the current channel.
     """
+    send_kwargs: dict[str, Any] = {
+        "content": content,
+        "allowed_mentions": allowed_mentions,
+        **kwargs,
+    }
+    if reference is not None:
+        send_kwargs["reference"] = reference
 
-    message: discord.Message = await ctx.ch.send(
-        content=content,
-        reference=reference, 
-        allowed_mentions=allowed_mentions,
-        **kwargs
-    )
+    message: Message = await cast(discord.abc.Messageable, ctx.ch).send(**send_kwargs)
     ctx.sent_messages.append(message)
     return message
 
 
 @Context.util
-async def error_reply(ctx, error_str):
+async def error_reply(ctx: Context, error_str: str):
     """
     Notify the user of a user level error.
     Typically, this will occur in a red embed, posted in the command channel.
     """
-    # embed = discord.Embed(
-    #     colour=discord.Colour.red(),
-    #     description=error_str,
-    #     timestamp=datetime.datetime.now(datetime.UTC),
-    # )
     try:
-        # message: discord.Message = await ctx.ch.send(embed=embed)
-        message = await ctx.reply(view=ErrorEmbedView(error_str, ctx.ts(datetime.datetime.now(datetime.UTC))))
+        message: Message = await ctx.reply(
+            view=ErrorEmbedView(
+                error_str, discord.utils.format_dt(discord.utils.utcnow(), "R")
+            )
+        )
         ctx.sent_messages.append(message)
         return message
     except discord.Forbidden:
-        message = await ctx.reply(view=ErrorEmbedView(error_str, ctx.ts(datetime.datetime.now(datetime.UTC))))
+        message: Message = await ctx.reply(
+            view=ErrorEmbedView(
+                error_str, discord.utils.format_dt(discord.utils.utcnow(), "R")
+            )
+        )
         ctx.sent_messages.append(message)
         return message
+
+
+@Context.util
+async def traceback(ctx: Context, helper_msg: str, error_str: str):
+    """
+    Notify the user of an error, and show traceback
+    """
+    try:
+        out_msg: Message = await ctx.reply(
+            view=DebugEmbedView(
+                helper_msg,
+                error_str,
+                discord.utils.format_dt(discord.utils.utcnow(), style="F"),
+            )
+        )
+        ctx.sent_messages.append(out_msg)
+        return out_msg
+    except discord.Forbidden:
+        out_msg: Message = await ctx.reply(
+            view=DebugEmbedView(
+                helper_msg,
+                error_str,
+                discord.utils.format_dt(discord.utils.utcnow(), style="F"),
+            )
+        )
+        ctx.sent_messages.append(out_msg)
+        return out_msg

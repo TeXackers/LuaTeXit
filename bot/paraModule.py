@@ -1,16 +1,14 @@
-import traceback
-import logging
 import asyncio
+import logging
+import traceback
 
 import discord
-
-from cmdClient import cmdClient, Module
-from cmdClient.lib import SafeCancellation
+from cmdClient import Context, Module, cmdClient
 from cmdClient.Check import FailedCheck
-
-from settings import guild_config
-
+from cmdClient.Layouts import DebugEmbedView
+from cmdClient.lib import SafeCancellation
 from logger import log
+from settings import guild_config
 
 
 class paraModule(Module):
@@ -26,8 +24,8 @@ class paraModule(Module):
 
         self.guild_settings = []
 
-        self.baseCommand.hidden = False
-        self.baseCommand.disabled = False
+        self.hidden: bool = False
+        self.disabled: bool = False
 
     def guild_setting(self, cls):
         """
@@ -35,15 +33,15 @@ class paraModule(Module):
         which will be later loaded on initialisation.
         """
         self.guild_settings.append(cls)
-        log("Registering guild setting '{}'.".format(cls.attr_name), context=self.name)
+        log(f"+     |-/{cls.attr_name}", context=self.name)
         return cls
 
     def initialise(self, client):
         if self.guild_settings and not self.initialised:
-            log("Attaching guild settings.", context=self.name)
+            log("guild", context=self.name)
             for setting in self.guild_settings:
                 log(
-                    "Attaching guild setting '{}'.".format(setting.attr_name),
+                    f"+     |--{setting.attr_name}",
                     context=self.name,
                 )
                 guild_config.attach_setting(setting)
@@ -79,7 +77,7 @@ class paraModule(Module):
         """
         self.data_init_tasks.append(func)
         log(
-            "Adding data initialisation task '{}'.".format(func.__name__),
+            f"a     |--{func.__name__}",
             context=self.name,
         )
         return func
@@ -89,11 +87,11 @@ class paraModule(Module):
         Data initialise hook.
         """
         if not self.data_initialised:
-            log("Running data initialisation tasks.", context=self.name)
+            log("data init", context=self.name)
 
             for task in self.data_init_tasks:
                 log(
-                    "Running data initialisation task '{}'.".format(task.__name__),
+                    f"t     |--[task] {task.__name__}",
                     context=self.name,
                 )
                 task(client)
@@ -101,11 +99,11 @@ class paraModule(Module):
             self.data_initialised = True
         else:
             log(
-                "Already initialised data, skipping data initialisation.",
+                "s     |--[skip]",
                 context=self.name,
             )
 
-    async def on_exception(self, ctx, exception):
+    async def on_exception(self, ctx: Context, exception: Exception):
         try:
             raise exception
         except (FailedCheck, SafeCancellation):
@@ -118,7 +116,7 @@ class paraModule(Module):
             # Unknown uncaught Forbidden
             try:
                 # Attempt a general error reply
-                await ctx.reply(
+                await ctx.error_reply(
                     "I don't have enough permissions here to complete the command!"
                 )
             except discord.Forbidden:
@@ -127,24 +125,18 @@ class paraModule(Module):
                 log(
                     (
                         "Caught an unhandled 'Forbidden' while "
-                        "executing command '{cmdname}' from module '{module}' "
-                        "from user '{message.author}' (uid:{message.author.id}) "
-                        "in guild '{message.guild}' (gid:{guildid}) "
-                        "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+                        f"executing command '{ctx.cmd.name}' from module '{ctx.cmd.module.name}' "
+                        f"from user '{ctx.msg.author}' (uid:{ctx.msg.author.id}) "
+                        f"in guild '{ctx.msg.guild}' (gid:{ctx.msg.guild.id if ctx.msg.guild else None}) "
+                        f"in channel '{ctx.msg.channel}' (cid:{ctx.msg.channel.id}).\n"
                         "Message Content:\n"
-                        "{content}\n"
-                        "{traceback}\n\n"
-                        "{flat_ctx}"
-                    ).format(
-                        cmdname=ctx.cmd.name,
-                        module=ctx.cmd.module.name,
-                        message=ctx.msg,
-                        guildid=ctx.guild.id if ctx.guild else None,
-                        content="\n".join(
-                            "\t" + line for line in ctx.msg.content.splitlines()
-                        ),
-                        traceback=full_traceback,
-                        flat_ctx=ctx.flatten(),
+                        f"{
+                            '\n'.join(
+                                '\t' + line for line in ctx.msg.content.splitlines()
+                            )
+                        }\n"
+                        f"{full_traceback}\n\n"
+                        f"{ctx.flatten()}"
                     ),
                     context="mid:{}".format(ctx.msg.id),
                     level=logging.WARNING,
@@ -158,49 +150,48 @@ class paraModule(Module):
             )
             # Handle the error message being too long to display in the embed
             # Discord can throw error messages over the embed field limit
-            if len(only_error) > 500:
-                only_error = only_error[:500] + "..."
+            if len(only_error) > 2000:
+                only_error = only_error[:2000] + "..."
 
-            log(
-                (
-                    "Caught an unhandled exception while "
-                    "executing command '{cmdname}' from module '{module}' "
-                    "from user '{message.author}' (uid:{message.author.id}) "
-                    "in guild '{message.guild}' (gid:{guildid}) "
-                    "in channel '{message.channel}' (cid:{message.channel.id}).\n"
-                    "Message Content:\n"
-                    "{content}\n"
-                    "Traceback:\n"
-                    "{traceback}\n\n"
-                    "{flat_ctx}"
-                ).format(
-                    cmdname=ctx.cmd.name,
-                    module=ctx.cmd.module.name,
-                    message=ctx.msg,
-                    guildid=ctx.guild.id if ctx.guild else None,
-                    content="\n".join(
-                        "\t" + line for line in ctx.msg.content.splitlines()
-                    ),
-                    traceback="\n".join(
-                        "\t" + line for line in full_traceback.splitlines()
-                    ),
-                    flat_ctx=ctx.flatten(),
-                ),
-                context="mid:{}".format(ctx.msg.id),
-                level=logging.ERROR,
+            # log(
+            #     (
+            #         "Caught an unhandled exception while "
+            #         "executing command '{cmdname}' from module '{module}' "
+            #         "from user '{message.author}' (uid:{message.author.id}) "
+            #         "in guild '{message.guild}' (gid:{guildid}) "
+            #         "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+            #         "Message Content:\n"
+            #         "{content}\n"
+            #         "Traceback:\n"
+            #         "{traceback}\n\n"
+            #         "{flat_ctx}"
+            #     ).format(
+            #         cmdname=ctx.cmd.name,
+            #         module=ctx.cmd.module.name,
+            #         message=ctx.msg,
+            #         guildid=ctx.guild.id if ctx.guild else None,
+            #         content="\n".join(
+            #             "\t" + line for line in ctx.msg.content.splitlines()
+            #         ),
+            #         traceback="\n".join(
+            #             "\t" + line for line in full_traceback.splitlines()
+            #         ),
+            #         flat_ctx=ctx.flatten(),
+            #     ),
+            #     context="mid:{}".format(ctx.msg.id),
+            #     level=logging.ERROR,
+            # )
+            # if logging.getLogger().getEffectiveLevel() < logging.INFO:
+            error_embed = DebugEmbedView(
+                f"Following error occurred while executing command `{ctx.cmd.name}` from `{ctx.cmd.module.name}`",
+                only_error,
+                discord.utils.format_dt(discord.utils.utcnow(), style="F"),
             )
-
-            error_embed = discord.Embed(title="Something went wrong!")
-            error_embed.description = (
-                "An unexpected error occurred while processing your command!\n"
-                "The error has been reported and should be fixed soon.\n"
-                "If the error persists, please contact our friendly support team at "
-                "[our support guild]({})!".format(ctx.client.app_info["support_guild"])
-            )
-            if logging.getLogger().getEffectiveLevel() < logging.INFO:
-                error_embed.add_field(name="Exception", value="`{}`".format(only_error))
-
-            await ctx.reply(embed=error_embed)
+            return await ctx.reply(view=error_embed)
+            # else:
+            #     return await ctx.error_reply(
+            #         f"An unexpected internal error occurred while running your command! Please report the following error to the developer:\n`{only_error}`"
+            #     )
 
 
 cmdClient.baseModule = paraModule

@@ -35,10 +35,8 @@ class Connector:
         Attach a data interface to this connector.
         """
         log(
-            "Attaching interface '{}' as '{}'.".format(
-                interface.__class__.__name__, name
-            ),
-            context="DB_CONNECTOR",
+            f"a     |--[attach] {interface.__class__.__name__} as {name}.",
+            context="DATABASE",
         )
         setattr(self, name, interface)
         self.interfaces[name] = interface

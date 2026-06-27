@@ -1,6 +1,7 @@
 import logging
+
 from paraModule import paraModule
-from registry import tableInterface, tableSchema, Column, ColumnType, RawElement
+from registry import Column, ColumnType, RawElement, tableInterface, tableSchema
 
 """
 Define core shared data for paradoxical instances.
@@ -72,9 +73,7 @@ def check_data_version(client):
                 )
             )
         else:
-            client.log(
-                "Current data version is `{}`.".format(version), context="DATA_VERSION"
-            )
+            client.log(f"Data Version: {version}", context="DATA_VERSION")
     else:
         client.log(
             "Refusing to start the client due to nonexistent version! "

@@ -1,22 +1,19 @@
 import logging
 
-from concurrent_log_handler import ConcurrentRotatingFileHandler
-
 import discord
-from cmdClient import cmdClient
-
-from config import Conf
-from logger import log, log_fmt, attach_log_client
+import modules  # noqa
 from apps import load_app
+from cmdClient import cmdClient
+from concurrent_log_handler import ConcurrentRotatingFileHandler
+from logger import attach_log_client, log, log_fmt
 from paraArgs import args
-
-from registry.connectors import mysqlConnector, sqliteConnector
-from settings import guild_config
 
 # Always load modules last
 from paraData import versionModule  # noqa
-import modules  # noqa
+from registry.connectors import mysqlConnector, sqliteConnector
+from settings import guild_config
 
+from config import Conf
 
 # Extract command line arguments
 config_file = args.config
@@ -195,22 +192,15 @@ async def on_ready():
     # Attach the log client and log the alive message
     attach_log_client(client)
 
+    if SHARD_COUNT > 1:
+        shard_msg = f"on {shard_num} with {SHARD_COUNT}"
+    else:
+        shard_msg = ""
+
     log_msg = (
-        "Logged in as\n{client.user.name} (uid:{client.user.id}).\n"
-        'Using configuration "{app}".\n'
-        "Logged into {n} guilds on shard {shard} with {shard_count} shard(s).\n"
-        "Loaded {m} modules with {mn} commands.\n"
-        "Listening for {mnn} command keywords.\n"
-        "Ready to take commands.".format(
-            client=client,
-            app=client.app_info["app"],
-            shard=shard_num,
-            shard_count=SHARD_COUNT,
-            n=len(client.guilds),
-            m=len(client.modules),
-            mn=len(client.cmds),
-            mnn=len(client.cmd_names),
-        )
+        f"Init {client.user.name} [{client.user.id}, {client.app_info['app']}.conf]\n"
+        f"{len(client.guilds)} guilds {shard_msg}\n"
+        f"{len(client.modules)} modules {len(client.cmds)} ({len(client.cmd_names)} incl. aliases) cmds\n"
     )
     log(log_msg)
 

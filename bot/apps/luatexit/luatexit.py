@@ -25,11 +25,7 @@ info = {
     "help_file": "bot/resources/apps/luatexit/luatexit_thanks.png",
 }
 
-disabled_modules = [
-    "Maths",
-    "Starboard",
-    "Social"
-]
+disabled_modules = ["Maths", "Starboard", "Social"]
 
 disabled_commands = {
     # "colour",
@@ -43,6 +39,7 @@ disabled_commands = {
     "secho",
 }
 
+
 def load_into(client):
     client.app_info = info
 
@@ -53,13 +50,10 @@ def load_into(client):
             module.cmds = [
                 cmd for cmd in module.cmds if cmd.name not in disabled_commands
             ]
-    
+
     client.update_cmdnames()
 
-
-    latex_module = [
-        module for module in client.modules if module.name == "LaTeX Rendering"
-    ][0]
+    latex_module = [module for module in client.modules if module.name == "LaTeX"][0]
 
     latex_module.LatexGuild.defaults["autotex"] = True
     latex_setting = [

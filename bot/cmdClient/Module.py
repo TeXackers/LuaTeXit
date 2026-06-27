@@ -1,4 +1,9 @@
-from typing import Optional, Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Optional, Type
+
+if TYPE_CHECKING:
+    from .Context import Context
 
 from . import cmdClient
 from .Command import Command
@@ -6,123 +11,125 @@ from .logger import log
 
 
 class Module:
+    """Data structure for a module of commands."""
+
     name: str = "Base Module"
 
     def __init__(
-        self, name: Optional[str] = None, baseCommand: Optional[Type[Command]] = Command
-    ):
+        self, name: Optional[str] = None, baseCommand: Type[Command] = Command
+    ) -> None:
         if name:
-            self.name = name
-        self.baseCommand = baseCommand
+            self.name: str = name
+        self.baseCommand: Type[Command] = baseCommand
 
-        self.cmds = []
-        self.initialised = False
-        self.ready = False
-        self.enabled = True
+        self.cmds: list[Command] = []
+        self.initialised: bool = False
+        self.ready: bool = False
+        self.enabled: bool = True
 
-        self.launch_tasks = []
-        self.init_tasks = []
+        self.launch_tasks: list[Callable] = []
+        self.init_tasks: list[Callable] = []
 
         cmdClient.cmdClient.modules.append(self)
 
-        log("New module created.", context=self.name)
+        log("     module", context=self.name)
 
-    def cmd(self, name, cmdClass: Optional[Type[Command]] = None, **kwargs):
+    def cmd(
+        self, name, cmdClass: Type[Command] | None = None, **kwargs
+    ) -> Callable[[Callable], Command]:
         """
         Decorator to create a command in this module with the given `name`.
         Creates the command using the provided `cmdClass`.
         Adds the command to the module command list and updates the client cache.
         Transparently passes the rest of the arguments to the `Command` constructor.
         """
-        log("Adding command '{}'.".format(name), context=self.name)
+        log(f"+     |-/{name}", context=self.name)
 
         cmdClass = cmdClass or self.baseCommand
 
-        def decorator(func):
-            cmd = cmdClass(name, func, self, **kwargs)
+        def decorator(func: Callable) -> Command:
+            cmd: Command = cmdClass(name, func, self, **kwargs)
             self.cmds.append(cmd)
             cmdClient.cmdClient.update_cmdnames()
             return cmd
 
         return decorator
 
-    def attach(self, func):
+    def attach(self, func: Callable) -> None:
         """
         Decorator which attaches the provided function to the current instance.
         """
         setattr(self, func.__name__, func)
-        log("Attached '{}'.".format(func.__name__), context=self.name)
+        log(f"+     |--[attach] {func.__name__}", context=self.name)
 
-    def launch_task(self, func):
+    def launch_task(self, func: Callable) -> Callable:
         """
         Decorator which adds a launch function to complete during the default launch procedure.
         """
         self.launch_tasks.append(func)
-        log("Adding launch task '{}'.".format(func.__name__), context=self.name)
+        log(f"t     |--[task] {func.__name__}", context=self.name)
         return func
 
-    def init_task(self, func):
+    def init_task(self, func: Callable) -> Callable:
         """
         Decorator which adds an init function to complete during the default initialise procedure.
         """
         self.init_tasks.append(func)
-        log("Adding initialisation task '{}'.".format(func.__name__), context=self.name)
+        log(f"i     |--[init] {func.__name__}", context=self.name)
         return func
 
-    def initialise(self, client):
+    def initialise(self, client: cmdClient.cmdClient) -> None:
         """
         Initialise hook.
         Executed by `client.initialise_modules`,
         or possibly by modules which depend on this one.
         """
         if not self.initialised:
-            log("Running initialisation tasks.", context=self.name)
+            log("      task init", context=self.name)
 
             for task in self.init_tasks:
                 log(
-                    "Running initialisation task '{}'.".format(task.__name__),
+                    f"t     |--[task] {task.__name__}",
                     context=self.name,
                 )
                 task(client)
 
             self.initialised = True
         else:
-            log("Already initialised, skipping initialisation.", context=self.name)
+            log("s     |--[skip]", context=self.name)
 
-    async def launch(self, client):
+    async def launch(self, client: cmdClient.cmdClient) -> None:
         """
         Launch hook.
         Executed in `client.on_ready`.
         Must set `ready` to `True`, otherwise all commands will hang.
         """
         if not self.ready:
-            log("Running launch tasks.", context=self.name)
+            log("launching", context=self.name)
 
             for task in self.launch_tasks:
-                log(
-                    "Running launch task '{}'.".format(task.__name__), context=self.name
-                )
+                log(f"t     |--[task] {task.__name__}", context=self.name)
                 await task(client)
 
             self.ready = True
         else:
-            log("Already launched, skipping launch.", context=self.name)
+            log("s     |--[skip]", context=self.name)
 
-    async def pre_command(self, ctx):
+    async def pre_command(self, ctx: Context):
         """
         Pre-command hook.
         Executed before a command is run.
         """
         pass
 
-    async def post_command(self, ctx):
+    async def post_command(self, ctx: Context):
         """
         Post-command hook.
         Executed after a command is run without exception.
         """
         pass
 
-    async def on_exception(self, ctx, exception):
+    async def on_exception(self, ctx: Context, exception: Exception):
         """
         Exception hook.
         Executed when a command function throws an exception.

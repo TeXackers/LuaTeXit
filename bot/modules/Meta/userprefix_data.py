@@ -29,6 +29,6 @@ def load_userprefix_cache(client):
     client.objects["user_prefix_cache"] = user_prefixes
 
     client.log(
-        "Read {} users with custom prefixes.".format(len(user_prefixes)),
-        context="LOAD_USER_PREFIXES",
+        f"r     |--custom user prefix: {len(user_prefixes)}",
+        context="Meta",
     )

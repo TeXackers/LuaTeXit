@@ -1,4 +1,10 @@
+from __future__ import annotations
+
 from functools import wraps
+
+from typing import Awaitable, Callable
+
+from .Context import Context
 
 
 class Check(object):
@@ -25,15 +31,22 @@ class Check(object):
         These are checked after the parents.
     """
 
-    def __init__(self, name, msg, check_func, parents=None, requires=None):
+    def __init__(
+        self,
+        name: str,
+        msg: str,
+        check_func: Callable[..., Awaitable[bool]],
+        parents: list[Check] | None = None,
+        requires: list[Check] | None = None,
+    ):
         self.name = name
         self.msg = msg
-        self.check_func = check_func
+        self.check_func: Callable[..., Awaitable[bool]] = check_func
 
         self.parents = parents or []
         self.required = requires or []
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Callable[[Callable], Callable]:
         """
         Returns a function decorator which adds this check before the function.
         Throws FailedCheck if the check fails.
@@ -41,8 +54,8 @@ class Check(object):
 
         def decorator(func):
             @wraps(func)
-            async def wrapper(ctx, *fargs, **fkargs):
-                result = await self.run(ctx, *args, **kwargs)
+            async def wrapper(ctx: Context, *fargs, **fkargs):
+                result: bool = await self.run(ctx, *args, **kwargs)
                 if not result:
                     raise FailedCheck(self)
 
@@ -52,7 +65,7 @@ class Check(object):
 
         return decorator
 
-    async def run(self, ctx, *args, **kwargs):
+    async def run(self, ctx: Context, *args, **kwargs) -> bool:
         """
         Executes this check and returns `True` if it passes or `False` if it fails.
         """
@@ -76,19 +89,19 @@ class FailedCheck(Exception):
     Stores the check which failed.
     """
 
-    def __init__(self, check):
+    def __init__(self, check: Check):
         super().__init__()
 
-        self.check = check
+        self.check: Check = check
 
 
-def check(*args, **kwargs):
+def check(*args, **kwargs) -> Callable[[Callable[..., Awaitable[bool]]], Check]:
     """
     Helper decorator for creating new checks.
     All arguments are passed to `Check` along with the decorated function as `check_func`.
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Awaitable[bool]]) -> Check:
         return Check(check_func=func, *args, **kwargs)
 
     return decorator

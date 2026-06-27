@@ -59,9 +59,7 @@ def load_into(client):
     client.update_cmdnames()
 
     # Set the default latex guild listening to True
-    latex_module = [
-        module for module in client.modules if module.name == "LaTeX Rendering"
-    ][0]
+    latex_module = [module for module in client.modules if module.name == "LaTeX"][0]
     latex_module.LatexGuild.defaults["autotex"] = True
     latex_setting = [
         setting for setting in latex_module.guild_settings if setting.name == "latex"

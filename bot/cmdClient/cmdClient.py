@@ -6,45 +6,49 @@ import os
 import sys
 import traceback
 from bisect import bisect
-from typing import ClassVar, Optional, Type
+from typing import Callable, ClassVar, Optional, Type
 
 import discord
 from cachetools import LRUCache
+from discord import Intents
 
-from .Context import Context
+from .Command import Command
+from .Context import Context, FlatContext
 from .logger import log
 from .Module import Module
 
 
 class cmdClient(discord.Client):
-    prefix: Optional[str]
+    prefix: str | None
 
     baseModule: ClassVar[Type[Module]] = Module
-    default_module: ClassVar[Module] = None
-
-    modules = []  # List of loaded modules
-
-    cmd_names = {}  # Command name cache, {cmdname: Command}, including aliases.
+    default_module: ClassVar[Optional[Module]] = None
+    # List of loaded modules
+    modules: list[Module] = []
+    # Command name cache, including aliases
+    cmd_names: dict[str, Command] = {}
 
     def __init__(
-        self, prefix=None, owners=None, ctx_cache=None, baseContext=Context, **kwargs
+        self,
+        prefix: str | None = None,
+        owners: list[int] | None = None,
+        ctx_cache: LRUCache | None = None,
+        baseContext: Type[Context] = Context,
+        intents: Intents = Intents.default(),
+        **kwargs,
     ):
-        super().__init__(**kwargs)
+        intents.message_content = True
+        super().__init__(intents=intents, **kwargs)
         self.prefix = prefix
         self.owners = owners or []
         self.objects = {}
-
-        self.baseContext = Context  # type: Type[Context]
-
-        self.ctx_cache = ctx_cache or LRUCache(
-            1000
-        )  # Previous Context cache, {messageid: ctxcache}
-        self.active_contexts = {}  # Current active contexts, {messageid: ctx}
-
+        self.baseContext: Type[Context] = Context
+        self.ctx_cache: LRUCache = ctx_cache or LRUCache(1000)
+        self.active_contexts: dict[int, Context] = {}
         self.extra_message_parsers = []
 
     @property
-    def cmds(self):
+    def cmds(self) -> list[Command]:
         """
         A list of current available commands.
         """
@@ -53,7 +57,7 @@ class cmdClient(discord.Client):
         )
 
     @classmethod
-    def get_default_module(cls):
+    def get_default_module(cls) -> Module:
         """
         Returns the default module, instantiating it if it does not exist.
         """
@@ -62,20 +66,22 @@ class cmdClient(discord.Client):
         return cls.default_module
 
     @classmethod
-    def cmd(cls, *args, module: Optional[Module] = None, **kwargs):
+    def cmd(
+        cls, *args, mod: Optional[Module] = None, **kwargs
+    ) -> Callable[[Callable], Command]:
         """
         Helper decorator to create a command with an optional module.
         If no module is specified, uses the class default module.
         """
-        module = module or cls.get_default_module()
+        module: Module = mod or cls.get_default_module()
         return module.cmd(*args, **kwargs)
 
     @classmethod
-    def update_cmdnames(cls):
+    def update_cmdnames(cls) -> None:
         """
         Updates the command name cache.
         """
-        cmds = {}
+        cmds: dict[str, Command] = {}
         for module in cls.modules:
             if module.enabled:
                 for cmd in module.cmds:
@@ -84,7 +90,7 @@ class cmdClient(discord.Client):
                         cmds[alias] = cmd
         cls.cmd_names = cmds
 
-    async def valid_prefixes(self, message):
+    async def valid_prefixes(self, message: discord.Message) -> tuple[str, ...]:
         if self.prefix:
             return (self.prefix,)
         else:
@@ -92,23 +98,24 @@ class cmdClient(discord.Client):
                 "No prefix set and no prefix function implemented.", level=logging.ERROR
             )
             await self.close()
+            return ()
 
-    def set_valid_prefixes(self, func):
+    def set_valid_prefixes(self, func: Callable) -> None:
         setattr(self, "valid_prefixes", func.__get__(self))
 
-    def initialise_modules(self):
-        log("Initialising all client modules.")
+    def initialise_modules(self) -> None:
+        log("client module init")
         for module in self.modules:
             if module.enabled:
                 module.initialise(self)
 
-    async def launch_modules(self):
-        log("Launching all client modules.")
+    async def launch_modules(self) -> None:
+        log("client module start")
         for module in self.modules:
             if module.enabled:
                 await module.launch(self)
 
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         """
         Client has logged into discord and completed initialisation.
         Log a ready message with some basic statistics and info.
@@ -116,44 +123,37 @@ class cmdClient(discord.Client):
         await self.launch_modules()
 
         ready_str = (
-            "Logged in as {client.user}\n"
-            "User id {client.user.id}\n"
-            "Logged in to {guilds} guilds\n"
-            "------------------------------\n"
-            "Default prefix is '{prefix}'\n"
-            "Loaded {commands} commands\n"
-            "------------------------------\n"
-            "Ready to take commands!\n"
-        ).format(
-            client=self,
-            guilds=len(self.guilds),
-            prefix=self.prefix,
-            commands=len(self.cmds),
+            f"{self.user} ({self.user.id}) launching in {len(self.guilds)} guilds\n"
+            f"Default prefix: {self.prefix}\n"
+            f"Commands: {len(self.cmds)}\n"
+            f"GOTOV"
         )
         log(ready_str)
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def on_error(self, event_method: str, *args, **kwargs) -> None:
         """
         An exception was caught in one of the event handlers.
         Log the exception with a traceback, and continue on.
         """
         log(
-            "Ignoring exception in {}\n{}".format(event_method, traceback.format_exc()),
+            f"Ignoring exception in {event_method}\n{traceback.format_exc()}",
             level=logging.ERROR,
         )
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message) -> None:
         """
         Event handler for `message`.
         Intended to be overridden.
         """
         await self.parse_message(message)
 
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(
+        self, before: discord.Message, after: discord.Message
+    ) -> None:
         if before.content != after.content:
             if after.id in self.ctx_cache:
-                flatctx = self.ctx_cache[after.id]
-                # Cleanup if required
+                flatctx: FlatContext = self.ctx_cache[after.id]
+
                 if flatctx.cleanup_on_edit:
                     if (
                         after.id in self.active_contexts
@@ -161,7 +161,7 @@ class cmdClient(discord.Client):
                     ):
                         ctx = self.active_contexts[after.id]
                         [task.cancel() for task in ctx.tasks]
-                        # Wait for the task to be removed from active contexts
+
                         while after.id in self.active_contexts:
                             await asyncio.sleep(0.1)
                         asyncio.ensure_future(self.active_command_response_cleaner(ctx))
@@ -169,15 +169,19 @@ class cmdClient(discord.Client):
                         asyncio.ensure_future(
                             self.flat_command_response_cleaner(flatctx)
                         )
-                # Reparse if required
+
                 if flatctx.reparse_on_edit:
                     await self.parse_message(after)
             else:
-                # If the message isn't in cache, treat as a new message
                 await self.on_message(after)
 
-    async def flat_command_response_cleaner(self, flatctx):
-        ch = self.get_channel(flatctx.ch)
+    async def flat_command_response_cleaner(self, flatctx: FlatContext):
+        ch: (
+            discord.TextChannel
+            | discord.DMChannel
+            | discord.Thread
+            | discord.VoiceChannel
+        ) = self.get_channel(flatctx.ch)
         if ch is not None:
             for msgid in flatctx.sent_messages:
                 try:
@@ -186,7 +190,7 @@ class cmdClient(discord.Client):
                 except Exception:
                     pass
 
-    async def active_command_response_cleaner(self, ctx):
+    async def active_command_response_cleaner(self, ctx: Context):
         try:
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.ch.delete_messages(ctx.sent_messages)
@@ -202,33 +206,33 @@ class cmdClient(discord.Client):
         """
         content = message.content.strip()
 
-        # Get valid prefixes
-        prefixes = await self.valid_prefixes(message)
+        # get prefixes
+        prefixes: tuple[str, ...] = await self.valid_prefixes(message)
+        prefixes = tuple(prefix for prefix in prefixes if content.startswith(prefix))
 
-        # Check whether the message starts with a valid prefix
-        prefixes = [prefix for prefix in prefixes if content.startswith(prefix)]
-        if prefixes is not None:
-            for prefix in sorted(prefixes, reverse=True):
-                # If the message starts with a valid command, pass it along to run_cmd
-                stripcontent = content[len(prefix) :].strip()
-                cmdnames = [
-                    cmdname
-                    for cmdname in self.cmd_names
-                    if stripcontent[: len(cmdname)].lower() == cmdname
-                ]
+        for prefix in sorted(prefixes, reverse=True):
+            # If the message starts with a valid command, pass it along to run_cmd
+            stripcontent: str = content[len(prefix) :].strip()
+            cmdnames: list[str] = [
+                cmdname
+                for cmdname in self.cmd_names
+                if stripcontent[: len(cmdname)].lower() == cmdname
+            ]
 
-                if cmdnames:
-                    cmdname = max(cmdnames, key=len)
-                    await self.run_cmd(
-                        message, cmdname, stripcontent[len(cmdname) :].strip(), prefix
-                    )
-                    return
+            if cmdnames:
+                cmdname: str = max(cmdnames, key=len)
+                await self.run_cmd(
+                    message, cmdname, stripcontent[len(cmdname) :].strip(), prefix
+                )
+                return
 
         # Run the extra message parsers
         for parser in self.extra_message_parsers:
             asyncio.ensure_future(parser[0](self, message), loop=self.loop)
 
-    async def run_cmd(self, message, cmdname, arg_str, prefix):
+    async def run_cmd(
+        self, message: discord.Message, cmdname: str, arg_str: str, prefix: str
+    ):
         """
         Run a command and pass it the command message and the arg_str.
 
@@ -240,44 +244,35 @@ class cmdClient(discord.Client):
             The name of the command to execute.
         arg_str: str
             The remaining content of the command message after the prefix and command name.
+        prefix: str
+            Prefix used in invoking the command
         """
-        cmd = self.cmd_names[cmdname]
+
+        cmd: Command = self.cmd_names[cmdname]
+        content: str = "\n".join(("\t" + line for line in message.content.splitlines()))
+
         log(
-            (
-                "Executing command '{cmdname}' from module '{module}' "
-                "from user '{message.author}' (uid:{message.author.id}) "
-                "in guild '{message.guild}' (gid:{guildid}) "
-                "in channel '{message.channel}' (cid:{message.channel.id}).\n"
-                "{content}"
-            ).format(
-                cmdname=cmdname,
-                module=cmd.module.name,
-                message=message,
-                guildid=message.guild.id if message.guild else None,
-                content="\n".join(
-                    ("\t" + line for line in message.content.splitlines())
-                ),
-            ),
-            context="mid:{}".format(message.id),
+            f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == 871997060239466496 else message.channel} ({'' if message.channel.id == 871997060239466496 else message.channel.id})\ngid: {message.guild if message.guild else ''} ({message.guild.id if message.guild else ''})\n\n{content}",
+            context=f"mid:{message.id}",
         )
 
         if not cmd.module.enabled:
             log(
-                "Skipping command due to disabled module.",
-                context="mid:{}".format(message.id),
+                "s     skip",
+                context=f"mid:{message.id}",
             )
             self.update_cmdnames()
 
         if not cmd.module.ready:
             log(
-                "Waiting for module '{}' to be ready.".format(cmd.module.name),
-                context="mid:{}".format(message.id),
+                f"w     |-- waiting {cmd.module.name}",
+                context=f"mid:{message.id}",
             )
             while not cmd.module.ready:
                 await asyncio.sleep(1)
 
         # Build the context
-        ctx = self.baseContext(
+        ctx: Context = self.baseContext(
             client=self,
             message=message,
             arg_str=arg_str,
@@ -289,21 +284,17 @@ class cmdClient(discord.Client):
         # Add command to command cache and active contexts
         self.ctx_cache[message.id] = ctx.flatten()
         self.active_contexts[message.id] = ctx
+
         try:
             await cmd.run(ctx)
         except Exception:
             log(
-                "The following exception was encountered executing command '{}'.\n{}".format(
-                    cmdname, traceback.format_exc()
-                ),
-                context="mid:{}".format(message.id),
+                f"The following exception was encountered executing command '{cmdname}'.\n{traceback.format_exc()}",
+                context=f"mid:{message.id}",
                 level=logging.ERROR,
             )
         finally:
-            # Renew command in command cache
             self.ctx_cache[message.id] = ctx.flatten()
-
-            # Remove message from active contexts
             self.active_contexts.pop(message.id, None)
 
     def load_dir(self, dirpath):
@@ -311,8 +302,8 @@ class cmdClient(discord.Client):
         Import all modules in a directory.
         Primarily for the use of importing new commands.
         """
-        loaded = 0
-        initial_cmds = len(self.cmds)
+        loaded: int = 0
+        initial_cmds: int = len(self.cmds)
 
         for fn in os.listdir(dirpath):
             path = os.path.join(dirpath, fn)
@@ -325,11 +316,7 @@ class cmdClient(discord.Client):
                     module.load_into(self)
 
                 loaded += 1
-        log(
-            "Imported {} modules from '{}', with {} new commands!".format(
-                loaded, dirpath, len(self.cmds) - initial_cmds
-            )
-        )
+        log(f"[load] {loaded} modules {dirpath} ({len(self.cmds) - initial_cmds} cmds)")
 
     def add_message_parser(self, func, priority=0):
         """
@@ -377,11 +364,7 @@ class cmdClient(discord.Client):
             bisect([parser[1] for parser in self.extra_message_parsers], priority),
             (new_func, priority),
         )
-        log(
-            'Adding message parser "{}" with priority "{}"'.format(
-                func.__name__, priority
-            )
-        )
+        log(f"+     |------{func.__name__} (priority: {priority})")
 
     def add_after_event(self, event, func, priority=0):
         """
@@ -418,11 +401,7 @@ class cmdClient(discord.Client):
         handlers.insert(
             bisect([handler[1] for handler in handlers], priority), (new_func, priority)
         )
-        log(
-            'Adding after_event handler "{}" for event "{}" with priority "{}"'.format(
-                func.__name__, event, priority
-            )
-        )
+        log(f"+     |--[event] {func.__name__} | {event} (priority: {priority})")
 
     def dispatch(self, event, *args, **kwargs):
         super().dispatch(event, *args, **kwargs)

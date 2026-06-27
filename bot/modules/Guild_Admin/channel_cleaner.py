@@ -143,10 +143,8 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
 
         client.objects["cleaned_guild_channels"] = cleaned_channels
         client.log(
-            "Read {} guilds with a total of {} autocleaned channels.".format(
-                len(cleaned_channels), channel_counter
-            ),
-            context="LOAD_CLEANED_CHANNELS",
+            f"r     |--Cleaned {len(cleaned_channels)} guilds (total: {channel_counter})",
+            context="Guild Admin",
         )
 
 

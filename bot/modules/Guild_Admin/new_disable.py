@@ -35,12 +35,12 @@ async def cmd_disable(ctx):
         *Depending on the application, some features and commands may already not be available.*
         The following refers to the modules and commands visible in `{prefix}ls`.
 
-        **latex**: All the commands in the `LaTeX Rendering` module.
+        **latex**: All the commands in the `LaTeX` module.
         **admin**: All guild admin commands apart from `config` and `disable`.
         **info**: All commands in the `Info` module.
         **utils**: All commands in the `Utility` module.
         **fun**: All the commands in the `Fun` module.
-        **maths**: All commands in the `Mathematics` module.
+        **maths**: All commands in the `Maths` module.
         **meta**: All commands in `Meta` apart from `help`, `list`, and `support`.
         **general-utils**:
     Example:

@@ -53,8 +53,8 @@ class guild_prefix(ColumnData, String, GuildSetting):
         }
 
         client.log(
-            "Read {} guilds with custom prefixes.".format(len(rows)),
-            context="LOAD_GUILD_PREFIXES",
+            f"r     |--custom prefixes: {len(rows)}",
+            context="Guild Admin",
         )
 
 

@@ -167,10 +167,8 @@ class disabled_commands(ListData, StringList, GuildSetting):
 
         client.objects["disabled_guild_commands"] = disabled_commands
         client.log(
-            "Read {} guilds with a total of {} disabled commands".format(
-                len(disabled_commands), command_counter
-            ),
-            context="LOAD_DISABLED_COMMANDS",
+            f"r     |--{len(disabled_commands)} guilds (total: {command_counter})",
+            context="DISABLED_COMMANDS",
         )
 
 

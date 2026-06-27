@@ -1,6 +1,6 @@
 from paraModule import paraModule
 
 github_module = paraModule(
-    "Github Integration",
+    "Github",
     description="Integrate with Github to display issues and pull requests (for TeXackers projects).",
 )

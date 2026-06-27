@@ -1,6 +1,5 @@
 import discord
 
-
 region_map = {
     "brazil": "Brazil",
     "eu-central": "Central Europe",
@@ -27,14 +26,14 @@ region_map = {
 
 sorted_cats = [
     "Bot Admin",
-    "LaTeX Rendering",
+    "LaTeX",
     "Guild Admin",
     "Info",
     "Utility",
     "Fun",
     "Social",
     "Moderation",
-    "Mathematics",
+    "Maths",
     "Meta",
     "Misc",
 ]

@@ -45,3 +45,14 @@ def footnote(text: str) -> str:
 
 def hyperlink(text: str, url: str) -> str:
     return f"[{text}]({url})"
+
+
+def em(text: str) -> str:
+    # ensure that it's not already delimited with asterisks/underscores
+    if text.startswith("*") and text.endswith("*"):
+        return text
+    return f"*{escape_mentions(text)}*"
+
+
+def emph(text: str) -> str:
+    return em(text)

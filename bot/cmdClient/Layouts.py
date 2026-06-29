@@ -7,7 +7,7 @@ import random
 from discord import Colour
 from discord.ui import Container, LayoutView, Section, Separator, TextDisplay, Thumbnail
 
-from .Format import footnote, h3
+from .Format import footnote, heading
 
 _error_colour: Colour = Colour.from_rgb(197, 50, 17)
 
@@ -37,10 +37,15 @@ IRASUTOYA_THUMBNAILS: list[str] = [
 
 
 class Header(TextDisplay):
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, level: int = 3) -> None:
         if not text:
             raise ValueError("Header text cannot be empty.")
-        super().__init__(f"{h3(text)}")
+        super().__init__(f"{heading(text, level)}")
+
+
+class HeaderWithThumbnail(Section):
+    def __init__(self, text: str, thumbnail_url: str, **kwargs) -> None:
+        super().__init__(Header(text, **kwargs), accessory=Thumbnail(thumbnail_url))
 
 
 class Body(TextDisplay):
@@ -62,12 +67,26 @@ class SectionWithThumbnail(Section):
         super().__init__(Body(text), accessory=Thumbnail(thumbnail_url))
 
 
+class TextEmbed(LayoutView):
+    def __init__(self, header: str, body: str, footer: str, accent_colour: Colour) -> None:
+        super().__init__(timeout=6000)
+
+        container = Container(
+            Header(header, 1),
+            Separator(),
+            Body(body),
+            Footer(footer),
+            accent_colour=accent_colour,
+        )
+        self.add_item(container)
+
+
 class GenericFullEmbed(LayoutView):
     def __init__(self, header: str, body: str, footer: str, thumbnail_url: str, accent_colour: Colour) -> None:
         super().__init__(timeout=6000)
 
         container = Container(
-            Header(header),
+            Header(header, 2),
             Separator(),
             SectionWithThumbnail(body, thumbnail_url),
             Footer(footer),

@@ -6,6 +6,19 @@ import discord
 import iso8601
 
 
+def tabulate(prop_list: dict) -> str:
+    """Tabulate a given dictionary into an old-school embed field-like format for the purpose of displaying it in a Discord LayoutView.
+
+    Args:
+        prop_list (dict): A dictionary of properties to tabulate.
+
+    Returns:
+        str: A string representation of the tabulated properties, with each property and its corresponding value on a new line, formatted as `property: value`. The properties are right-aligned based on the longest property name.
+    """
+    max_header_length: int = max(len(str(k)) for k in prop_list)
+    return "\n".join(f"`{key:>{max_header_length + 1}}:` {value:<}" for key, value in prop_list.items())
+
+
 def prop_tabulate(prop_list, value_list, indent=True):
     """
     Turns a list of properties and corresponding list of values into
@@ -372,7 +385,7 @@ def join_list(string, nfs=False):
     return "{}{}".format("".join(string), "" if nfs else ".")
 
 
-def format_activity(user):
+def format_activity(user: discord.Member) -> str:
     """
     Format a user's activity string, depending on the type of activity.
     Currently supported types are:

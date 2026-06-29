@@ -11,7 +11,7 @@ from .module import latex_module as module
 
 
 @module.cmd("texconfig", desc="View or modify your personal LaTeX rendering options.", aliases=["texflags", "tc"])
-async def cmd_texconfig(ctx: type[Context]) -> None:
+async def cmd_texconfig(ctx: Context) -> None:
     """
     Usage``:
         {prefix}texconfig
@@ -133,7 +133,7 @@ async def cmd_texconfig(ctx: type[Context]) -> None:
 
 
 @module.cmd("autotex", desc="Toggle whether your LaTeX is automatically rendered.", aliases=["texlisten"])
-async def cmd_autotex(ctx: type[Context]) -> None:
+async def cmd_autotex(ctx: Context) -> None:
     """
     Usage``:
         {prefix}autotex [on | off]

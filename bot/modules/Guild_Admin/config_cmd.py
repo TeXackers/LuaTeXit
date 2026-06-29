@@ -14,7 +14,7 @@ conf_pages = {
 }
 
 
-async def _build_config_pages(ctx: type[Context], show_help=True):
+async def _build_config_pages(ctx: Context, show_help=True):
     """
     Build guild configuration pages.
     """
@@ -69,7 +69,7 @@ async def _build_config_pages(ctx: type[Context], show_help=True):
 
 @module.cmd("config", desc="View and set the guild configuration.")
 @in_guild()
-async def cmd_config(ctx: type[Context]):
+async def cmd_config(ctx: Context):
     """
     Usage``:
         {prefix}config

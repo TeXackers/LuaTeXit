@@ -252,7 +252,7 @@ def triage_pods(pod_list):
     flags=["text"],
     aliases=["ask", "wolf", "wa", "?w"],
 )
-async def cmd_query(ctx: type[Context], flags: dict):
+async def cmd_query(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}ask [query] [--text]

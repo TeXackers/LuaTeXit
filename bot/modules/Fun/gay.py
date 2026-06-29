@@ -1,7 +1,7 @@
 import asyncio
-import datetime
 import random
 
+import discord
 from cmdClient import Context, Layouts
 from discord import Colour
 
@@ -43,12 +43,12 @@ BALL: list[str] = [
     "Very doubtful",  # r
 ]
 
-_col_megapositive: Colour = Colour.from_rgb(0, 0, 150)
-_col_positive: Colour = Colour.from_rgb(0, 150, 0)
-_col_uncertain: Colour = Colour.from_str("0xFFA107")
-_col_negative: Colour = Colour.from_rgb(150, 0, 0)
+col_megapositive: Colour = Colour.from_rgb(0, 0, 150)
+col_positive: Colour = Colour.from_rgb(0, 150, 0)
+col_uncertain: Colour = Colour.from_str("0xFFA107")
+col_negative: Colour = Colour.from_rgb(150, 0, 0)
 
-BALL_COLOURS: list[Colour] = 5 * [_col_megapositive] + 5 * [_col_positive] + 6 * [_col_uncertain] + 5 * [_col_negative]
+BALL_COLOURS: list[Colour] = 5 * [col_megapositive] + 5 * [col_positive] + 6 * [col_uncertain] + 5 * [col_negative]
 
 EMOJI: list[str] = ["🎱", "✨", "🔮", "🛐"]
 
@@ -79,12 +79,6 @@ def parse_die(die: str) -> tuple[int, int]:
     return (num, type_)
 
 
-def generate_die_stats(rolls: list[int]):
-    """
-    Generate some descriptive statistics about a list of die rolls, such as the total, average, highest, and lowest rolls. Also generate a relevant statistical plot for the rolls, such as a histogram or box plot. Return the statistics and the plot as a string.
-    """
-
-
 @module.cmd("8ball", desc="Ask the magic 8ball a question.", aliases=["8"])
 async def cmd_8ball(ctx):
     """
@@ -113,12 +107,10 @@ async def cmd_8ball(ctx):
 
         await anim_msg.delete()
         return await ctx.reply(
-            # reference = ctx.msg,
-            # allowed_mentions=discord.AllowedMentions.none(),
             view=Layouts.GenericFullEmbed(
                 f"{ctx.arg_str}",
                 ballsays,
-                f"{ctx.ts(datetime.datetime.now(datetime.UTC))}",
+                f"{discord.utils.format_dt(discord.utils.utcnow(), 'F')}",
                 BALL_GIF,
                 BALL_COLOURS[BALL.index(ballsays)],
             )
@@ -127,7 +119,7 @@ async def cmd_8ball(ctx):
 
 
 @module.cmd("roll", desc="Roll a DND die.", aliases=["die"])
-async def cmd_roll(ctx: type[Context]):
+async def cmd_roll(ctx: Context):
     """
     Usage``:
         {prefix}roll <die>

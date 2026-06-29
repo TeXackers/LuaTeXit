@@ -49,7 +49,7 @@ field_menu = []
 # Define callback functions for the menu
 
 
-async def update_preview(ctx: type[Context]):
+async def update_preview(ctx: Context):
     try:
         await ctx.bot.edit_message(ctx.objs["embed_preview_msg"], embed=ctx.objs["embed_embed"])
     except discord.HTTPException:
@@ -59,12 +59,12 @@ async def update_preview(ctx: type[Context]):
         )
 
 
-async def root_callback(ctx: type[Context], result):
+async def root_callback(ctx: Context, result):
     await root_menu[result][1](ctx)
     asyncio.ensure_future(update_preview(ctx))
 
 
-async def field_callback(ctx: type[Context], result):
+async def field_callback(ctx: Context, result):
     await field_menu[result][1](ctx)
     asyncio.ensure_future(update_preview(ctx))
 
@@ -91,7 +91,7 @@ async def set_title(ctx):
 
 
 @menu_item(root_menu, "Set Author")
-async def set_author(ctx: type[Context]):
+async def set_author(ctx: Context):
     new_msg = "Please enter the author name! (Max 256 characters, type c to cancel.)"
     await ctx.bot.edit_message(ctx.objs["menu"]["msg"], new_msg)
 
@@ -103,7 +103,7 @@ async def set_author(ctx: type[Context]):
 
 
 @menu_item(root_menu, "Set Author Icon")
-async def set_author_icon(ctx: type[Context]):
+async def set_author_icon(ctx: Context):
     new_msg = "Please submit the author icon! (Must be a valid URL, type c to cancel.)"
     await ctx.bot.edit_message(ctx.objs["menu"]["msg"], new_msg)
 
@@ -115,7 +115,7 @@ async def set_author_icon(ctx: type[Context]):
 
 
 @menu_item(root_menu, "Set Author URL")
-async def set_author_url(ctx: type[Context]):
+async def set_author_url(ctx: Context):
     new_msg = "Please enter the author URL! (Must be a valid URL, type c to cancel.)"
     await ctx.bot.edit_message(ctx.objs["menu"]["msg"], new_msg)
 
@@ -126,7 +126,7 @@ async def set_author_url(ctx: type[Context]):
         )
 
 
-def colour_check(ctx: type[Context], msg: str):
+def colour_check(ctx: Context, msg: str):
     user_str = msg.content
     if user_str.lower() in discordColours:
         return None

@@ -10,3 +10,5 @@ from . import modrole_config
 # from . import ticket_cmds
 
 # from . import blank_cmds
+
+__all__ = ["modrole_config"]

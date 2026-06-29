@@ -21,7 +21,7 @@ from .core.preamble_utils import (
 from .module import latex_module as module
 
 
-async def approval_queue(ctx: type[Context]):
+async def approval_queue(ctx: Context):
     """
     Show a selectable list of preambles to be approved/denied
     """
@@ -60,7 +60,7 @@ async def approval_queue(ctx: type[Context]):
             judging = ctx.client.data.user_pending_preambles.select_where(userid=currently_on_wait)[0]
 
             current_preamble_row = ctx.client.data.user_latex_preambles.select_where(userid=currently_on_wait)
-            current = current_preamble_row[0]["preamble"] if current_preamble_row else None
+            current: str | None = current_preamble_row[0]["preamble"] if current_preamble_row else None
             sub_msg = await view_preamble_diff(
                 ctx,
                 preamble_old=current,
@@ -82,15 +82,14 @@ async def approval_queue(ctx: type[Context]):
             # Add the approval/denial/testing emojis to the submission
             await judgement_reactions(ctx, judging["userid"], sub_msg)
         else:
-            await ctx.reply("All preambles assessed, good work!")
-            break
+            return await ctx.reply("All preambles assessed, good work!")
 
         # Remove the submission message, if possible
         with suppress(discord.NotFound):
             await sub_msg.delete()
 
 
-async def user_admin(ctx: type[Context], userid: int):
+async def user_admin(ctx: Context, userid: int):
     """
     Shows a preamble management menu for a single user.
     Menu:
@@ -265,7 +264,7 @@ async def user_admin(ctx: type[Context], userid: int):
     return None
 
 
-async def guild_admin(ctx: type[Context], guildid: int):
+async def guild_admin(ctx: Context, guildid: int):
     """
     Shows a preamble management menu for a single guild.
     Menu:

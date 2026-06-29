@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import discord
+from cmdClient import Check  # noqa
 from discord import Status
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting
@@ -60,10 +61,8 @@ async def join_logger(client, member):
     embed = discord.Embed(
         color=colour, title=f"{member} ({member.id})", description=desc, timestamp=discord.utils.utcnow()
     )
-    embed.set_author(
-        name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"), url=member.avatar_url
-    )
-    embed.set_thumbnail(url=member.avatar_url)
+    embed.set_author(name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"), url=member.avatar)
+    embed.set_thumbnail(url=member.avatar)
 
     try:
         await joinlog.send(embed=embed)
@@ -89,7 +88,7 @@ async def departure_logger(client, member):
     # Extract member information
     name = f"{member.display_name} ({member.mention})"
     colour = discord.Colour.red()
-    avatar = member.avatar_url
+    avatar = member.avatar
 
     joined_ago = f"({strfdelta(discord.utils.utcnow() - member.joined_at, minutes=True)} ago)"
     joined = member.joined_at.strftime("%I:%M %p, %d/%m/%Y")
@@ -136,8 +135,8 @@ def attach_traffic_handlers(client):
 class guild_joinlog(ColumnData, Channel, GuildSetting):
     attr_name = "join_log"
     category = "Logging"
-    read_check = None
-    write_check = guild_manager
+    read_check: type[Check] = Check
+    write_check: Check = guild_manager
 
     name = "joinlog"
     desc = "Channel to log information about new members."
@@ -153,8 +152,8 @@ class guild_joinlog(ColumnData, Channel, GuildSetting):
 class guild_departurelog(ColumnData, Channel, GuildSetting):
     attr_name = "departure_log"
     category = "Logging"
-    read_check = None
-    write_check = guild_manager
+    read_check: type[Check] = Check
+    write_check: Check = guild_manager
 
     name = "departurelog"
     desc = "Channel to log information about departing members."

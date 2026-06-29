@@ -10,7 +10,7 @@ from .tickets import Ticket, TicketType, describes_ticket
 
 @module.cmd("note", desc="Create a moderation note on a member.", aliases=["addnote"])
 @guild_moderator()
-async def cmd_note(ctx: type[Context]):
+async def cmd_note(ctx: Context):
     """
     Usage``:
         {prefix}note <user> [content]
@@ -59,7 +59,7 @@ class NoteTicket(Ticket):
         # Moderator information
         mod_user = self._client.get_user(self.modid)
         if mod_user is not None:
-            embed.set_footer(text=f"Created by: {mod_user}", icon_url=mod_user.avatar_url)
+            embed.set_footer(text=f"Created by: {mod_user}", icon_url=mod_user.avatar)
         else:
             embed.set_footer(text=f"Created by: {self.modid}")
 

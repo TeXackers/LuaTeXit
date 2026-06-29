@@ -6,7 +6,7 @@ from wards import is_reviewer
 from .core.LatexContext import LatexContext
 from .core.LatexGuild import LatexGuild
 from .core.LatexUser import LatexUser
-from .core.tex_utils import ParseMode
+from .core.tex_utils import ParseMode, TexNameStyle
 from .module import latex_module as module
 
 
@@ -17,7 +17,7 @@ from .module import latex_module as module
     flags=["u="],
 )
 @is_reviewer()
-async def cmd_texas(ctx: type[Context], flags: dict):
+async def cmd_texas(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}texas -u <userid> <code>
@@ -70,7 +70,7 @@ async def cmd_texas(ctx: type[Context], flags: dict):
 
     # Since luser is the "as" user, force namestyle 4 (reaction-based)
     # Also pass the ID of the real user as mask_id
-    luser.namestyle = 4
+    luser.namestyle = TexNameStyle.RUNNINGAS
     target_id = str(flags["u"])
 
     match ctx.alias.lower():

@@ -29,13 +29,13 @@ class LatexUser:
         self.id = id
 
         # Explicitly typed user configuration settings
-        self.autotex: bool | None = None
-        self.keepsourcefor: int | None = None
+        self.autotex: bool = False
+        self.keepsourcefor: int = 300
         self.colour: str = "light"
-        self.alwaysmath: bool | None = None
-        self.alwayswide: bool | None = None
-        self.namestyle: TexNameStyle | None = None
-        self.autotex_level: AutoTexLevel | None = None
+        self.alwaysmath: bool = False
+        self.alwayswide: bool = False
+        self.namestyle: TexNameStyle = TexNameStyle.NICKNAME
+        self.autotex_level: AutoTexLevel = AutoTexLevel.WEAK
 
         self.preamble: str | None = None
 
@@ -77,5 +77,5 @@ class LatexUser:
 
 
 @module.data_init_task
-def attach_latexuser_client(client: type[cmdClient]):
+def attach_latexuser_client(client: cmdClient):
     LatexUser._client = client

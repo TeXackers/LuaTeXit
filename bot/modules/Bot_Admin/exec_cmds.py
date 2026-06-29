@@ -27,7 +27,7 @@ Commands provided:
 
 @module.cmd("async", desc="Executes async code and displays the output.")
 @is_master()
-async def cmd_async(ctx: type[Context]) -> None:
+async def cmd_async(ctx: Context) -> None:
     """
     Usage``:
         {prefix}async <code>
@@ -50,7 +50,7 @@ async def cmd_async(ctx: type[Context]) -> None:
 
 @module.cmd("exec", desc="Executes python code using exec and displays the output.")
 @is_master()
-async def cmd_exec(ctx: type[Context]) -> None:
+async def cmd_exec(ctx: Context) -> None:
     """
     Usage``:
         {prefix}exec <code>
@@ -73,7 +73,7 @@ async def cmd_exec(ctx: type[Context]) -> None:
 
 @module.cmd("eval", desc="Executes python code using eval and displays the output.", flags=["s"])
 @is_master()
-async def cmd_eval(ctx: type[Context], flags) -> None:
+async def cmd_eval(ctx: Context, flags) -> None:
     """
     Usage``:
         {prefix}eval <code> [-s]
@@ -100,7 +100,7 @@ async def cmd_eval(ctx: type[Context], flags) -> None:
 
 @module.cmd("shell", desc="Runs a command in the operating environment.")
 @is_master()
-async def cmd_shell(ctx: type[Context]) -> None:
+async def cmd_shell(ctx: Context) -> None:
     """
     Usage``:
         {prefix}shell <command>
@@ -119,7 +119,7 @@ async def cmd_shell(ctx: type[Context]) -> None:
     )
 
 
-async def _eval(ctx):
+async def _eval(ctx: Context):
     output = None
     try:
         output = eval(ctx.args)
@@ -130,7 +130,7 @@ async def _eval(ctx):
     return (output, 0)
 
 
-async def _exec(ctx):
+async def _exec(ctx: Context):
     old_stdout = sys.stdout
     redirected_output = sys.stdout = StringIO()
     result = None
@@ -144,7 +144,7 @@ async def _exec(ctx):
     return result
 
 
-async def _async(ctx):
+async def _async(ctx: Context):
     env = {"ctx": ctx}
     env.update(globals())
     old_stdout = sys.stdout
@@ -156,8 +156,7 @@ async def _async(ctx):
         exec(exec_string, env)
         result = (redirected_output.getvalue(), 0)
     except Exception:
-        result = (str(traceback.format_exc()), 1)
-        return await result
+        return (str(traceback.format_exc()), 1)
     _temp_exec = env["_temp_exec"]
     try:
         returnval = await _temp_exec()

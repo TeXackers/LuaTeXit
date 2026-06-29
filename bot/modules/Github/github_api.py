@@ -11,6 +11,7 @@ from cmdClient import Context  # noqa
 from github import Auth, Github
 
 if TYPE_CHECKING:
+    from github.Issue import Issue
     from github.Repository import Repository
 
 from .GithubColours import GithubColour
@@ -25,7 +26,7 @@ def is_alnum_with_hyphen(s: str) -> bool:
 
 
 @module.cmd(name="github", desc="Look up issues from repositories on GitHub.", aliases=["gh"], flags=["issue"])
-async def cmd_github_lookup(ctx: type[Context], flags):
+async def cmd_github_lookup(ctx: Context, flags):
     """
     Usage``:
         {prefix}gh <repository>
@@ -41,14 +42,15 @@ async def cmd_github_lookup(ctx: type[Context], flags):
     # in case it's not, we can try <arg>/<arg> and see if that works
     # otherwise exit with an error message
     query_issue = flags["issue"]
+    query: list[str] | str
     if query_issue:
         query = ctx.args.strip().split()
         if len(query) != 2:
             return await ctx.error_reply(
                 "Please provide a repository and an issue number to look up. For example, `typst/typst 123`."
             )
-        orgrepo = query[0]
-        issue_num = query[1]
+        orgrepo: str = query[0]
+        issue_num: str = query[1]
 
         if not issue_num.isdigit():
             return await ctx.error_reply(
@@ -60,8 +62,8 @@ async def cmd_github_lookup(ctx: type[Context], flags):
             return await ctx.error_reply(
                 "Please provide a repository to look up. For example, `typst/typst` or `latex3`."
             )
-        orgrepo = query
-        issue_num = None
+        orgrepo: str = query
+        issue_num: str = ""
 
     # validate org/repo formatting
     match is_alnum_with_hyphen(orgrepo), "/" in orgrepo:
@@ -84,13 +86,13 @@ async def cmd_github_lookup(ctx: type[Context], flags):
 
     out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
     GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
-    github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
+    github_api: github.Github = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
     repo: Repository = github_api.get_repo(f"{org}/{reponame}")
 
     if not query_issue:
         try:
             _ = repo.updated_at
-        except github.UnknownObjectException as e:
+        except github.GithubException as e:
             match e.status:
                 case 302:
                     (reason := "it has been moved permanently [302].")
@@ -142,29 +144,29 @@ async def cmd_github_lookup(ctx: type[Context], flags):
                     "icon_url": f"https://avatars.githubusercontent.com/u/{repo.owner.id}?v=4",
                 },
                 created_at=repo.created_at,
-                footer_text=f"Last updated: {discord.utils.format_dt(repo.updated_at, 'R')} | Requested by: {ctx.author.display_name}",
+                footer_text=f"Last updated: {discord.utils.format_dt(repo.updated_at, 'R')} | Requested by: {ctx.author.display_name or ctx.author.name}",
                 images=None,
             ),
         )
     try:
-        issue = repo.get_issue(int(issue_num))
-    except github.UnknownObjectException as e:
-        reason: str = ""
+        issue: Issue = repo.get_issue(int(issue_num))
+        _ = issue.created_at
+    except github.GithubException as e:
         match e.status:
             case 301:
-                reason = "it has been moved permanently [304]."
+                (reason := "it has been moved permanently [304].")
             case 403:
-                reason = "access to the issue/PR is forbidden [403]."
+                (reason := "access to the issue/PR is forbidden [403].")
             case 404:
-                reason = "it does not exist [404]."
+                (reason := "it does not exist [404].")
             case 410:
-                reason = "it has been deleted [410]."
+                (reason := "it has been deleted [410].")
             case 422:
-                reason = "validation failed, or the endpoint has been spammed [422]."
+                (reason := "validation failed, or the endpoint has been spammed [422].")
             case 503:
-                reason = "GitHub is currently unavailable [503]."
+                (reason := "GitHub is currently unavailable [503].")
             case _:
-                reason = f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}]."
+                (reason := f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}].")
         await out_msg.delete()
         return await ctx.error_reply(f"Could not find issue/PR #{issue_num} in {org}/{reponame}, because {reason}")
 

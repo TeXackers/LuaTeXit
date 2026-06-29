@@ -19,21 +19,21 @@ class _tableData:
     _data_column = None
 
     @classmethod
-    def _get_table_interface(cls, client: type[cmdClient]):
+    def _get_table_interface(cls, client: cmdClient):
         """
         Gets the table interface from the client.
         """
         return client.data.interfaces.get(cls._table_interface_name)
 
     @classmethod
-    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read a setting from storage and return setting data or None.
         """
         raise NotImplementedError
 
     @classmethod
-    def _writer(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def _writer(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
         """
         Write provided setting data to storage.
         If the data is None, the setting is empty and should be unset.
@@ -48,7 +48,7 @@ class ListData(_tableData):
     """
 
     @classmethod
-    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read in all entries associated to the guild.
         """
@@ -59,7 +59,7 @@ class ListData(_tableData):
         return data_rows if data_rows else None
 
     @classmethod
-    def _writer(cls, client: type[cmdClient], guildid: int, data: list[Any], **kwargs):
+    def _writer(cls, client: cmdClient, guildid: int, data: list[Any], **kwargs):
         """
         Write the provided list to storage.
         """
@@ -108,7 +108,7 @@ class ColumnData(_tableData):
     _upsert_constraint = None
 
     @classmethod
-    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read in the requested entry associated to the guild.
         """
@@ -118,7 +118,7 @@ class ColumnData(_tableData):
         return rows[0][cls._data_column] if rows else None
 
     @classmethod
-    def _writer(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def _writer(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
         """
         Write the provided entry to the table, allowing replacements.
         """
@@ -141,7 +141,7 @@ class BoolData(_tableData):
     """
 
     @classmethod
-    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read the table and return whether the specified guildid exists.
         """
@@ -151,7 +151,7 @@ class BoolData(_tableData):
         return len(rows) > 0
 
     @classmethod
-    def _writer(cls, client: type[cmdClient], guildid: int, data: bool, **kwargs):
+    def _writer(cls, client: cmdClient, guildid: int, data: bool, **kwargs):
         """
         Write the provided boolean to storage by adding or removing the row.
         """

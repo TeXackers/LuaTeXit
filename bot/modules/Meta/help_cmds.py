@@ -25,7 +25,7 @@ Commands provided:
 
 
 @module.cmd("help", desc="Bot and command usage information.", aliases=["h", "man"])
-async def cmd_help(ctx: type[Context]):
+async def cmd_help(ctx: Context):
     """
     Usage``:
         {prefix}help [command name]
@@ -193,7 +193,7 @@ async def cmd_help(ctx: type[Context]):
 
 
 @module.cmd("list", desc="Lists all my commands!", aliases=["ls"])
-async def cmd_list(ctx: type[Context]) -> None:
+async def cmd_list(ctx: Context) -> None:
     """
     Usage``:
         {prefix}list [module]

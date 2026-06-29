@@ -115,7 +115,7 @@ class Ticket:
         # Moderator information
         mod_user = self._client.get_user(self.modid)
         if mod_user is not None:
-            embed.set_footer(text=f"Responsible moderator: {mod_user}", icon_url=mod_user.avatar_url)
+            embed.set_footer(text=f"Responsible moderator: {mod_user}", icon_url=mod_user.avatar)
         else:
             embed.set_footer(text=f"Responsible moderator: {self.modid}")
 

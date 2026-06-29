@@ -15,13 +15,13 @@ Handlers:
 """
 
 
-async def log_left_guild(client: type[cmdClient], guild: discord.Guild):
+async def log_left_guild(client: cmdClient, guild: discord.Guild):
     # Build embed
     embed = discord.Embed(
         title=f"`{guild.name} (ID: {guild.id})`", colour=discord.Colour.red(), timestamp=discord.utils.utcnow()
     )
     embed.set_author(name="Left guild!")
-    embed.set_thumbnail(url=guild.icon_url)
+    embed.set_thumbnail(url=guild.icon)
 
     # Add more specific information about the guild
     embed.add_field(name="Owner", value=f"{guild.owner.name} (ID: {guild.owner.id})", inline=False)
@@ -36,7 +36,7 @@ async def log_left_guild(client: type[cmdClient], guild: discord.Guild):
 
 async def log_joined_guild(client: cmdClient, guild: discord.Guild):
     owner = guild.owner
-    icon = guild.icon_url
+    icon = guild.icon
 
     bots = 0
     known = 0

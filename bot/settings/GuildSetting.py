@@ -33,7 +33,7 @@ class GuildSetting:
     long_desc: str = None  # User readable long description of the setting
     accepts: str = None  # User readable description of the acceptable values
 
-    def __init__(self, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def __init__(self, client: cmdClient, guildid: int, data: Any, **kwargs):
         self.client = client
         self.guildid = guildid
         self._data = data
@@ -69,7 +69,7 @@ class GuildSetting:
 
     # Instance generation
     @classmethod
-    def get(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def get(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Return a setting instance initialised from the stored value.
         """
@@ -77,7 +77,7 @@ class GuildSetting:
         return cls(client, guildid, data, **kwargs)
 
     @classmethod
-    async def parse(cls, ctx: type[Context], userstr: str, **kwargs):
+    async def parse(cls, ctx: Context, userstr: str, **kwargs):
         """
         Return a setting instance initialised from a parsed user string.
         """
@@ -140,7 +140,7 @@ class GuildSetting:
 
     # Raw converters
     @classmethod
-    def _data_from_value(cls, client: type[cmdClient], guildid: int, value, **kwargs):
+    def _data_from_value(cls, client: cmdClient, guildid: int, value, **kwargs):
         """
         Convert a high-level setting value to internal data.
         Must be overriden by the setting.
@@ -150,7 +150,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _data_to_value(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def _data_to_value(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
         """
         Convert internal data to high-level setting value.
         Must be overriden by the setting.
@@ -158,7 +158,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    async def _parse_userstr(cls, ctx: type[Context], guildid: int, userstr: str, **kwargs):
+    async def _parse_userstr(cls, ctx: Context, guildid: int, userstr: str, **kwargs):
         """
         Parse user provided input into internal data.
         Must be overriden by the setting if the setting is user-configurable.
@@ -166,7 +166,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _format_data(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def _format_data(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
         """
         Convert internal data into a formatted user-readable string.
         Must be overriden by the setting if the setting is user-viewable.
@@ -175,7 +175,7 @@ class GuildSetting:
 
     # Database access classmethods
     @classmethod
-    def _reader(cls, client: type[cmdClient], guildid: int, **kwargs):
+    def _reader(cls, client: cmdClient, guildid: int, **kwargs):
         """
         Read a setting from storage and return setting data or None.
         Must be overriden by the setting.
@@ -183,7 +183,7 @@ class GuildSetting:
         raise NotImplementedError
 
     @classmethod
-    def _writer(cls, client: type[cmdClient], guildid: int, data: Any, **kwargs):
+    def _writer(cls, client: cmdClient, guildid: int, data: Any, **kwargs):
         """
         Write provided setting data to storage.
         Must be overriden by the setting unless the `write` method is overidden.
@@ -193,7 +193,7 @@ class GuildSetting:
 
     # Helper methods for external use
     @classmethod
-    def initialise(cls, client: type[cmdClient], **kwargs):
+    def initialise(cls, client: cmdClient, **kwargs):
         """
         Initialisation method to set up the client for this setting.
         The setting does not run this itself,

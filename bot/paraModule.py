@@ -37,7 +37,7 @@ class paraModule(Module):
         log(f"+     |-/{cls.attr_name}", context=self.name)
         return cls
 
-    def initialise(self, client: type[cmdClient]):
+    def initialise(self, client: cmdClient):
         if self.guild_settings and not self.initialised:
             log("guild", context=self.name)
             for setting in self.guild_settings:
@@ -53,7 +53,7 @@ class paraModule(Module):
 
         super().initialise(client)
 
-    async def pre_command(self, ctx: type[Context]):
+    async def pre_command(self, ctx: Context):
         if ctx.guild:
             disabled = ctx.client.objects["disabled_guild_commands"]
             if (
@@ -72,7 +72,7 @@ class paraModule(Module):
             ):
                 raise SafeCancellation
 
-    def data_init_task(self, func: Callable[[type[cmdClient]], None]) -> Callable[[type[cmdClient]], None]:
+    def data_init_task(self, func: Callable[[cmdClient], None]) -> Callable[[cmdClient], None]:
         """
         Decorator which adds a data initialisation task.
         These tasks accept a client,
@@ -83,7 +83,7 @@ class paraModule(Module):
         log(f"a     |--{func.__name__}", context=self.name)
         return func
 
-    def initialise_data(self, client: type[cmdClient]):
+    def initialise_data(self, client: cmdClient):
         """
         Data initialise hook.
         """
@@ -98,7 +98,7 @@ class paraModule(Module):
         else:
             log("s     |--[skip]", context=self.name)
 
-    async def on_exception(self, ctx: type[Context], exception: Exception):
+    async def on_exception(self, ctx: Context, exception: Exception):
         try:
             raise exception
         except (FailedCheck, SafeCancellation):
@@ -140,34 +140,30 @@ class paraModule(Module):
             if len(only_error) > 2000:
                 only_error = only_error[:2000] + "..."
 
-            # log(
-            #     (
-            #         "Caught an unhandled exception while "
-            #         "executing command '{cmdname}' from module '{module}' "
-            #         "from user '{message.author}' (uid:{message.author.id}) "
-            #         "in guild '{message.guild}' (gid:{guildid}) "
-            #         "in channel '{message.channel}' (cid:{message.channel.id}).\n"
-            #         "Message Content:\n"
-            #         "{content}\n"
-            #         "Traceback:\n"
-            #         "{traceback}\n\n"
-            #         "{flat_ctx}"
-            #     ).format(
-            #         cmdname=ctx.cmd.name,
-            #         module=ctx.cmd.module.name,
-            #         message=ctx.msg,
-            #         guildid=ctx.guild.id if ctx.guild else None,
-            #         content="\n".join(
-            #             "\t" + line for line in ctx.msg.content.splitlines()
-            #         ),
-            #         traceback="\n".join(
-            #             "\t" + line for line in full_traceback.splitlines()
-            #         ),
-            #         flat_ctx=ctx.flatten(),
-            #     ),
-            #     context="mid:{}".format(ctx.msg.id),
-            #     level=logging.ERROR,
-            # )
+            log(
+                (
+                    "Caught an unhandled exception while "
+                    "executing command '{cmdname}' from module '{module}' "
+                    "from user '{message.author}' (uid:{message.author.id}) "
+                    "in guild '{message.guild}' (gid:{guildid}) "
+                    "in channel '{message.channel}' (cid:{message.channel.id}).\n"
+                    "Message Content:\n"
+                    "{content}\n"
+                    "Traceback:\n"
+                    "{traceback}\n\n"
+                    "{flat_ctx}"
+                ).format(
+                    cmdname=ctx.cmd.name if ctx.cmd is not None else None,
+                    module=ctx.cmd.module.name if ctx.cmd is not None else None,
+                    message=ctx.msg,
+                    guildid=ctx.guild.id if ctx.guild else None,
+                    content="\n".join("\t" + line for line in ctx.msg.content.splitlines()),
+                    traceback="\n".join("\t" + line for line in full_traceback.splitlines()),
+                    flat_ctx=ctx.flatten(),
+                ),
+                context=f"mid:{ctx.msg.id}",
+                level=logging.ERROR,
+            )
             # if logging.getLogger().getEffectiveLevel() < logging.INFO:
             error_embed = DebugEmbedView(
                 f"Following error occurred while executing command `{ctx.cmd.name}` from `{ctx.cmd.module.name}`",

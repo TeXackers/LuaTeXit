@@ -4,6 +4,7 @@ import traceback
 
 import discord
 from cmdClient import cmdClient  # noqa
+from discord import Message
 from logger import log
 
 from .core.LatexContext import LatexContext
@@ -13,7 +14,7 @@ from .core.tex_utils import AutoTexLevel, ParseMode
 from .module import latex_module as module
 
 
-async def latex_message_parser(client: type[cmdClient], message: str):
+async def latex_message_parser(client: cmdClient, message: Message):
     """
     Check incoming messages for LaTeX, render them if required, and add them to cache.
     As a cmdClient message parser, it handles both new messages and edits which were ignored by the command parser.
@@ -144,5 +145,5 @@ async def latex_message_parser(client: type[cmdClient], message: str):
 
 
 @module.init_task
-def register_latex_parser(client: type[cmdClient]):
+def register_latex_parser(client: cmdClient):
     client.add_message_parser(latex_message_parser)

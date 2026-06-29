@@ -12,7 +12,7 @@ from .module import utils_module as module
 default_emoji_url = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/{}.png"
 
 
-def get_custom_emoji(ctx: type[Context], emoji_str: str):
+def get_custom_emoji(ctx: Context, emoji_str: str):
     # Not valid emoji name or emoji id
     # Cross fingers and hope it is of form a:name:id, <a:name:id>, name:id, or <:name:id>
     # Give up otherwise
@@ -56,7 +56,7 @@ def unicode_char_rep(uni: str) -> str:
     aliases=["e", "ee", "ree", "sree", "emote"],
     flags=["e", "to==", "up=="],
 )
-async def cmd_emoji(ctx: type[Context], flags: dict):
+async def cmd_emoji(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}emoji <emoji> [-e]

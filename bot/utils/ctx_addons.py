@@ -82,7 +82,7 @@ async def _message_counter(client, channel, max_count):
 
 
 @Context.util
-def log(ctx: type[Context], *args, **kwargs):
+async def log(ctx: Context, *args, **kwargs):
     """
     Shortcut to the logger which automatically adds the context.
     """
@@ -92,7 +92,7 @@ def log(ctx: type[Context], *args, **kwargs):
 
 
 @Context.util
-async def run_in_shell(ctx: type[Context], script):
+async def run_in_shell(ctx: Context, script):
     """
     Execute a script or command asynchronously in a subprocess shell.
     """
@@ -112,7 +112,7 @@ async def run_in_shell(ctx: type[Context], script):
 
 
 @Context.util
-def best_prefix(ctx: type[Context]):
+async def best_prefix(ctx: Context):
     """
     Returns the best default prefix in the current context.
     This will be the server prefix if it is defined,
@@ -126,18 +126,18 @@ def best_prefix(ctx: type[Context]):
 
 
 @Context.util
-def format_usage(ctx: type[Context]):
+async def format_usage(ctx: Context):
     """
     Formats the usage string of the current command.
     Assumes the first section of the doc string is the usage string.
     """
     usage = ctx.cmd.long_help[0][1]
-    usage = usage.format(ctx=ctx, client=ctx.client, prefix=ctx.best_prefix())
+    usage = usage.format(ctx=ctx, client=ctx.client, prefix=await ctx.best_prefix())
     return "**USAGE:**{}{}".format("\n" if "\n" in usage else " ", usage)
 
 
 @Context.util
-async def confirm_sent(ctx: type[Context], msg=None, reply=None):
+async def confirm_sent(ctx: Context, msg=None, reply=None):
     """
     Confirms to a user that the bot has DMed them by adding a tick reaction to the command message.
     If the bot doesn't have permission to add reactions, it will respond with a message if reply is provided.
@@ -158,7 +158,7 @@ async def confirm_sent(ctx: type[Context], msg=None, reply=None):
 
 
 @Context.util
-async def offer_delete(ctx: type[Context], *to_delete, timeout=300):
+async def offer_delete(ctx: Context, *to_delete, timeout=300):
     """
     Offers to delete the provided messages via a reaction on the last message.
     Removes the reaction if the offer times out.
@@ -238,7 +238,7 @@ async def mail(ctx, channelid, content=None, **kwargs):
 
 
 @Context.util
-async def safe_delete_msgs(ctx: type[Context], *msgs):
+async def safe_delete_msgs(ctx: Context, *msgs):
     """
     Safely deletes a list of messages, ignoring any exceptions that could be raised.
 
@@ -258,7 +258,7 @@ async def safe_delete_msgs(ctx: type[Context], *msgs):
 
 
 @Context.util
-async def dm_reply(ctx: type[Context], *args, **kwargs):
+async def dm_reply(ctx: Context, *args, **kwargs):
     """
     Respond to a user by DMing them.
 
@@ -274,7 +274,7 @@ async def dm_reply(ctx: type[Context], *args, **kwargs):
 
 
 @Context.util
-def clean_arg_str(ctx: type[Context]):
+def clean_arg_str(ctx: Context):
     """
     Re-parse a command message using `Message.clean_content`
     to clean mentions from the arguments.
@@ -292,7 +292,7 @@ def clean_arg_str(ctx: type[Context]):
 
 
 @Context.util
-def usage_embed(ctx: type[Context], custom_usage=None):
+def usage_embed(ctx: Context, custom_usage=None):
     """
     Creates an embed displaying the current command's usage field.
     If `custom_usage` is provided, uses this instead of the help usage field.
@@ -315,7 +315,7 @@ def usage_embed(ctx: type[Context], custom_usage=None):
 
 
 @Context.util
-def ts(ctx: type[Context], timestamp, mode="F") -> str:
+def ts(ctx: Context, timestamp, mode="F") -> str:
     """
     Converts datetime timestamps for use in Discord's timestamp format.
     Intended to be used to display "created at" dates.

@@ -9,7 +9,7 @@ from .module import guild_admin_module as module
 
 @module.cmd("rmrole", desc="Deletes the provided role", aliases=["removerole", "remrole", "deleterole", "delrole"])
 @guild_moderator()
-async def cmd_rmrole(ctx: type[Context]):
+async def cmd_rmrole(ctx: Context):
     """
     Usage``:
         {prefix}rmrole <rolename>
@@ -18,7 +18,7 @@ async def cmd_rmrole(ctx: type[Context]):
     """
     if not ctx.arg_str:
         return await ctx.error_reply("Please provide a role to delete.")
-    role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
+    role: discord.Role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
     if not role:
         return None
     # Various checks to avoid hard errors and prevent abuse.
@@ -46,7 +46,7 @@ async def cmd_rmrole(ctx: type[Context]):
     flags=["colour=", "color=", "name==", "perm==", "hoist=", "mention=", "pos=="],
 )
 @guild_moderator()
-async def cmd_editrole(ctx: type[Context], flags):
+async def cmd_editrole(ctx: Context, flags):
     """
     Usage``:
         {prefix}editrole <rolename> [flags]

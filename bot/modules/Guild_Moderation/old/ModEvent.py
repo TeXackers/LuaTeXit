@@ -49,7 +49,7 @@ class ModEvent:
         if self.timeout is not None:
             embed.add_field(name="Expires:", value=self.ctx.strfdelta(self.timeout), inline=False)
         embed.add_field(name="Reason", value=self.reason, inline=False)
-        embed.set_footer(icon_url=self.mod.avatar_url, text=f"Acting Moderator: {self.mod}")
+        embed.set_footer(icon_url=self.mod.avatar, text=f"Acting Moderator: {self.mod}")
         self.embed = embed
         return embed
 

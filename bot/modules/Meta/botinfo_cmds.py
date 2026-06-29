@@ -31,7 +31,7 @@ Commands provided:
 
 
 @module.cmd("stat", desc="Hardware Stats and Load.")
-async def cmd_curr_load(ctx: type[Context]) -> None:
+async def cmd_curr_load(ctx: Context) -> None:
     table_fields: list = []
 
     # separate for MacOS vs linux
@@ -106,7 +106,7 @@ async def cmd_curr_load(ctx: type[Context]) -> None:
 
 
 @module.cmd("about", desc="Shard status and bot statistics.")
-async def cmd_about(ctx: type[Context]):
+async def cmd_about(ctx: Context):
     """
     Usage``:
         {prefix}about
@@ -174,7 +174,7 @@ async def cmd_about(ctx: type[Context]):
 
 
 @module.cmd("ping", desc="Check heartbeat and API latency.", aliases=["pong"])
-async def cmd_ping(ctx: type[Context]):
+async def cmd_ping(ctx: Context):
     """
     Usage``:
         {prefix}ping
@@ -193,7 +193,7 @@ async def cmd_ping(ctx: type[Context]):
 
 
 @module.cmd("invite", desc="Sends the bot's invite link", aliases=["inv"])
-async def cmd_invite(ctx: type[Context]):
+async def cmd_invite(ctx: Context):
     """
     Usage``:
         {prefix}invite

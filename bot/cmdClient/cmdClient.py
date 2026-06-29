@@ -6,6 +6,7 @@ import sys
 import traceback
 from bisect import bisect
 from collections.abc import Callable  # noqa
+from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
@@ -120,7 +121,7 @@ class cmdClient(discord.Client):
         await self.launch_modules()
 
         ready_str = (
-            f"{self.user} ({self.user.id}) launching in {len(self.guilds)} guilds\n"
+            f"{self.user} ({self.user.id if self.user.id else 'Unknown ID'}) launching in {len(self.guilds)} guilds\n"
             f"Default prefix: {self.prefix}\n"
             f"Commands: {len(self.cmds)}\n"
             f"GOTOV"
@@ -163,25 +164,19 @@ class cmdClient(discord.Client):
                 await self.on_message(after)
 
     async def flat_command_response_cleaner(self, flatctx: FlatContext):
-        ch: discord.TextChannel | discord.DMChannel | discord.Thread | discord.VoiceChannel = self.get_channel(
-            flatctx.ch
-        )
+        ch = self.get_channel(flatctx.ch)
         if ch is not None:
             for msgid in flatctx.sent_messages:
-                try:
+                with suppress(Exception):
                     msg = await ch.fetch_message(msgid)
                     asyncio.ensure_future(msg.delete())
-                except Exception:
-                    pass
 
-    async def active_command_response_cleaner(self, ctx: type[Context]):
-        try:
+    async def active_command_response_cleaner(self, ctx: Context):
+        with suppress(discord.NotFound):
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.ch.delete_messages(ctx.sent_messages)
             else:
                 await asyncio.gather(*(msg.delete() for msg in ctx.sent_messages))
-        except discord.NotFound:
-            pass
 
     async def parse_message(self, message):
         """
@@ -244,7 +239,7 @@ class cmdClient(discord.Client):
                 await asyncio.sleep(1)
 
         # Build the context
-        ctx: type[Context] = self.baseContext(
+        ctx: Context = self.baseContext(
             client=self, message=message, arg_str=arg_str, alias=cmdname, cmd=cmd, prefix=prefix
         )
 

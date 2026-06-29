@@ -14,7 +14,7 @@ from .module import guild_admin_module as module
     "autoclean", desc="Automatic deletion of messages in the current channel.", aliases=["cleanch", "autodelete"]
 )
 @guild_manager()
-async def cmd_autoclean(ctx: type[Context]):
+async def cmd_autoclean(ctx: Context):
     """
     Usage``:
         {prefix}autoclean

@@ -18,9 +18,9 @@ __location__: str = str(Path(__file__).resolve().parent)
 @module.cmd(
     "preamble",
     desc="View or modify your LaTeX preamble.",
-    flags=["reset", "retract", "add", "remove", "revert", "usepackage", "replace", "preset"],
+    flags=["reset", "retract", "add", "remove", "revert", "replace"],
 )
-async def cmd_preamble(ctx: type[Context], flags: dict):
+async def cmd_preamble(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}preamble
@@ -274,58 +274,6 @@ async def cmd_preamble(ctx: type[Context], flags: dict):
             )
             await ctx.reply("Your preamble has been updated!")
             await preamblelog(ctx, "Material was removed from the preamble. New preamble below.", source=new_preamble)
-        return None
-
-    # Handle setting the preamble to a preset
-    if flags["preset"]:
-        return await ctx.error_reply(
-            "Preamble presets have been temporarily disabled!\nPlease check back in a few days."
-        )
-        #       # Get the name of the preset to use
-        #       if not ctx.args:
-        #           # Run through an interactive selection process
-        #           # Selection header message
-        #           message = "Please select a preamble preset to apply!"
-
-        #           # Run the selector
-        #           result = await ctx.selector(message, ctx.client.objects["latex_presets"], allow_single=True)
-        #           preset = ctx.client.objects
-        #       else:
-        #           # Check that the preset name entered with the command is a valid preset
-        #           # If it is, set selected to this
-        #           selected = get_preset(ctx.arg_str.strip())
-
-        #           if not selected:
-        #               await ctx.reply("This isn't a valid preset! "
-        #               "Use {}ppr --show to see the current list of presets!".format(ctx.used_prefix))
-        #               return
-
-        #       # selected now contains the name of a preset
-        #       # Grab the actual preset from the preset directory
-        #       preset_file = os.path.join(preset_dir, selected + '.tex')
-        #       with open(preset_file, 'r') as f:
-        #           preset = f.read()
-
-        #       # Confirm that the user wishes to overwrite their current preamble with the preset
-        #       prompt = "Are you sure you want to overwrite your current LaTeX preamble with the following preset?"
-        #       result = await confirm(ctx: type[Context], prompt, preset)
-
-        #       # Handle empty results
-        #       if result is None:
-        #           await ctx.reply("Query timed out, aborting.")
-        #           return
-        #       if not result:
-        #           await ctx.reply("User cancelled, aborting.")
-        #           return
-
-        #       # Set the preamble
-        #       current_preamble = await ctx.data.users_long.get(ctx.authid, 'latex_preamble')
-        #       await ctx.data.users_long.set(ctx.authid, 'previous_preamble', current_preamble)
-        #       await ctx.data.users_long.set(ctx.authid, 'latex_preamble', preset)
-
-        #       await ctx.reply("The preset has been applied!\
-        #                       \nTo revert to your previous preamble, use `{}preamble --revert`".format(ctx.used_prefix))
-        #       await preamblelog(ctx: type[Context], "Preamble preset {} was applied".format(selected))
         return None
 
     # At this point, the user wants to view, replace, or add to their preamble.

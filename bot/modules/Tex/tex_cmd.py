@@ -31,7 +31,7 @@ from .module import latex_module as module
     ],
     flags=["config", "keepsourcefor", "color", "colour", "alwaysmath", "allowother", "name"],
 )
-async def cmd_tex(ctx: type[Context], flags: dict):
+async def cmd_tex(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}luatex <code>

@@ -19,7 +19,7 @@ from .module import guild_moderation_module as module
     flags=["r==", "bot", "bots", "user", "embed", "file", "me", "from==", "after==", "force"],
 )
 @guild_moderator()
-async def cmd_prune(ctx: type[Context], flags: dict):
+async def cmd_prune(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}prune [number] [flags] [--after <msgid>] [--from <user>] [-r <reason>]

@@ -76,7 +76,7 @@ def field_pager(strings: list[str]) -> list[str]:
 
 
 @module.cmd("nlab", desc="Searches the [nlab](https://ncatlab.org)", aliases=["nlablink", "nl"])
-async def cmd_nlab(ctx: type[Context]):
+async def cmd_nlab(ctx: Context):
     """
     Usage``:
         {prefix}nlab <search>

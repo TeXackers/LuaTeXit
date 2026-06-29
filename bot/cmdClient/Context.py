@@ -4,16 +4,8 @@ from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import discord
 from discord import (
-    DMChannel,
-    ForumChannel,
-    GroupChannel,
     Message,
     MessageReference,
-    PartialMessageable,
-    StageChannel,
-    TextChannel,
-    Thread,
-    VoiceChannel,
 )
 
 if TYPE_CHECKING:
@@ -90,29 +82,20 @@ class Context:
     def __init__(self, client, **kwargs):
         self.client: cmdClient = client
 
-        self.msg: Message | None = kwargs.pop("message", None)
-
-        self.ch: (
-            TextChannel
-            | VoiceChannel
-            | ForumChannel
-            | DMChannel
-            | GroupChannel
-            | Thread
-            | PartialMessageable
-            | StageChannel
+        self.msg: Message = kwargs.pop("message", None)
+        self.ch: discord.abc.MessageableChannel = (
+            self.msg.channel if self.msg is not None else kwargs.pop("channel", None)
         )
-        self.ch = self.msg.channel if self.msg is not None else kwargs.pop("channel", None)
         self.guild: discord.Guild | None = self.msg.guild if self.msg is not None else kwargs.pop("guild", None)
         self.server: discord.Guild | None = self.guild
-        self.author: discord.User | discord.Member | None = (
+        self.author: discord.User | discord.Member = (
             self.msg.author if self.msg is not None else kwargs.pop("author", None)
         )
 
-        self.arg_str: str | None = kwargs.pop("arg_str", None)
-        self.cmd: Command | None = kwargs.pop("cmd", None)
-        self.alias: str | None = kwargs.pop("alias", None)
-        self.prefix: str | None = kwargs.pop("prefix", None)
+        self.arg_str: str = kwargs.pop("arg_str", None)
+        self.cmd: Command = kwargs.pop("cmd", None)
+        self.alias: str = kwargs.pop("alias", None)
+        self.prefix: str = kwargs.pop("prefix", None)
 
         self.cleanup_on_edit: bool = kwargs.pop(
             "cleanup_on_edit", self.cmd.handle_edits if self.cmd is not None else True
@@ -135,6 +118,12 @@ class Context:
         Decorator to make a utility function available as a Context instance method
         """
         setattr(cls, util_func.__name__, util_func)
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Allow dynamic utility methods registered with Context.util to type-check cleanly.
+        """
+        raise AttributeError(name)
 
     def flatten(self) -> FlatContext:
         """
@@ -159,7 +148,7 @@ class Context:
 
 @Context.util
 async def reply(
-    ctx: type[Context],
+    ctx: Context,
     content: str | None = None,
     reference: MessageReference | None = None,
     allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
@@ -178,7 +167,7 @@ async def reply(
 
 
 @Context.util
-async def error_reply(ctx: type[Context], error_str: str):
+async def error_reply(ctx: Context, error_str: str):
     """
     Notify the user of a user level error.
     Typically, this will occur in a red embed, posted in the command channel.
@@ -198,7 +187,7 @@ async def error_reply(ctx: type[Context], error_str: str):
 
 
 @Context.util
-async def traceback(ctx: type[Context], helper_msg: str, error_str: str):
+async def traceback(ctx: Context, helper_msg: str, error_str: str):
     """
     Notify the user of an error, and show traceback
     """

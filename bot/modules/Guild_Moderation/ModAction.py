@@ -44,11 +44,11 @@ class ModAction:
     summary_success_report = "Acted on {count} members."
     summary_failure_report = "Failed to act on {count} members."
 
-    def __init__(self, ctx: type[Context], flags):
-        self.ctx: type[Context] = ctx
+    def __init__(self, ctx: Context, flags):
+        self.ctx: Context = ctx
         self.flags = flags
 
-        self.reason = None
+        self.reason: str = ""
         self.targets = None
         self.ticket = None
         self.duration = None

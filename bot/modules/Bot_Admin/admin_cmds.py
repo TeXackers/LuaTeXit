@@ -46,7 +46,7 @@ activity_dict = {
 
 @module.cmd("shutdown", desc="Shut down the client.", aliases=["restart"])
 @is_manager()
-async def cmd_shutdown(ctx: type[Context]):
+async def cmd_shutdown(ctx: Context):
     """
     Usage``:
         {prefix}shutdown
@@ -56,7 +56,7 @@ async def cmd_shutdown(ctx: type[Context]):
         *Requires you to be an owner of the bot.*
     """
     await ctx.reply("Shutting down...")
-    await ctx.client.logout()
+    await ctx.client.close()
 
 
 @module.cmd(
@@ -66,7 +66,7 @@ async def cmd_shutdown(ctx: type[Context]):
     flags=["type=", "desc==", "url==", "avatar==", "status="],
 )
 @is_manager()
-async def cmd_setgame(ctx: type[Context], flags):
+async def cmd_setgame(ctx: Context, flags):
     """
     Usage``:
         {prefix}setinfo [--type activity type] [--desc activity] [--url url] [--status status] [--avatar avatar_url]
@@ -111,7 +111,7 @@ async def cmd_setgame(ctx: type[Context], flags):
 
 @module.cmd("dm", desc="Sends a direct message to a user, if possible.")
 @is_master()
-async def cmd_dm(ctx: type[Context]):
+async def cmd_dm(ctx: Context):
     """
     Usage``:
         {prefix}dm user_id message
@@ -124,13 +124,12 @@ async def cmd_dm(ctx: type[Context]):
         return await ctx.error_reply(ctx.format_usage())
 
     userid, message = splits
-    userid = int(userid)
 
     # Find the user
-    user = ctx.client.get_user(userid)
+    user: discord.User | None = ctx.client.get_user(int(userid))
     if user is None:
         try:
-            user = await ctx.client.fetch_user(userid)
+            user = await ctx.client.fetch_user(int(userid))
         except discord.NotFound:
             return await ctx.error_reply("This user does not exist!")
 
@@ -151,7 +150,7 @@ async def cmd_dm(ctx: type[Context]):
 
 @module.cmd("logs", desc="Read and return the bot logs.")
 @is_master()
-async def cmd_logs(ctx: type[Context]):
+async def cmd_logs(ctx: Context):
     """
     Usage``:
         {prefix}logs [lines]
@@ -183,7 +182,7 @@ async def cmd_logs(ctx: type[Context]):
 
 @module.cmd("showcmd", desc="Shows the source of a command.")
 @is_master()
-async def cmd_showcmd(ctx: type[Context]) -> None:
+async def cmd_showcmd(ctx: Context) -> None:
     """
     Usage:
         {prefix}showcmd <name>

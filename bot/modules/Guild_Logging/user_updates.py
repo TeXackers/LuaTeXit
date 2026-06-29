@@ -3,6 +3,8 @@ import logging
 from enum import Enum
 
 import discord
+from cmdClient import cmdClient  # noqa
+from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting, IntegerEnum, ListData, MemberList, SettingList
 from utils.lib import prop_tabulate
@@ -18,12 +20,12 @@ class UserLogEvent(Enum):
     ROLES = 3
 
 
-async def member_update_handler(client, before, after, from_user=False, guild=None):
+async def member_update_handler(client: cmdClient, before, after, from_user=False, guild=None):
     # Check the event is one we we can handle
     if not (
         before.name != after.name
         or (not from_user and before.nick != after.nick)
-        or before.avatar_url != after.avatar_url
+        or before.avatar != after.avatar
         or (not from_user and before.roles != after.roles)
     ):
         return
@@ -54,12 +56,12 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
         # Handle nickname changes
         desc_lines.append(f"**Nickname updated!**\n`Before:` {before.nick}\n`After:` {after.nick}\n")
 
-    if before.avatar_url != after.avatar_url and UserLogEvent.AVATAR in userlog_events:
+    if before.avatar != after.avatar and UserLogEvent.AVATAR in userlog_events:
         # Handle avatar changes
         desc_lines.append(
-            f"**Avatar updated!**\n`Before:` [Old Avatar]({before.avatar_url})\n`After:` [New Avatar]({after.avatar_url})\n"
+            f"**Avatar updated!**\n`Before:` [Old Avatar]({before.avatar})\n`After:` [New Avatar]({after.avatar})\n"
         )
-        image = after.avatar_url if after.avatar_url else None
+        image = after.avatar if after.avatar else None
 
     if not from_user and before.roles != after.roles and UserLogEvent.ROLES in userlog_events:
         # Handle role changes
@@ -92,7 +94,7 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
     except discord.NotFound:
         pass
     except Exception as e:
-        client.log(
+        log(
             f"Failed to post user update log for member '{after}' (uid:{after.id}) in guild '{after.guild.name} (gid:{after.guild.id}). Exception: {e.__repr__()}",
             context="POST_USERLOG",
             level=logging.WARNING,
@@ -101,7 +103,7 @@ async def member_update_handler(client, before, after, from_user=False, guild=No
 
 async def user_update_handler(client, before, after):
     # Check the event is one we we can handle
-    if not (before.name != after.name or before.avatar_url != after.avatar_url):
+    if not (before.name != after.name or before.avatar != after.avatar):
         return
     # Get the shared guilds
     guilds = [g for g in client.guilds if after in g.members]

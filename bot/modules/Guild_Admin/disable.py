@@ -12,7 +12,7 @@ protected_commands = ["list", "help", "support", "disable", "config"]
 @module.cmd("disable", desc="Disable commands in this guild.", aliases=["enable"])
 @in_guild()
 @guild_manager()
-async def cmd_disable(ctx: type[Context]):
+async def cmd_disable(ctx: Context):
     """
     Usage``:
         {prefix}disable

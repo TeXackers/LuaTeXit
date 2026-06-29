@@ -1,4 +1,4 @@
-from cmdClient import cmdClient, Context  # noqa
+from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut
 from utils.lib import substitute_ranges
 from wards import guild_admin, in_guild
@@ -16,7 +16,7 @@ from .resources import default_preamble
     flags=["reset", "add", "remove", "replace"],
 )
 @in_guild()
-async def cmd_gpreamble(ctx: type[cmdClient], flags: dict[str, bool]):
+async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
     """
     Usage``:
         {prefix}gpreamble

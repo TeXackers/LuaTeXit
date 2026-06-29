@@ -110,21 +110,21 @@ class Module:
         else:
             log("s     |--[skip]", context=self.name)
 
-    async def pre_command(self, ctx: type[Context]):
+    async def pre_command(self, ctx: Context):
         """
         Pre-command hook.
         Executed before a command is run.
         """
         pass
 
-    async def post_command(self, ctx: type[Context]):
+    async def post_command(self, ctx: Context):
         """
         Post-command hook.
         Executed after a command is run without exception.
         """
         pass
 
-    async def on_exception(self, ctx: type[Context], exception: Exception):
+    async def on_exception(self, ctx: Context, exception: Exception):
         """
         Exception hook.
         Executed when a command function throws an exception.

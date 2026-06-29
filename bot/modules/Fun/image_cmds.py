@@ -28,7 +28,7 @@ Commands provided:
 @module.cmd(
     "image", desc="Searches Pixabay for images matching the specified text.", aliases=["imagesearch", "images", "img"]
 )
-async def cmd_image(ctx: type[Context]):
+async def cmd_image(ctx: Context):
     """
     Usage``:
         {prefix}image <image text>
@@ -66,7 +66,7 @@ async def cmd_image(ctx: type[Context]):
 
 
 @module.cmd("dog", desc="Sends a random dog image", aliases=["doge", "pupper", "doggo", "woof"])
-async def cmd_dog(ctx: type[Context]):
+async def cmd_dog(ctx: Context):
     """
     Usage``:
         {prefix}dog
@@ -89,7 +89,7 @@ async def cmd_dog(ctx: type[Context]):
 
 
 @module.cmd("duck", desc="Sends a random duck image", aliases=["quack"], flags=["gif"])
-async def cmd_duck(ctx: type[Context], flags):
+async def cmd_duck(ctx: Context, flags):
     """
     Usage``:
         {prefix}duck [-gif]
@@ -111,7 +111,7 @@ async def cmd_duck(ctx: type[Context], flags):
 @module.cmd(
     "cat", desc="Sends a random cat image", aliases=["meow", "purr", "pussy"], flags=["t==", "c==", "cc=", "cs="]
 )
-async def cmd_cat(ctx: type[Context], flags):
+async def cmd_cat(ctx: Context, flags):
     """
     Usage``:
         {prefix}cat
@@ -176,7 +176,7 @@ async def cmd_cat(ctx: type[Context], flags):
 
 
 @module.cmd("holo", desc="Holo")
-async def cmd_holo(ctx: type[Context]):
+async def cmd_holo(ctx: Context):
     """
     Usage``:
         {prefix}holo

@@ -113,7 +113,7 @@ class autotex(LatexUserSetting, Boolean):
     _data_column = "autotex"
 
     @classmethod
-    def response(cls, ctx: type[Context], data):
+    def response(cls, ctx: Context, data):
         match data:
             case True:
                 return (
@@ -260,7 +260,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
     _data_column = "namestyle"
 
     @classmethod
-    def response(cls, ctx: type[Context], data) -> str:
+    def response(cls, ctx: Context, data) -> str:
         match data:
             case None:
                 return "Your namestyle has been returned to the default."
@@ -277,7 +277,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
                 )
 
     @classmethod
-    def info_embed(cls, ctx: type[Context], data):
+    def info_embed(cls, ctx: Context, data):
         embed = super().info_embed(ctx, data)
         props = cls.namestyles.keys()
         values = [val.format(ctx=ctx) for val in cls.namestyles.values()]
@@ -304,7 +304,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
     _data_column = "autotex_level"
 
     @classmethod
-    def response(cls, ctx: type[Context], data) -> str:
+    def response(cls, ctx: Context, data) -> str:
         match data:
             case None:
                 return "Your autotex level has been returned to the default."
@@ -322,7 +322,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
                 )
 
     @classmethod
-    def info_embed(cls, ctx: type[Context], data) -> type[discord.Embed]:
+    def info_embed(cls, ctx: Context, data) -> type[discord.Embed]:
         embed = super().info_embed(ctx, data)
         embed.add_field(name="LaTeX Levels", value=cls.tabled_levels)
         return embed

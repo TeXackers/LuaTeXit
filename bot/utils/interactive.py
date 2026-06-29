@@ -9,7 +9,7 @@ from .lib import paginate_list
 
 
 @Context.util
-async def listen_for(ctx: type[Context], allowed_input=None, timeout=120, lower=True, check=None):
+async def listen_for(ctx: Context, allowed_input=None, timeout=120, lower=True, check=None):
     """
     Listen for a one of a particular set of input strings,
     sent in the current channel by `ctx.author`.
@@ -45,7 +45,7 @@ async def listen_for(ctx: type[Context], allowed_input=None, timeout=120, lower=
         allowed_input = [s.lower() for s in allowed_input]
 
         # Create the check function
-        def check(message: str) -> bool:
+        def check(message: discord.Message) -> bool:
             result = message.author == ctx.author
             result = result and (message.channel == ctx.ch)
             return result and ((message.content.lower() if lower else message.content) in allowed_input)
@@ -60,7 +60,7 @@ async def listen_for(ctx: type[Context], allowed_input=None, timeout=120, lower=
 
 
 @Context.util
-async def selector(ctx: type[Context], header, select_from, timeout=120, max_len=20, allow_single=True):
+async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, allow_single=True):
     """
     Interactive routine to prompt the `ctx.author` to select an item from a list.
     Returns the list index that was selected.
@@ -133,7 +133,7 @@ async def selector(ctx: type[Context], header, select_from, timeout=120, max_len
 
 
 @Context.util
-async def multi_selector(ctx: type[Context], header, select_from, timeout=120, max_len=20, allow_single=True):
+async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len=20, allow_single=True):
     """
     Interactive routine to prompt the `ctx.author` to select multiple items from a list.
     Returns a list of list indices that were selected.

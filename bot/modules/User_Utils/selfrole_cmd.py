@@ -17,7 +17,7 @@ from .module import utils_module as module
     flags=["add", "remove", "list"],
 )
 @in_guild()
-async def cmd_giveme(ctx: type[Context], flags: dict):
+async def cmd_giveme(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}giveme

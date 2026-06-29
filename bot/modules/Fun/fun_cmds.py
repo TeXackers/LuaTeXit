@@ -21,8 +21,8 @@ Commands provided:
 """
 
 
-@module.cmd("convertbinary", desc="Converts binary to text.", aliases=["bin2t", "binarytotext", "convbin"])
-async def cmd_convertbinary(ctx: type[Context]):
+@module.cmd("convertbinary", desc="Converts binary to text.")
+async def cmd_convertbinary(ctx: Context):
     """
     Usage``:
         {prefix}convertbinary <binary string>
@@ -31,15 +31,14 @@ async def cmd_convertbinary(ctx: type[Context]):
     """
     bitstr = ctx.arg_str.replace(" ", "")
     if (not bitstr.isdigit()) or (len(bitstr) % 8 != 0):
-        await ctx.reply("Please provide a valid binary string!")
-        return
+        return await ctx.error_reply("Please provide a valid binary string!")
     bytelist = map("".join, zip(*[iter(bitstr)] * 8))
     asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
-    await ctx.reply("Output: `{}`".format("".join(asciilist)))
+    return await ctx.reply("Output: `{}`".format("".join(asciilist)))
 
 
 @module.cmd("lenny", desc="( ͡° ͜ʖ ͡°)")
-async def cmd_lenny(ctx: type[Context]):
+async def cmd_lenny(ctx: Context):
     """
     Usage``:
         {prefix}lenny
@@ -52,7 +51,7 @@ async def cmd_lenny(ctx: type[Context]):
 
 
 @module.cmd("discrim", desc="Searches for users with a given discriminator.")
-async def cmd_discrim(ctx: type[Context]):
+async def cmd_discrim(ctx: Context):
     """
     Usage``:
         {prefix}discrim [discriminator]
@@ -78,7 +77,7 @@ async def cmd_discrim(ctx: type[Context]):
 
 
 @module.cmd("sorry", desc="Sorry, love.")
-async def cmd_sorry(ctx: type[Context]):
+async def cmd_sorry(ctx: Context):
     """
     Usage``:
         {prefix}sorry

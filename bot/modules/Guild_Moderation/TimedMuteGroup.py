@@ -15,9 +15,9 @@ from .tickets import TicketType
 
 class TimedMuteGroup:
     __slots__ = ("ticket", "memberids", "_task", "_cancelled")
-    _client: type[cmdClient] = None  # Attached during initialisation
+    _client: cmdClient
 
-    _member_data: type[tableInterface] = None  # Attached during initialisation
+    _member_data: type[tableInterface]
 
     # Cache associating muted members to timed mute groups
     _member_map = {}
@@ -42,17 +42,17 @@ class TimedMuteGroup:
 
     # Client initialisation and launch methods
     @classmethod
-    def setup(cls, client):
+    def setup(cls, client: cmdClient):
         """
         Initialisation task.
         Attaches the client, along with the guild and member data interfaces.
         Also adds the mute cache as a client object for external use.
         """
-        cls._client = client  # type: cmdClient
-        cls._member_data = client.data.guild_timed_mute_members  # type: tableInterface
+        cls._client: cmdClient = client  # type: cmdClient
+        cls._member_data: tableInterface = client.data.guild_timed_mute_members  # type: tableInterface
 
     @classmethod
-    async def launch(cls, client):
+    async def launch(cls, client: cmdClient):
         """
         Launch task.
         Populate the caches and schedule the pending mutes.

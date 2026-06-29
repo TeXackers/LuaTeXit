@@ -14,7 +14,7 @@ API_ADDR = "http://api.mathjs.org/v4/"
 
 
 @module.cmd("calc", desc="Calculate short mathematical expressions.")
-async def cmd_calc(ctx: type[Context]):
+async def cmd_calc(ctx: Context):
     """
     Usage``:
         {prefix}calc <expr>

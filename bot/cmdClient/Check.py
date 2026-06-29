@@ -56,7 +56,7 @@ class Check:
 
         def decorator(func):
             @wraps(func)
-            async def wrapper(ctx: type[Context], *fargs, **fkargs):
+            async def wrapper(ctx: Context, *fargs, **fkargs):
                 result: bool = await self.run(ctx, *args, **kwargs)
                 if not result:
                     raise FailedCheck(self)
@@ -67,7 +67,7 @@ class Check:
 
         return decorator
 
-    async def run(self, ctx: type[Context], *args, **kwargs) -> bool:
+    async def run(self, ctx: Context, *args, **kwargs) -> bool:
         """
         Executes this check and returns `True` if it passes or `False` if it fails.
         """

@@ -70,7 +70,7 @@ def gen_tz_strings(tzlist) -> list[str]:
     return list(itertools.chain(*block_strs))
 
 
-async def tz_lookup(ctx: type[Context], search_str: str) -> str:
+async def tz_lookup(ctx: Context, search_str: str) -> str:
     """
     Intelligently Lookup a timezone from a given partial or full string.
     """

@@ -17,7 +17,7 @@ Commands provided:
 
 
 @module.cmd("feedback", desc="Send feedback to my creators")
-async def cmd_feedback(ctx: type[Context]):
+async def cmd_feedback(ctx: Context):
     """
     Usage``:
         {prefix}feedback <message>

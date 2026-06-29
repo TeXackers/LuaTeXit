@@ -12,7 +12,7 @@ from .module import utils_module as module
 
 
 @module.cmd("echo", desc="Sends what you tell me to!")
-async def cmd_echo(ctx: type[Context]):
+async def cmd_echo(ctx: Context):
     """
     Usage``:
         {prefix}echo <text>
@@ -25,7 +25,7 @@ async def cmd_echo(ctx: type[Context]):
 
 
 @module.cmd("secho", desc="Deletes your message and echos it.")
-async def cmd_secho(ctx: type[Context]):
+async def cmd_secho(ctx: Context):
     """
     Usage``:
         {prefix}secho <text>
@@ -47,7 +47,7 @@ async def cmd_secho(ctx: type[Context]):
 
 @module.cmd("jumpto", desc="Finds the given messageid and generates a jump link.")
 @in_guild()
-async def cmd_jumpto(ctx: type[Context]):
+async def cmd_jumpto(ctx: Context):
     """
     Usage``:
         {prefix}jumpto <msgid>
@@ -97,7 +97,7 @@ async def cmd_jumpto(ctx: type[Context]):
 
 @module.cmd("quote", desc="Quotes a message by ID.", flags=["a", "r"])
 @in_guild()
-async def cmd_quote(ctx: type[Context], flags: dict[str, bool]):
+async def cmd_quote(ctx: Context, flags: dict[str, bool]):
     """
     Usage``:
         {prefix}quote <messageid> [-a] [-r]
@@ -201,7 +201,7 @@ async def cmd_quote(ctx: type[Context], flags: dict[str, bool]):
 
 
 @module.cmd("invitebot", desc="Generates a bot invite link for a given bot or botid.", aliases=["ibot"])
-async def cmd_invitebot(ctx: type[Context]):
+async def cmd_invitebot(ctx: Context):
     """
     Usage``:
         {prefix}invitebot <bot>
@@ -244,7 +244,7 @@ async def cmd_invitebot(ctx: type[Context]):
 
 
 @module.cmd("colour", desc="Displays information about a colour.", aliases=["color"])
-async def cmd_colour(ctx: type[Context]):
+async def cmd_colour(ctx: Context):
     """
     Usage``:
         {prefix}colour <hexvalue>

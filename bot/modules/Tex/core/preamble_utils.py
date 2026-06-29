@@ -128,7 +128,7 @@ async def tex_pagination_diff(
         # if text_old is None, that means it's the default preamble
         # default preamble is in paradox/bot/modules/Tex/resources/default_preamble.tex
         default_preamble_path: str = str(Path("bot") / "modules" / "Tex" / "resources" / "default_preamble.tex")
-        with Path.open(default_preamble_path) as f:
+        with Path(default_preamble_path).open() as f:
             text_old = f.read()
 
     diff = "\n".join(
@@ -189,7 +189,7 @@ async def tex_pagination_diff(
     return embeds
 
 
-async def sendfile_reaction_handler(ctx: type[Context], msg, contents, title, file_name="preamble.tex"):
+async def sendfile_reaction_handler(ctx: Context, msg, contents, title, file_name="preamble.tex"):
     """
     Attach a reaction to the given message which sends reacting users
     a file containing `contents`.
@@ -235,7 +235,7 @@ async def sendfile_reaction_handler(ctx: type[Context], msg, contents, title, fi
 
 
 async def view_preamble(
-    ctx: type[Context], preamble: str, title: str, start_page=0, file_react=False, file_message=None, **pagination_args
+    ctx: Context, preamble: str, title: str, start_page=0, file_react=False, file_message=None, **pagination_args
 ):
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
@@ -248,7 +248,7 @@ async def view_preamble(
 
 
 async def view_preamble_diff(
-    ctx: type[Context],
+    ctx: Context,
     preamble_old: str,
     preamble_pending: str,
     title: str,
@@ -262,7 +262,7 @@ async def view_preamble_diff(
     return await ctx.pager(pages, start_page=start_page, locked=False)
 
 
-async def confirm(ctx: type[Context], question: str, preamble: str, **kwargs):
+async def confirm(ctx: Context, question: str, preamble: str, **kwargs):
     out_msg = await view_preamble(ctx, preamble, f"{question} (y/n)", **kwargs)
     result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=120)
 
@@ -276,9 +276,7 @@ async def confirm(ctx: type[Context], question: str, preamble: str, **kwargs):
     return result not in ["n", "no"]
 
 
-async def preamblelog(
-    ctx: type[Context], title: str | None, user=None, userid=None, author=None, header=None, source=None
-):
+async def preamblelog(ctx: Context, title: str | None, user=None, userid=None, author=None, header=None, source=None):
     """
     Log a message to the preamble log channel
     """
@@ -353,7 +351,7 @@ async def resolve_pending_preamble(ctx, userid, info, colour=None):
     pass
 
 
-async def submit_preamble(ctx: type[Context], user, submission, info):
+async def submit_preamble(ctx: Context, user, submission, info):
     """
     Make a new preamble submission
     """
@@ -406,7 +404,7 @@ async def submit_preamble(ctx: type[Context], user, submission, info):
 #     asyncio.ensure_future(judgement_reactions(newctx, user.id, sub_msg))
 
 
-async def judgement_reactions(ctx: type[Context], userid, msg):
+async def judgement_reactions(ctx: Context, userid, msg):
     """
     Adds approve/deny/test reactions to the given msg,
     with the reactions applicable to the user given by the userid.
@@ -469,7 +467,7 @@ async def judgement_reactions(ctx: type[Context], userid, msg):
             await test_submission(ctx, userid, ctx.author)
 
 
-async def approve_submission(ctx: type[Context], userid, manager, reason=None):
+async def approve_submission(ctx: Context, userid, manager, reason=None):
     ctx.author = manager  # Hack so that ask and input work properly
 
     # Ask for confirmation and potential new message
@@ -582,7 +580,7 @@ async def approve_submission(ctx: type[Context], userid, manager, reason=None):
     return True
 
 
-async def deny_submission(ctx: type[Context], userid, manager, reason=None):
+async def deny_submission(ctx: Context, userid, manager, reason=None):
     ctx.author = manager  # Hack so that ask and input work properly
 
     # If the user no longer has a pending preamble, let the reviewer know and exit
@@ -688,7 +686,7 @@ async def test_submission(ctx, userid, manager):
             case "pdflatex":
                 log = await ctx.maketex(preamble_test_code, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path.is_file(file_path) else discord.File(failed_image_path)
+                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""
@@ -700,7 +698,7 @@ async def test_submission(ctx, userid, manager):
             case "lualatex":
                 log = await ctx.makeluatex(preamble_test_code_luatex, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path.is_file(file_path) else discord.File(failed_image_path)
+                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""
@@ -712,7 +710,7 @@ async def test_submission(ctx, userid, manager):
             case "xelatex":
                 log = await ctx.makexetex(preamble_test_code_xetex, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path.is_file(file_path) else discord.File(failed_image_path)
+                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""

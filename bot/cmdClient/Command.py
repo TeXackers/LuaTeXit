@@ -34,7 +34,7 @@ class Command:
 
         self.__dict__.update(kwargs)
 
-    async def run(self, ctx: type[Context]) -> None:
+    async def run(self, ctx: Context) -> None:
         """
         Safely execute this command with the current context.
         Respond and log any exceptions that arise.
@@ -84,7 +84,7 @@ class Command:
         else:
             log("Command completed execution without error.", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)
 
-    async def exec_wrapper(self, ctx: type[Context]) -> None:
+    async def exec_wrapper(self, ctx: Context) -> None:
         """
         Execute the command in the current context.
         May raise an exception if not handled by the module on_exception handler.

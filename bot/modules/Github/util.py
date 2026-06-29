@@ -104,9 +104,8 @@ async def sanitise_image(text: str) -> str:
 
     # finally, purge html/markdown comments
     comment_pattern = r"<!--.*?-->"
-    text = re.sub(comment_pattern, "", text)
 
-    return await text
+    return re.sub(comment_pattern, "", text)
 
 
 async def grab_image(text: str) -> list[str] | None:

@@ -6,6 +6,9 @@ from github import Auth, Github
 
 if TYPE_CHECKING:
     from github.ContentFile import ContentFile
+    from github.Issue import Issue
+    from github.Organization import Organization
+    from github.Repository import Repository
 
 from .GithubColours import GithubColour
 from .GithubLayouts import GithubEmbed
@@ -28,7 +31,7 @@ Provides a quick and easy way to display github issues and pull requests for `ta
     aliases=["tblr"],
     flags=["file", "list"],
 )
-async def cmd_tabularray(ctx: type[Context], flags):
+async def cmd_tabularray(ctx: Context, flags):
     """
     Usage``:
         {prefix}tblr <issue/PR number>
@@ -41,12 +44,12 @@ async def cmd_tabularray(ctx: type[Context], flags):
         {prefix}tblr --file tabularray-dev.sty
         {prefix}tblr --list doc
     """
-    GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
-    __github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
-    __texackers = __github_api.get_organization("TeXackers")
-    __tabularray = __texackers.get_repo("tabularray")
+    GITHUB_TOKEN: str = str(ctx.client.conf["GITHUB_AUTH_TOKEN"])
+    __github_api: Github = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
+    __texackers: Organization = __github_api.get_organization("TeXackers")
+    __tabularray: Repository = __texackers.get_repo("tabularray")
 
-    out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
+    out_msg = await ctx.reply(f"Querying Github, please wait... {ctx.client.conf.emojis.getemoji('loading')}")
     # no flags provided, treat the argument as either an issue/PR number or a search query
     if not flags["file"] and not flags["list"]:
         query = ctx.args.strip()
@@ -56,31 +59,29 @@ async def cmd_tabularray(ctx: type[Context], flags):
 
         _gh_issue_num = int(query)
 
-        _issue = __tabularray.get_issue(_gh_issue_num)
+        _issue: Issue = __tabularray.get_issue(_gh_issue_num)
         try:
             _ = _issue.created_at
-        except Exception as e:
-            reason: str = ""
+        except github.GithubException as e:
             match int(e.status):
                 case 301:
-                    reason = "it has been moved permanently [304]."
+                    (reason := "it has been moved permanently [304].")
                 case 403:
-                    reason = "access to the issue/PR is forbidden [403]."
+                    (reason := "access to the issue/PR is forbidden [403].")
                 case 404:
-                    reason = "it does not exist [404]."
+                    (reason := "it does not exist [404].")
                 case 410:
-                    reason = "it has been deleted [410]."
+                    (reason := "it has been deleted [410].")
                 case 422:
-                    reason = "validation failed, or the endpoint has been spammed [422]."
+                    (reason := "validation failed, or the endpoint has been spammed [422].")
                 case 503:
-                    reason = "GitHub is currently unavailable [503]."
+                    (reason := "GitHub is currently unavailable [503].")
                 case _:
-                    reason = f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}]."
+                    (reason := f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}].")
             await out_msg.delete()
-            return await ctx.error_reply(f"Could not find \#{query}, because {reason}")
+            return await ctx.error_reply(f"Could not find #\u00a0{query}, because {reason}")
 
         # change embed colour based on the state of the issue/PR
-
         match _issue.state, _issue.state_reason:
             case "open", _:
                 _embed_colour = GithubColour.github_green
@@ -123,11 +124,11 @@ async def cmd_tabularray(ctx: type[Context], flags):
     if flags["file"]:
         query = ctx.args.strip()
         # if query is empty, display the tabularray-dev.sty file in dev-version branch
-        if query == "":
+        if not query:
             try:
                 __file_cf: ContentFile = __tabularray.get_contents("tabularray-dev.sty", ref="dev-version")
                 __file_content: str = __file_cf.decoded_content.decode("utf-8")
-            except github.UnknownObjectException as e:
+            except github.GithubException as e:
                 match e.status:
                     case 302:
                         reason = "it has been moved permanently [302]."
@@ -146,7 +147,7 @@ async def cmd_tabularray(ctx: type[Context], flags):
                 __file_content,
                 "tabularray-dev.sty",
                 "Content of the `tabularray-dev.sty` file in the `dev-version` branch.",
-                syntax=_syntax_selection("tabularray-dev.sty"),
+                syntax=await _syntax_selection("tabularray-dev.sty"),
             )
 
         # hopefully here query isn't empty
@@ -155,7 +156,7 @@ async def cmd_tabularray(ctx: type[Context], flags):
 
             try:
                 __file_content: str = __file_cf.decoded_content.decode("utf-8")
-            except github.UnknownObjectException as e:
+            except github.GithubException as e:
                 match e.status:
                     case 302:
                         reason = "it has been moved permanently [302]."
@@ -171,10 +172,10 @@ async def cmd_tabularray(ctx: type[Context], flags):
                 return await ctx.error_reply(f"Could not find the requested file, because {reason}")
 
             embeds = await _gh_pagination(
-                "Content View",
+                __file_content,
                 query,
                 f"Content of the `{query}` file in the `dev-version` branch.",
-                syntax=_syntax_selection(query),
+                syntax=await _syntax_selection(query),
             )
         await out_msg.delete()
         return await ctx.pager(embeds, locked=False)
@@ -182,9 +183,13 @@ async def cmd_tabularray(ctx: type[Context], flags):
     if flags["list"]:
         # list all directories and files in the root of the repository
         query = ctx.args.strip()
-        if query == "":
+        if not query:
             # assume dev-version
-            __contents: list[ContentFile] = __tabularray.get_contents("", ref="dev-version")
+            __contents: list[ContentFile] = (
+                __tabularray.get_contents("", ref="dev-version")
+                if isinstance(__tabularray.get_contents("", ref="dev-version"), list)
+                else [__tabularray.get_contents("", ref="dev-version")]
+            )
 
             # make a `ls -laH` style listing
             listing = ""
@@ -205,15 +210,15 @@ async def cmd_tabularray(ctx: type[Context], flags):
         except github.GithubException as e:
             match e.status:
                 case 302:
-                    reason = "it has been moved permanently [302]."
+                    (reason := "it has been moved permanently [302].")
                 case 304:
-                    reason = "it has not been modified since the last request [304]."
+                    (reason := "it has not been modified since the last request [304].")
                 case 403:
-                    reason = "access to the file is forbidden [403]."
+                    (reason := "access to the file is forbidden [403].")
                 case 404:
-                    reason = "it does not exist [404]."
+                    (reason := "it does not exist [404].")
                 case _:
-                    reason = f"of an undocumented (by GitHub) error [Unknown Status Code: {e.status}]."
+                    (reason := f"of an undocumented (by GitHub) error [Unknown Status Code: {e.status}].")
             await out_msg.delete()
             return await ctx.error_reply(f"Could not find the requested file/directory, because {reason}")
 

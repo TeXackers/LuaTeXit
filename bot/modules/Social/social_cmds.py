@@ -42,9 +42,7 @@ async def cmd_profile(ctx):
     rep = await ctx.data.users.get(user.id, "rep")
     given_rep = await ctx.data.users.get(user.id, "given_rep")
 
-    embed = discord.Embed(type="rich", color=user.colour).set_author(
-        name=f"{user} ({user.id})", icon_url=user.avatar_url
-    )
+    embed = discord.Embed(type="rich", color=user.colour).set_author(name=f"{user} ({user.id})", icon_url=user.avatar)
     if badges:
         embed.add_field(name="Badges", value=badges, inline=False)
 

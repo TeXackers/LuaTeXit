@@ -128,7 +128,7 @@ class LatexContext:
     emoji_show_errors = None
     emoji_delete_source = None
 
-    def __init__(self, ctx: type[Context], source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs):
+    def __init__(self, ctx: Context, source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs):
         self.ctx = ctx
         self.source = source
         self.lguild = lguild or LatexGuild.get(ctx.guild.id if ctx.guild else 0)
@@ -317,9 +317,9 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
-            exists = bool(Path.is_file(file_path))
-            file_path = failed_image_path if not exists else file_path
+            file_path: Path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = bool(file_path.is_file())
+            file_path = Path(failed_image_path) if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
@@ -409,8 +409,8 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
-            exists = bool(Path.is_file(file_path))
+            file_path: Path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = bool(file_path.is_file())
             file_path = failed_image_path if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
@@ -595,9 +595,9 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
-            exists = bool(Path.is_file(file_path))
-            file_path = failed_image_path if not exists else file_path
+            file_path: Path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = bool(file_path.is_file())
+            file_path = Path(failed_image_path) if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
@@ -689,9 +689,9 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
-            exists = bool(Path.is_file(file_path))
-            file_path = failed_image_path if not exists else file_path
+            file_path: Path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = bool(file_path.is_file())
+            file_path = Path(failed_image_path) if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
@@ -783,9 +783,9 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path = f"tex/staging/{luser.id}/{luser.id}.png"
-            exists = bool(Path.is_file(file_path))
-            file_path = failed_image_path if not exists else file_path
+            file_path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = bool(file_path.is_file())
+            file_path = Path(failed_image_path) if not exists else file_path
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
@@ -963,7 +963,7 @@ class LatexContext:
         return has_tex or ((r"\[" in content) and (r"\]" in content))
 
 
-async def reaction_listener(client: type[cmdClient], reaction, user):
+async def reaction_listener(client: cmdClient, reaction, user):
     # Ignore reaction if it isn't from an active context
     if reaction.message.id not in LatexContext.active_contexts:
         return
@@ -1022,7 +1022,7 @@ async def reaction_listener(client: type[cmdClient], reaction, user):
 
 
 @module.init_task
-def attach_emojis(client: type[cmdClient]):
+def attach_emojis(client: cmdClient):
     LatexContext.emoji_delete = client.conf.emojis.getemoji("delete")
     LatexContext.emoji_show_source = client.conf.emojis.getemoji("latex_show_source")
     LatexContext.emoji_show_errors = client.conf.emojis.getemoji("latex_show_errors")
@@ -1030,12 +1030,12 @@ def attach_emojis(client: type[cmdClient]):
 
 
 @module.init_task
-def register_reaction_listener(client: type[cmdClient]):
+def register_reaction_listener(client: cmdClient):
     client.add_after_event("reaction_add", reaction_listener)
 
 
 @module.init_task
-def attach_latex_locks(client: type[cmdClient]):
+def attach_latex_locks(client: cmdClient):
     # Attach user simultaneous rendering locks
     client.objects["latex_user_locks"] = LatexContext.user_locks
 

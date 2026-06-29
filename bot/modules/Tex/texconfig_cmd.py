@@ -65,21 +65,14 @@ async def cmd_texconfig(ctx: Context) -> None:
             ]
         setting_table = prop_tabulate(properties, values)
 
-        # Create the description
-        # desc = (
-        #     "{0}\n"
-        #     "To see more detailed information use `{1}texconfig <option>`.\n"
-        #     "To set an option use `{1}texconfig <option> <value>`."
-        # ).format(setting_table, ctx.best_prefix())
-
         desc: str = f"""{setting_table}
-        To see more detailed information use `{ctx.best_prefix()}texconfig <option>`.
-        To set an option use `{ctx.best_prefix()}texconfig <option> <value>`."""
+        To see more detailed information use `{await ctx.best_prefix()}texconfig <option>`.
+        To set an option use `{await ctx.best_prefix()}texconfig <option> <value>`."""
 
         # Create the preamble field contents
         if show_desc:
             preamble_field: str = f"""Personal persistent compilation preamble, used for defining macros and importing packages that may be used across all compilations.
-                See `{ctx.best_prefix()}help preamble` for more information."""
+                See `{await ctx.best_prefix()}help preamble` for more information."""
         else:
             if luser.preamble:
                 preamble_field: str = f"Using a personal preamble with `{len(luser.preamble.splitlines())}` lines!"
@@ -90,7 +83,7 @@ async def cmd_texconfig(ctx: Context) -> None:
                 else:
                     preamble_field = "Using the global default preamble."
 
-            preamble_field += f"\nUse `{ctx.best_prefix()}preamble` to view or modify your preamble!"
+            preamble_field += f"\nUse `{await ctx.best_prefix()}preamble` to view or modify your preamble!"
 
         # We have all the components, build the embed and post
         embed = discord.Embed(
@@ -119,7 +112,7 @@ async def cmd_texconfig(ctx: Context) -> None:
             return await ctx.error_reply("Use the `preamble` command to view or modify your preamble.")
         if option not in luser.settings:
             return await ctx.error_reply(
-                f"I don't recognise the option `{option}`. Use `{ctx.best_prefix()}texconfig` to see the list of options."
+                f"I don't recognise the option `{option}`. Use `{await ctx.best_prefix()}texconfig` to see the list of options."
             )
         setting = luser.settings[option]
         current_value = getattr(luser, option)
@@ -172,7 +165,7 @@ async def cmd_autotex(ctx: Context) -> None:
                 "You have *disabled* personal automatic LaTeX compilation.\n"
                 "Please be aware that LaTeX will still be rendered in guilds "
                 "with the `latex` setting enabled.\n"
-                f"See `{ctx.best_prefix()}help autotex` for more information about automatic compilation."
+                f"See `{await ctx.best_prefix()}help autotex` for more information about automatic compilation."
             )
         elif largs == "on" or not (largs or luser.autotex):
             luser.settings["autotex"].save(ctx.client, ctx.author.id, True)
@@ -180,7 +173,7 @@ async def cmd_autotex(ctx: Context) -> None:
                 "You have *enabled* personal automatic LaTeX compilation, "
                 f"with LaTeX recognition level `{luser.autotex_level.name}`.\n"
                 "Please be aware that automatic compilation may be restricted by guild settings.\n"
-                f"See `{ctx.best_prefix()}help autotex` for more information about automatic compilation."
+                f"See `{await ctx.best_prefix()}help autotex` for more information about automatic compilation."
             )
     elif largs in ["codeblock", "strict", "weak"]:
         if not luser.autotex:
@@ -194,5 +187,5 @@ async def cmd_autotex(ctx: Context) -> None:
         )
     else:
         await ctx.error_reply(
-            f"Unrecognised compilation level `{largs}`.\nSee `{ctx.best_prefix()}texconfig autotex_level` for the valid options."
+            f"Unrecognised compilation level `{largs}`.\nSee `{await ctx.best_prefix()}texconfig autotex_level` for the valid options."
         )

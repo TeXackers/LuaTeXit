@@ -57,7 +57,7 @@ async def _build_config_pages(ctx: Context, show_help=True):
         # Finalise the embed
         page_embed.set_footer(
             text="Use {0}config <option> and {0}config <option> <value> to see or set an option.".format(
-                ctx.best_prefix()
+                await ctx.best_prefix()
             )
         )
         # Add the page embed
@@ -103,7 +103,7 @@ async def cmd_config(ctx: Context):
     elif params[0] not in settings:
         # Handle unrecognised option
         await ctx.error_reply(
-            f"Unrecognised guild option `{params[0]}`. Use `{ctx.best_prefix()}config help` to see all the options."
+            f"Unrecognised guild option `{params[0]}`. Use `{await ctx.best_prefix()}config help` to see all the options."
         )
     elif len(params) == 1:
         # Assume argument is an option, display option information
@@ -129,7 +129,7 @@ async def cmd_config(ctx: Context):
                 )
                 embed = discord.Embed(description=desc, color=discord.Color.red())
                 embed.set_footer(
-                    text=f"Use `{ctx.best_prefix()}config {setting.name}` to see more detailed information about this setting."
+                    text=f"Use `{await ctx.best_prefix()}config {setting.name}` to see more detailed information about this setting."
                 )
                 await ctx.reply(embed=embed)
             else:

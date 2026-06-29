@@ -76,7 +76,7 @@ async def cmd_emoji(ctx: Context, flags: dict):
     Examples``:
         {prefix}e catThink
     """
-    prefix = ctx.best_prefix()
+    prefix = await ctx.best_prefix()
 
     # Flags indicating what we want to do
     react_only = ctx.alias in ["ree", "sree"]

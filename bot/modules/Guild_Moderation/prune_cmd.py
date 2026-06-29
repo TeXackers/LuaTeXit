@@ -67,7 +67,7 @@ async def cmd_prune(ctx: Context, flags: dict):
     after_msg_id = None
     if flags["after"]:
         if flags["after"] is True or not flags["after"].isdigit():
-            return await ctx.error_reply(f"**Usage:** {ctx.best_prefix()}purge ... --after <msgid> ...")
+            return await ctx.error_reply(f"**Usage:** {await ctx.best_prefix()}purge ... --after <msgid> ...")
 
         after_msg_id = int(flags["after"])
 

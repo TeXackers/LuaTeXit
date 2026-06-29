@@ -57,8 +57,8 @@ async def cmd_help(ctx: Context):
         if ctx.ch.type != discord.ChannelType.private:
             await ctx.reply(
                 "A brief description and guide on how to use me was sent to your DMs!\n"
-                f"Please use `{ctx.best_prefix()}list` to see a list of all my commands, "
-                f"and `{ctx.best_prefix()}help cmd` to get detailed help on a command!"
+                f"Please use `{await ctx.best_prefix()}list` to see a list of all my commands, "
+                f"and `{await ctx.best_prefix()}help cmd` to get detailed help on a command!"
             )
     else:
         # Send specific command help
@@ -69,8 +69,8 @@ async def cmd_help(ctx: Context):
             if ctx.args == "cmd":
                 return await ctx.reply(
                     "~~You really shouldn't take it literally :upside_down:.~~ "
-                    f"Please type `{ctx.best_prefix()}help ping`, for example!\n"
-                    f"The full command list may be found using `{ctx.best_prefix()}list`."
+                    f"Please type `{await ctx.best_prefix()}help ping`, for example!\n"
+                    f"The full command list may be found using `{await ctx.best_prefix()}list`."
                 )
             # If this was triggered by the `h` alias, don't respond unless there's a space afterwards
             if ctx.alias == "h":
@@ -80,7 +80,7 @@ async def cmd_help(ctx: Context):
 
             return await ctx.error_reply(
                 f"Command `{ctx.arg_str}` not found!\n"
-                f"Use the `{ctx.best_prefix()}list` command without arguments to see a list of commands."
+                f"Use the `{await ctx.best_prefix()}list` command without arguments to see a list of commands."
             )
 
         help_fields = command.long_help.copy()
@@ -232,7 +232,7 @@ async def cmd_list(ctx: Context) -> None:
                 )
         embed.set_footer(
             text="Use '{0}help' or '{0}help cmd' for detailed help, or get support with {0}support.".format(
-                ctx.best_prefix()
+                await ctx.best_prefix()
             )
         )
 
@@ -246,14 +246,14 @@ async def cmd_list(ctx: Context) -> None:
             "to view detailed help for a particular command, "
             "or `{0}help` to view general help.\n\n"
             "If you still have questions, talk to our friendly support team [here]({1})."
-        ).format(ctx.best_prefix(), ctx.client.app_info["support_guild"])
+        ).format(await ctx.best_prefix(), ctx.client.app_info["support_guild"])
 
         # Build the command groups
         groups = {
             cat.name: (
                 cat,
                 [
-                    (cmd.name, getattr(cmd, "desc", f"See `{ctx.best_prefix()}help {cmd.name}`."), cmd)
+                    (cmd.name, getattr(cmd, "desc", f"See `{await ctx.best_prefix()}help {cmd.name}`."), cmd)
                     for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
                     if (show_hidden or not cmd.hidden)
                 ],
@@ -264,7 +264,7 @@ async def cmd_list(ctx: Context) -> None:
 
         if not groups:
             return await ctx.error_reply(
-                f"No matching modules! See `{ctx.best_prefix()}ls` for a list of modules and their commands."
+                f"No matching modules! See `{await ctx.best_prefix()}ls` for a list of modules and their commands."
             )
 
         # Sort the command groups based on sorted_cats and extract the required data

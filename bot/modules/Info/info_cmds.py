@@ -32,7 +32,30 @@ Commands provided:
 """
 
 
-async def get_server_avatar(ctx, gid, uid):
+async def get_user_avatar(ctx: Context, uid: int) -> str:
+    """
+    Fetches a user's global avatar URL, and return it if it exists.
+    If the user does not have a global avatar, the default avatar will be returned.
+
+    Parameters
+    ----------
+    uid: int
+        The user's ID.
+
+    Returns: str
+        The direct URL to the user's global avatar.
+    """
+
+    res = await ctx.client.http.request(Route("GET", f"/users/{uid}"))
+    if not res["avatar"]:
+        return f"https://cdn.discordapp.com/embed/avatars/{int(res['discriminator']) % 5}.png"
+
+    filetype: str = "webp" if res["avatar"].startswith("a_") else "png"
+
+    return f"https://cdn.discordapp.com/avatars/{uid}/{res['avatar']}.{filetype}?size=1024"
+
+
+async def get_server_avatar(ctx: Context, gid: int, uid: int) -> str | None:
     """
     Fetches a member's server avatar URL, and return it if it exists.
     If the member does not have a server avatar, None will be returned.
@@ -53,13 +76,9 @@ async def get_server_avatar(ctx, gid, uid):
     if not res["avatar"]:
         return None
 
-    filetype = "gif" if res["avatar"].startswith("a_") else "png"
+    filetype: str = "gif" if res["avatar"].startswith("a_") else "png"
 
-    url = "https://cdn.discordapp.com/guilds/{}/users/{}/avatars/{}.{}?size=1024".format(
-        gid, uid, res["avatar"], filetype
-    )
-
-    return await url
+    return f"https://cdn.discordapp.com/guilds/{gid}/users/{uid}/avatars/{res['avatar']}.{filetype}?size=1024"
 
 
 async def get_user_banner(ctx: Context, uid: int) -> str | None:
@@ -405,43 +424,54 @@ async def cmd_channelinfo(ctx: Context) -> None:
     return await ctx.reply(view=v)
 
 
-@module.cmd("avatar", desc="Obtains the mentioned user's avatar, or your own.", aliases=["av"], flags=["server"])
-async def cmd_avatar(ctx: type[Context], flags) -> None:
+@module.cmd("avatar", desc="Obtains the mentioned user's avatar, or your own.", aliases=["av"], flags=["global"])
+async def cmd_avatar(ctx: Context, flags) -> None:
     """
     Usage``:
         {prefix}avatar [<username> | <user ID> | <user mention> | <partial lookup>]
-        [--server]
+        [--global]
     Description:
         Displays the avatar of the provided user. If no user is provided, the author will be used.
         Hyperlinks the user's avatar so it can be viewed online.
     Flags::
-        server: Display the user's server avatar, if set.
+        global: Display the user's global avatar, if set.
     """
-
-    user = ctx.author
-    if ctx.guild:
-        if ctx.args:
-            user = await ctx.find_member(ctx.args, interactive=True)
-            if not user:
-                return None
-        colour = LuaTeXitCC["yellow"] if user.colour.value == "#000000" else user.colour
-    else:
+    if not ctx.args:
+        user = ctx.author
         colour = LuaTeXitCC["purple"]
-
-    if flags["server"]:
-        if not ctx.guild:
-            return await ctx.error_reply("This flag can only be used in a server.")
-
-        avatar_url = await get_server_avatar(ctx, ctx.guild.id, user.id)
-        if not avatar_url:
-            return await ctx.error_reply(f"{user} has no server avatar set.")
-
     else:
-        avatar_url = user.avatar
+        user = await ctx.find_member(ctx.args, interactive=True)
+        if not user:
+            ctx.error_reply("User not found.")
+        colour = LuaTeXitCC["yellow"] if user.colour.value == "#000000" else user.colour
 
-    desc = f"Click [here]({avatar_url}) to view the {'GIF' if user.is_avatar_animated() else 'image'}."
-    embed = discord.Embed(colour=colour, description=desc)
-    embed.set_author(name=f"{user}'s Avatar")
-    embed.set_image(url=avatar_url)
+    if flags["global"]:
+        avatar_url = await get_user_avatar(ctx, user.id)
+        using = "global avatar"
+    elif ctx.guild and user.guild_avatar:
+        avatar_url = await get_server_avatar(ctx, ctx.guild.id, user.id)
+        using = "server avatar"
+    else:
+        avatar_url = user.display_avatar.url
+        using = "display avatar (in lieu)"
 
-    return await ctx.reply(embed=embed)
+    avatar_url = (
+        user.display_avatar.url
+        if (flags["global"] and user.display_avatar)
+        else user.guild_avatar.url
+        if (ctx.guild and user.guild_avatar)
+        else user.display_avatar.url
+    )
+
+    container = Container(accent_colour=colour)
+    container.add_item(Body(f"**{user}**'s {using}"))
+    container.add_item(
+        discord.ui.MediaGallery(
+            discord.MediaGalleryItem(avatar_url, description=f"Avatar for {user.display_name}"),
+        )
+    )
+    container.add_item(Footer(f"Requested by: {ctx.author}"))
+
+    v = LayoutView()
+    v.add_item(container)
+    return await ctx.reply(view=v)

@@ -271,7 +271,7 @@ async def cmd_query(ctx: Context, flags: dict):
     # Preload the required emojis
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     more_emoji = ctx.client.conf.emojis.getemoji("more")
-    prefix = ctx.best_prefix()
+    prefix = await ctx.best_prefix()
 
     # Handle no arguments
     if not ctx.args:
@@ -347,7 +347,7 @@ async def cmd_query(ctx: Context, flags: dict):
                         "Couldn't send your query!\n"
                         "**Error:** Invalid Wolfram Alpha `AppID`!\n"
                         "Please ask a guild admin to re-configure the `wolfram_id`.\n"
-                        f"(See `{ctx.best_prefix()}config wofram_id` for more information.)"
+                        f"(See `{await ctx.best_prefix()}config wofram_id` for more information.)"
                     )
                 else:
                     desc = ("An unknown error occurred querying the WolframAlpha API!\n**ERROR:** {}\t{}").format(

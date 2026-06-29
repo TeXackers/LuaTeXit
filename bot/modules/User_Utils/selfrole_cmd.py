@@ -93,7 +93,7 @@ async def cmd_giveme(ctx: Context, flags: dict):
         if flags["add"]:
             # Handle adding without arguments
             if not ctx.args:
-                return await ctx.error_reply(f"**Usage:** `{ctx.best_prefix()}{ctx.alias} --add role1, role2, role3`")
+                return await ctx.error_reply(f"**Usage:** `{await ctx.best_prefix()}{ctx.alias} --add role1, role2, role3`")
 
             roles = [
                 await ctx.find_role(
@@ -159,13 +159,13 @@ async def cmd_giveme(ctx: Context, flags: dict):
             msg = (
                 "**Self assignable roles for this guild**:\n"
                 f"{role_list}"
-                f"Use `{ctx.best_prefix()}iam role1, role2, ...` to assign yourself roles.\n"
-                f"Use `{ctx.best_prefix()}iamnot role1, role2, ...` to remove the roles."
+                f"Use `{await ctx.best_prefix()}iam role1, role2, ...` to assign yourself roles.\n"
+                f"Use `{await ctx.best_prefix()}iamnot role1, role2, ...` to remove the roles."
             )
         else:
             msg = (
                 "No self assignable roles have been set for this guild. "
-                f"See `{ctx.best_prefix()}help selfroles` for more information about creating selfroles."
+                f"See `{await ctx.best_prefix()}help selfroles` for more information about creating selfroles."
             )
 
         return await ctx.reply(msg)
@@ -181,7 +181,7 @@ async def cmd_giveme(ctx: Context, flags: dict):
                 role = await ctx.find_role(rolestr, interactive=True, collection=select_from, allow_notfound=False)
             except SafeCancellation:
                 return await ctx.error_reply(
-                    f"No selfroles matching `{rolestr}`.\nSee `{ctx.best_prefix()}selfroles --list` for the list of valid selfroles."
+                    f"No selfroles matching `{rolestr}`.\nSee `{await ctx.best_prefix()}selfroles --list` for the list of valid selfroles."
                 )
 
             roles.append(role)
@@ -191,7 +191,7 @@ async def cmd_giveme(ctx: Context, flags: dict):
                 resp = await ctx.ask(
                     "You already have the selfroles `{}`, do you want to remove them? (`y(es)`/`n(o)`)\n"
                     "(Tip: use `{}iamnot` to remove roles without this prompt.)".format(
-                        "`, `".join(r.name for r in remove_roles), ctx.best_prefix()
+                        "`, `".join(r.name for r in remove_roles), await ctx.best_prefix()
                     ),
                     add_hints=False,
                 )
@@ -203,7 +203,7 @@ async def cmd_giveme(ctx: Context, flags: dict):
                 resp = await ctx.ask(
                     "You don't have the selfroles `{}`, do you want to add them? (`y(es)`/`n(o)`)\n"
                     "(Tip: use `{}iam` to add roles without this prompt.)".format(
-                        "`, `".join(r.name for r in add_roles), ctx.best_prefix()
+                        "`, `".join(r.name for r in add_roles), await ctx.best_prefix()
                     ),
                     add_hints=False,
                 )
@@ -215,17 +215,17 @@ async def cmd_giveme(ctx: Context, flags: dict):
     else:
         # Case for empty arguments
         if add_alias:
-            offer_str = f"Please select the desired selfroles! (Use `{ctx.best_prefix()}iamnot` to remove your current selfroles.)"
+            offer_str = f"Please select the desired selfroles! (Use `{await ctx.best_prefix()}iamnot` to remove your current selfroles.)"
             select_from = [role for role in selfroles if role not in ctx.author.roles]
             if not select_from:
                 return await ctx.error_reply(
-                    f"You have all the selfroles! (Use `{ctx.best_prefix()}iamnot` to remove them)."
+                    f"You have all the selfroles! (Use `{await ctx.best_prefix()}iamnot` to remove them)."
                 )
         else:
             offer_str = "Please select the selfroles to remove."
             select_from = [role for role in selfroles if role in ctx.author.roles]
             if not select_from:
-                return await ctx.error_reply(f"You don't have any selfroles! Use `{ctx.best_prefix()}iam` to get some.")
+                return await ctx.error_reply(f"You don't have any selfroles! Use `{await ctx.best_prefix()}iam` to get some.")
 
         # Request roles to toggle
         try:

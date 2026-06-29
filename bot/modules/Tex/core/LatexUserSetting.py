@@ -89,7 +89,7 @@ class LatexUserSetting(SettingType):
 
             embed = discord.Embed(title="Couldn't parse your input!", description=desc, color=discord.Color.red())
             embed.set_footer(
-                text=f"Use `{ctx.best_prefix()}texconfig {cls.name}` to see more detailed information about this setting."
+                text=f"Use `{await ctx.best_prefix()}texconfig {cls.name}` to see more detailed information about this setting."
             )
 
             return await ctx.reply(embed=embed)

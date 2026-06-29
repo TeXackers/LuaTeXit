@@ -29,7 +29,7 @@ class _MuteTypeAction(ModAction):
         muterole = self.ctx.get_guild_setting.muterole.value
         if not muterole or not isinstance(muterole, discord.Role):
             raise SafeCancellation(
-                f"Please setup the muterole (`{self.ctx.best_prefix()}config muterole`) before using mute commands."
+                f"Please setup the muterole (`{await self.ctx.best_prefix()}config muterole`) before using mute commands."
             )
 
         # Check the client has sufficient permissions to manage it

@@ -207,7 +207,7 @@ async def cmd_time(ctx, flags):
         {prefix}time --at Melbourne
         {prefix}time --at 06:00
     """
-    prefix = ctx.best_prefix()
+    prefix = await ctx.best_prefix()
 
     time_data = ctx.client.data.user_time_settings
     tauthor = time_data.select_where(userid=ctx.author.id)

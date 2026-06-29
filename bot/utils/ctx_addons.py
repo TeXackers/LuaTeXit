@@ -112,7 +112,7 @@ async def run_in_shell(ctx: Context, script):
 
 
 @Context.util
-async def best_prefix(ctx: Context):
+async def best_prefix(ctx: Context) -> str:
     """
     Returns the best default prefix in the current context.
     This will be the server prefix if it is defined,

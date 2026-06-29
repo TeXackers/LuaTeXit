@@ -49,7 +49,7 @@ async def cmd_disable(ctx: Context):
                 "Disabled commands in this guild:{cmd_str}"
                 "Use `{prefix}disable cmd1, cmd2, ...` to disable commands.\n"
                 "Use `{prefix}enable cmd1, cmd2, ...` to renable commands.".format(
-                    prefix=ctx.best_prefix(), cmd_str="```css\n{}\n```".format(", ".join(disabled))
+                    prefix=await ctx.best_prefix(), cmd_str="```css\n{}\n```".format(", ".join(disabled))
                 )
             )
     else:

@@ -155,7 +155,7 @@ async def cmd_about(ctx: Context):
     table = prop_tabulate(fields, values)
 
     # Create info string for top of description
-    info = ctx.client.app_info["info_str"].format(prefix=ctx.best_prefix())
+    info = ctx.client.app_info["info_str"].format(prefix=await ctx.best_prefix())
 
     # Create link string for bottom of description
     links = "[Support server]({}), [Invite me]({}), [Contribute!]({})".format(

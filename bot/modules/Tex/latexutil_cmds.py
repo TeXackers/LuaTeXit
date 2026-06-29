@@ -6,8 +6,10 @@ import urllib.parse
 import discord
 import iso639
 import requests
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
+from bs4.element import NavigableString
 from cmdClient import Context  # noqa
+from cmdClient.Layouts import GenericFullEmbed
 from utils.lib import prop_tabulate, split_text
 
 from .module import latex_module as module
@@ -16,16 +18,12 @@ from .module import latex_module as module
 Provides ctan and texdoc commands.
 """
 
-texdoc_url = "http://texdoc.net/pkg/{}"
-ctan_url = "https://ctan.org/{}"
-lion_url = "https://ctan.org/lion/files/ctan_lion_350x350.png"
-bend_url = "https://cdn.discordapp.com/attachments/1043075521476579398/1043077445911322624/dangerous-bend.png"
-comp_url = (
-    "https://cdn.discordapp.com/attachments/884225590666887188/"
-    "949152868768837662/Screen_Shot_2022-03-04_at_14.54.10.png"
-)
+texdoc_url: str = "http://texdoc.net/pkg/{}"
+ctan_url: str = "https://ctan.org/{}"
+lion_url: str = "https://ctan.org/lion/files/ctan_lion_350x350.png"
+bend_url: str = "https://cdn.discordapp.com/attachments/1043075521476579398/1043077445911322624/dangerous-bend.png"
 
-thumbnails = [lion_url, bend_url, comp_url]
+thumbnails = [lion_url, bend_url]
 
 
 def soup_site(url: str) -> BeautifulSoup:
@@ -172,11 +170,11 @@ class MarkdownConverter:
 def search_n_parse(soup: BeautifulSoup):
     title = soup.find("h1")
 
-    if "Not Found" in title.contents[0]:
+    if title and title.contents and "Not Found" in str(title.contents[0]):
         return ("", "", [], [])
 
     try:
-        if "is Gone" in title.contents[2]:
+        if title and title.contents and len(title.contents) > 2 and "is Gone" in str(title.contents[2]):
             div = soup.find("div", attrs={"class": "left"})
             desc = div.text
             return (title.text, desc, [], [])
@@ -220,7 +218,7 @@ def search_n_parse(soup: BeautifulSoup):
 
 
 @module.cmd("texdoc", desc="Searches the [texdoc](http://texdoc.net)", aliases=["td"])
-async def cmd_texdoc(ctx: type[Context]):
+async def cmd_texdoc(ctx: Context):
     """
     Usage``:
         {prefix}texdoc <package_name>
@@ -239,7 +237,7 @@ async def cmd_texdoc(ctx: type[Context]):
 
 
 @module.cmd("ctan", desc="Searches the [ctan](https://ctan.org)", aliases=["ctanlink", "ctans"])
-async def cmd_ctan(ctx: type[Context]):
+async def cmd_ctan(ctx: Context):
     """
     Usage``:
         {prefix}ctan <package_name>

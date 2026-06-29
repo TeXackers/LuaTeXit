@@ -111,7 +111,7 @@ async def cmd_preamble(ctx: Context, flags: dict):
         if pending_preamble and not flags["retract"]:
             response += "\nUse `{prefix}preamble --retract` to also retract your pending preamble request"
 
-        await ctx.reply(response.format(prefix=ctx.best_prefix()))
+        await ctx.reply(response.format(prefix=await ctx.best_prefix()))
 
     # Handle retracting a preamble request
     if flags["retract"]:
@@ -156,7 +156,7 @@ async def cmd_preamble(ctx: Context, flags: dict):
         # Logging
         await preamblelog(ctx, "Preamble has been reverted.")
         await ctx.reply(
-            f"Your preamble has been reverted to the previous version. Use `{ctx.best_prefix()}preamble --revert` again to undo."
+            f"Your preamble has been reverted to the previous version. Use `{await ctx.best_prefix()}preamble --revert` again to undo."
         )
         return None
 
@@ -315,7 +315,7 @@ async def cmd_preamble(ctx: Context, flags: dict):
             "Your preamble request has been sent to my managers for review.\n"
             "You will be messaged when your request is reviewed "
             "(usually around `1`-`2` hours, depending on availability).\n"
-            f"If you wish to retract your submission, please use `{ctx.best_prefix()}preamble --retract`."
+            f"If you wish to retract your submission, please use `{await ctx.best_prefix()}preamble --retract`."
         )
 
     # Handle a request to add material to the preamble
@@ -339,7 +339,7 @@ async def cmd_preamble(ctx: Context, flags: dict):
             # Prompt the user for the material they wish to add, handle cancellations and timeout
             prompt = (
                 "Please enter the material you wish to add to your preamble, or `c` to cancel.\n"
-                f"**If you wish to *replace* your preamble, please rerun with `{ctx.best_prefix()}preamble --replace`.**\n"
+                f"**If you wish to *replace* your preamble, please rerun with `{await ctx.best_prefix()}preamble --replace`.**\n"
             )
             try:
                 args = await ctx.input(prompt, timeout=600)
@@ -421,12 +421,12 @@ async def cmd_preamble(ctx: Context, flags: dict):
             "Your preamble request has been sent to my review team.\n"
             "You will be messaged when your request is reviewed "
             "(usually around `1`-`2` hours, depending on availability).\n"
-            f"If you wish to retract your submission, please use `{ctx.best_prefix()}preamble --retract`."
+            f"If you wish to retract your submission, please use `{await ctx.best_prefix()}preamble --retract`."
         )
 
     # If the user doesn't want to edit their preamble, they must just want to view it
 
-    title = f"Your current preamble. Use {ctx.best_prefix()}texconfig to see the other LaTeX config options!"
+    title = f"Your current preamble. Use {await ctx.best_prefix()}texconfig to see the other LaTeX config options!"
     return await ctx.offer_delete(
         await view_preamble(
             ctx, preamble, title, header=header, file_react=True, file_message=f"Current Preamble for {ctx.author}"

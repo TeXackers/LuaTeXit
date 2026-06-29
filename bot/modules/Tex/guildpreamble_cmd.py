@@ -208,7 +208,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
             # Prompt the user for the material they wish to add, handle cancellations and timeout
             prompt = (
                 "Please enter the material you wish to add to the guild preamble, or send `c` to cancel.\n"
-                f"**If you wish to *replace* the guild preamble, please rerun with `{ctx.best_prefix()}preamble --replace`.**\n"
+                f"**If you wish to *replace* the guild preamble, please rerun with `{await ctx.best_prefix()}preamble --replace`.**\n"
             )
             try:
                 args = await ctx.input(prompt, timeout=600)

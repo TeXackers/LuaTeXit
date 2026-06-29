@@ -78,7 +78,7 @@ async def cmd_tex(ctx: Context, flags: dict):
     if any(flags.values()):
         return await ctx.error_reply(
             "LaTeX configuration has moved to the `texconfig` command.\n"
-            f"Please see `{ctx.best_prefix()}help texconfig` for usage."
+            f"Please see `{await ctx.best_prefix()}help texconfig` for usage."
         )
 
     # Handle empty and erroneous input
@@ -99,7 +99,7 @@ async def cmd_tex(ctx: Context, flags: dict):
 
     # Handle `tex help`
     if ctx.args.lower() in ["help", "--help"]:
-        return await ctx.error_reply(f"Please use `{ctx.best_prefix()}help tex` for command help.")
+        return await ctx.error_reply(f"Please use `{await ctx.best_prefix()}help tex` for command help.")
 
     # WARNING FOR BEGIN DOCUMET - REMOVED
     # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:

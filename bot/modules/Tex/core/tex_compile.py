@@ -156,9 +156,9 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"{path}/{targetid}.tex"
+    fn: Path = Path(f"{path}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -196,9 +196,9 @@ async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="d
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"tex/staging/{targetid}/{targetid}.tex"
+    fn: Path = Path(f"tex/staging/{targetid}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -236,9 +236,9 @@ async def makexetex(ctx, source, targetid, preamble=default_preamble, colour="de
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"{path}/{targetid}.tex"
+    fn: Path = Path(f"{path}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -284,9 +284,9 @@ async def make_plain_luatex(
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"{path}/{targetid}.tex"
+    fn: Path = Path(f"{path}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -332,9 +332,9 @@ async def make_plain_pdftex(
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"{path}/{targetid}.tex"
+    fn: Path = Path(f"{path}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -380,9 +380,9 @@ async def makepythontex(
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
-    fn = f"{path}/{targetid}.tex"
+    fn: Path = Path(f"{path}/{targetid}.tex")
 
     with Path.open(fn, "w") as work:
         work.write(
@@ -411,5 +411,5 @@ def setup_structure(client):
     """
     # Delete and recreate the staging directory, if it exists
     shutil.rmtree("tex/staging", ignore_errors=True)
-    Path.mkdir("tex/staging", parents=True, exist_ok=True)
+    Path("tex/staging").mkdir(parents=True, exist_ok=True)
     shutil.copy(failed_image_path, "tex")

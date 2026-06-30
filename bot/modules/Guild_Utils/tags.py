@@ -28,12 +28,12 @@ async def cmd_tag(ctx):
             return
 
         current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
-        current_tags = current_tags if current_tags else {}
+        current_tags = current_tags or {}
         current_tags[tag_info["name"]] = tag_info
         await ctx.bot.data.servers_long.set(ctx.server.id, "tags", current_tags)
         return
     current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
-    current_tags = current_tags if current_tags else {}
+    current_tags = current_tags or {}
     if ctx.arg_str == "":
         if current_tags:
             await ctx.reply("Available tags are `{}`.".format("`, `".join(current_tags.keys())))
@@ -51,7 +51,7 @@ async def cmd_tag(ctx):
                     return
 
                 current_tags = await ctx.bot.data.servers_long.get(ctx.server.id, "tags")
-                current_tags = current_tags if current_tags else {}
+                current_tags = current_tags or {}
                 current_tags[tag_info["name"]] = tag_info
                 await ctx.bot.data.servers_long.set(ctx.server.id, "tags", current_tags)
         return
@@ -81,8 +81,10 @@ async def cmd_tag(ctx):
         )
         embed.set_footer(
             text="Created at {} by {} ({})".format(
-                tag["time"], (await ctx.bot.get_user_info(tag["author"])).name, tag["author"]
-            )
+                tag["time"],
+                (await ctx.bot.get_user_info(tag["author"])).name,
+                tag["author"],
+            ),
         )
         await ctx.reply(embed=embed)
         return
@@ -107,7 +109,7 @@ async def create_tag(ctx):
         await ctx.reply("Sorry, you must be a moderator to create tags")
         return None
 
-    tag_name = ctx.arg_str if ctx.arg_str else None
+    tag_name = ctx.arg_str or None
     content = None
     created_time = ctx.msg.timestamp
     created_time_str = created_time.strftime("%I:%M %p, %d/%m/%Y")
@@ -121,14 +123,14 @@ async def create_tag(ctx):
             return None
 
     create_embed = discord.Embed(title="Creating Tag", author=ctx.author.display_name)
-    create_embed.add_field(name="Tag Name", value=tag_name if tag_name else "Not set", inline=False)
-    create_embed.add_field(name="Tag Content", value=content if content else "Not set", inline=False)
+    create_embed.add_field(name="Tag Name", value=tag_name or "Not set", inline=False)
+    create_embed.add_field(name="Tag Content", value=content or "Not set", inline=False)
     create_embed.add_field(name="Usable by", value="Everyone", inline=False)
     create_embed.set_footer(text=f"Created at {created_time_str}")
     embed_msg = await ctx.reply(embed=create_embed)
 
     if not tag_name:
-        tag_name = await ctx.input("Please enter the tag name (or `cancel` to abort)")
+        tag_name = await ctx.on_input("Please enter the tag name (or `cancel` to abort)")
         if tag_name in ["cancel", "Cancel"]:
             await ctx.reply("User canceled, aborting")
             tag_name = None
@@ -143,7 +145,7 @@ async def create_tag(ctx):
         await ctx.bot.edit_message(embed_msg, embed=create_embed)
 
     if not content:
-        content = await ctx.input("Please enter the content you want for the tag (or `cancel` to abort)")
+        content = await ctx.on_input("Please enter the content you want for the tag (or `cancel` to abort)")
         if content in ["cancel", "Cancel"]:
             await ctx.reply("User canceled, aborting")
             content = None
@@ -156,8 +158,8 @@ async def create_tag(ctx):
         create_embed.set_field_at(1, name="Tag Content", value=content)
         await ctx.bot.edit_message(embed_msg, embed=create_embed)
 
-    role_name = await ctx.input(
-        "Enter the role required to use this tag, or `everyone` or `.` if everyone can use it (or `cancel` to abort)"
+    role_name = await ctx.on_input(
+        "Enter the role required to use this tag, or `everyone` or `.` if everyone can use it (or `cancel` to abort)",
     )
     if role_name in ["cancel", "Cancel"]:
         await ctx.reply("User canceled, aborting")

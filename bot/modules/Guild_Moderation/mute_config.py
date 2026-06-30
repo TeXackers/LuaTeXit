@@ -39,5 +39,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_muterole_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_muteroles"
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_muteroles",
     )

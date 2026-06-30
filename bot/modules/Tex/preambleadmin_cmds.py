@@ -30,7 +30,7 @@ async def approval_queue(ctx: Context):
     while True:
         # Generate the list of users waiting for judgement
         waiting = ctx.client.data.user_pending_preambles.select_where(
-            select_columns=("userid", "username", "app", "submission_time", "submission_source_name")
+            select_columns=("userid", "username", "app", "submission_time", "submission_source_name"),
         )
 
         # Quit if there is nothing to approve
@@ -40,7 +40,10 @@ async def approval_queue(ctx: Context):
             # Make a pretty approval list
             waiting_list = [
                 "{} ({}) from '{}' on '{}'".format(
-                    waiter["username"], waiter["userid"], waiter["submission_source_name"], waiter["app"]
+                    waiter["username"],
+                    waiter["userid"],
+                    waiter["submission_source_name"],
+                    waiter["app"],
                 )
                 for waiter in waiting
             ]
@@ -77,7 +80,7 @@ async def approval_queue(ctx: Context):
                     "Warning: This user submitted their request from a different app, "
                     "and this shard cannot see the submission guild.\n"
                     "If this client does not share a guild with the user, "
-                    "I will not be able to message them."
+                    "I will not be able to message them.",
                 )
             # Add the approval/denial/testing emojis to the submission
             await judgement_reactions(ctx, judging["userid"], sub_msg)
@@ -153,10 +156,12 @@ async def user_admin(ctx: Context, userid: int):
             offer_msg = await ctx.reply(prompt)
             try:
                 result_msg = await ctx.client.wait_for(
-                    "message", check=lambda msg: msg.author == ctx.author and msg.channel == ctx.ch, timeout=600
+                    "message",
+                    check=lambda msg: msg.author == ctx.author and msg.channel == ctx.ch,
+                    timeout=600,
                 )
-            except asyncio.TimeoutError:
-                raise ResponseTimedOut("Timed out waiting for a menu selection.")
+            except asyncio.TimeoutError as toe:
+                raise ResponseTimedOut("Timed out waiting for a menu selection.") from toe
             finally:
                 await offer_msg.delete()
 
@@ -175,7 +180,7 @@ async def user_admin(ctx: Context, userid: int):
                         preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
                     except UnicodeError:
                         return await ctx.error_reply(
-                            "Couldn't decode the attached file, please ensure it uses the `utf-8` encoding."
+                            "Couldn't decode the attached file, please ensure it uses the `utf-8` encoding.",
                         )
                 else:
                     preamble = result_msg.content
@@ -252,7 +257,7 @@ async def user_admin(ctx: Context, userid: int):
                     "Warning: This user submitted their request from a different app, "
                     "and this shard cannot see the submission guild.\n"
                     "If this client does not share a guild with the user, "
-                    "I will not be able to message them."
+                    "I will not be able to message them.",
                 )
 
             # Add the approval/denial/testing emojis to the submission
@@ -319,10 +324,12 @@ async def guild_admin(ctx: Context, guildid: int):
             offer_msg = await ctx.reply(prompt)
             try:
                 result_msg = await ctx.client.wait_for(
-                    "message", check=lambda msg: msg.author == ctx.author and msg.channel == ctx.ch, timeout=600
+                    "message",
+                    check=lambda msg: msg.author == ctx.author and msg.channel == ctx.ch,
+                    timeout=600,
                 )
-            except asyncio.TimeoutError:
-                raise ResponseTimedOut("Timed out waiting for a menu selection.")
+            except asyncio.TimeoutError as toe:
+                raise ResponseTimedOut("Timed out waiting for a menu selection.") from toe
             finally:
                 await offer_msg.delete()
 
@@ -341,7 +348,7 @@ async def guild_admin(ctx: Context, guildid: int):
                         preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
                     except UnicodeError:
                         return await ctx.error_reply(
-                            "Couldn't decode the attached file, please ensure it uses the `utf-8` codec."
+                            "Couldn't decode the attached file, please ensure it uses the `utf-8` codec.",
                         )
                 else:
                     preamble = result_msg.content

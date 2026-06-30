@@ -35,7 +35,7 @@ async def cmd_note(ctx: Context):
         note = " ".join(note)
     else:
         # No note was provided, prompt the author to provide the content.
-        note = await ctx.input("Please enter the note, or `c` to cancel.")
+        note = await ctx.on_input("Please enter the note, or `c` to cancel.")
         if note.lower() == "c":
             return await ctx.error_reply("Note creation cancelled.")
 

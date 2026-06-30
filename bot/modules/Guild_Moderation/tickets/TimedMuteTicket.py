@@ -36,7 +36,10 @@ class TimedMuteTicket(Ticket):
     def _create_ticket(cls, ticketid, memberids, duration=None, roleid=None, unmute_timestamp=None):
         # Save the extra timed mute data
         cls._client.data.guild_timed_mute_tickets.insert(
-            ticketid=ticketid, duration=duration, roleid=roleid, unmute_timestamp=unmute_timestamp
+            ticketid=ticketid,
+            duration=duration,
+            roleid=roleid,
+            unmute_timestamp=unmute_timestamp,
         )
 
         # Finish creating the ticket
@@ -56,5 +59,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_mute_ticket_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_timed_mute_tickets"
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_timed_mute_tickets",
     )

@@ -17,11 +17,11 @@ def get_custom_emoji(ctx: Context, emoji_str: str):
     # Cross fingers and hope it is of form a:name:id, <a:name:id>, name:id, or <:name:id>
     # Give up otherwise
     if not re.match(r"^[A-Za-z0-9_]+$", emoji_str):
-        id = re.search(r"\d+", emoji_str)
-        if not id:
+        emoji_id = re.search(r"\d+", emoji_str)
+        if not emoji_id:
             return None
-        id = int(id.group())
-        return discord.utils.get(ctx.client.emojis, id=id)
+        emoji_id = int(emoji_id.group())
+        return discord.utils.get(ctx.client.emojis, id=emoji_id)
 
     # Not valid emoji id
     # Priority: guild exact match > guild inexact match > exact match > inexact match
@@ -34,13 +34,15 @@ def get_custom_emoji(ctx: Context, emoji_str: str):
                 or discord.utils.find(lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis)
             )
         return discord.utils.find(
-            lambda e: emoji_str.lower() == e.name.lower(), ctx.client.emojis
+            lambda e: emoji_str.lower() == e.name.lower(),
+            ctx.client.emojis,
         ) or discord.utils.find(lambda e: emoji_str.lower() in e.name.lower(), ctx.client.emojis)
 
     # Valid emoji id
     if ctx.guild:
         return discord.utils.get(ctx.guild.emojis, id=int(emoji_str)) or discord.utils.get(
-            ctx.client.emojis, id=int(emoji_str)
+            ctx.client.emojis,
+            id=int(emoji_str),
         )
     return discord.utils.get(ctx.client.emojis, id=int(emoji_str))
 
@@ -94,7 +96,7 @@ async def cmd_emoji(ctx: Context, flags: dict):
         if not emojis:
             return await ctx.error_reply(
                 "No custom emojis found in this guild!\n"
-                "Use this command to search for custom emojis from my other guilds."
+                "Use this command to search for custom emojis from my other guilds.",
             )
 
         emojistrs = [f"{str(e)}`{e.id}` {e.name}" for e in emojis]
@@ -197,7 +199,9 @@ async def cmd_emoji(ctx: Context, flags: dict):
         # Wrap this in try/except in case the message was deleted in the meantime somehow.
         try:
             await ctx.client.http.add_reaction(
-                ctx.ch.id, react_message.id, f"{emoji.name}:{emoji.id}" if emoji_is_custom else emoji["emoji"]
+                ctx.ch.id,
+                react_message.id,
+                f"{emoji.name}:{emoji.id}" if emoji_is_custom else emoji["emoji"],
             )
         except discord.NotFound:
             pass

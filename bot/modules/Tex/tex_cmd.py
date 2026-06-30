@@ -78,7 +78,7 @@ async def cmd_tex(ctx: Context, flags: dict):
     if any(flags.values()):
         return await ctx.error_reply(
             "LaTeX configuration has moved to the `texconfig` command.\n"
-            f"Please see `{await ctx.best_prefix()}help texconfig` for usage."
+            f"Please see `{await ctx.best_prefix()}help texconfig` for usage.",
         )
 
     # Handle empty and erroneous input
@@ -149,7 +149,7 @@ async def cmd_tex(ctx: Context, flags: dict):
         return await ctx.error_reply(
             "Codeblocks found, but no LaTeX codeblocks!\n"
             "Please write your codeblocks as follows.\n"
-            "\\`\\`\\`tex\ncode\n\\`\\`\\`"
+            "\\`\\`\\`tex\ncode\n\\`\\`\\`",
         )
 
     match ctx.alias.lower():

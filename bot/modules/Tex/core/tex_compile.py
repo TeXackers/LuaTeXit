@@ -52,7 +52,7 @@ colourschemes.update(
         "grey": colourschemes["ash"],  # ash
         "darkgrey": colourschemes["dark"],  # dark
         "black": colourschemes["onyx"],  # onyx
-    }
+    },
 )
 
 # Header for every LaTeX source file
@@ -143,7 +143,8 @@ to_compile_plaintex: str = r"""
 async def maketex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning LaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -168,7 +169,7 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
                 header=header,
                 preamble=preamble,
                 source=source,
-            )
+            ),
         )
         work.close()
 
@@ -183,7 +184,8 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
 async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning LuaLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -208,7 +210,7 @@ async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="d
                 header=header,
                 preamble=preamble,
                 source=source,
-            )
+            ),
         )
         work.close()
 
@@ -223,7 +225,8 @@ async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="d
 async def makexetex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
     log(
         "Beginning XeLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -248,7 +251,7 @@ async def makexetex(ctx, source, targetid, preamble=default_preamble, colour="de
                 header=header,
                 preamble=preamble,
                 source=source,
-            )
+            ),
         )
         work.close()
 
@@ -271,7 +274,8 @@ async def make_plain_luatex(
 ):
     log(
         "Beginning plain LuaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -295,8 +299,8 @@ async def make_plain_luatex(
                 # alwayswide = "minpagewidth=110pt" if pad else "",
                 # header = header,
                 # preamble = preamble,
-                source=source
-            )
+                source=source,
+            ),
         )
         work.close()
 
@@ -319,7 +323,8 @@ async def make_plain_pdftex(
 ):
     log(
         "Beginning plain pdfTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -343,8 +348,8 @@ async def make_plain_pdftex(
                 # alwayswide = "minpagewidth=110pt" if pad else "",
                 # header = header,
                 # preamble = preamble,
-                source=source
-            )
+                source=source,
+            ),
         )
         work.close()
 
@@ -367,7 +372,8 @@ async def makepythontex(
 ):
     log(
         "Beginning pythonTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid, content="\n".join("\t" + line for line in source.splitlines())
+            targetid=targetid,
+            content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
         context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
@@ -392,7 +398,7 @@ async def makepythontex(
                 header=header,
                 preamble=preamble,
                 source=source,
-            )
+            ),
         )
         work.close()
 

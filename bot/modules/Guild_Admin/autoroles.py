@@ -103,9 +103,11 @@ bar_schema = tableSchema(
 @module.data_init_task
 def attach_autorole_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ar_schema, shared=False), "guild_autoroles"
+        tableInterface.from_schema(client.data, client.app, ar_schema, shared=False),
+        "guild_autoroles",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, bar_schema, shared=False), "guild_bot_autoroles"
+        tableInterface.from_schema(client.data, client.app, bar_schema, shared=False),
+        "guild_bot_autoroles",
     )

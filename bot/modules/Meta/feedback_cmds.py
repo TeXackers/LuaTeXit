@@ -34,13 +34,16 @@ async def cmd_feedback(ctx: Context):
     # Get the desired feedback
     response = ctx.args
     if not response:
-        response = await ctx.input("What message would you like to send? (`c` to cancel)", timeout=240)
+        response = await ctx.on_input("What message would you like to send? (`c` to cancel)", timeout=240)
         if response.lower() == "c":
             return await ctx.error_reply("Cancelled question.")
 
     # Build the feedback embed
     embed = discord.Embed(
-        title="Feedback", color=LuaTeXitCC["purple"], timestamp=discord.utils.utcnow(), description=response
+        title="Feedback",
+        color=LuaTeXitCC["purple"],
+        timestamp=discord.utils.utcnow(),
+        description=response,
     )
     embed.set_author(name=f"{ctx.author} ({ctx.author.id})", icon_url=ctx.author.avatar.url)
     embed.set_footer(text=discord.utils.utcnow().strftime("Sent from {}".format(ctx.guild.name if ctx.guild else "DM")))
@@ -48,7 +51,8 @@ async def cmd_feedback(ctx: Context):
     # Send a preview and confirm with the user
     preview = await ctx.reply(embed=embed)
     response = await ctx.ask(
-        "Are you sure you wish to submit the following feedback to my developers? (`y`/`n`)", use_msg=preview
+        "Are you sure you wish to submit the following feedback to my developers? (`y`/`n`)",
+        use_msg=preview,
     )
     await preview.edit(content="")
     if not response:

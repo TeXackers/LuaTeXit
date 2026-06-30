@@ -59,7 +59,10 @@ async def join_logger(client, member):
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
-        color=colour, title=f"{member} ({member.id})", description=desc, timestamp=discord.utils.utcnow()
+        color=colour,
+        title=f"{member} ({member.id})",
+        description=desc,
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="New {usertype} joined!".format(usertype="bot" if member.bot else "user"), url=member.avatar)
     embed.set_thumbnail(url=member.avatar)
@@ -104,7 +107,10 @@ async def departure_logger(client, member):
     desc = prop_tabulate(prop_list, value_list)
 
     embed = discord.Embed(
-        color=colour, title=f"{member} ({member.id})", description=desc, timestamp=discord.utils.utcnow()
+        color=colour,
+        title=f"{member} ({member.id})",
+        description=desc,
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="{usertype} left!".format(usertype="Bot" if member.bot else "User"), url=avatar)
     embed.set_thumbnail(url=avatar)
@@ -196,11 +202,13 @@ departure_log_schema = tableSchema(
 @module.data_init_task
 def attach_traffic_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_traffic_schema, shared=True), "member_traffic"
+        tableInterface.from_schema(client.data, client.app, member_traffic_schema, shared=True),
+        "member_traffic",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, join_log_schema, shared=False), "guild_logging_joins"
+        tableInterface.from_schema(client.data, client.app, join_log_schema, shared=False),
+        "guild_logging_joins",
     )
 
     client.data.attach_interface(

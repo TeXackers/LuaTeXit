@@ -25,7 +25,7 @@ User data:
 """
 
 # Some quotes about time
-time_quotes = [
+time_quotes: list[str] = [
     '"Men talk of killing time, while time quietly kills them." -- Dion Boucicault',
     '"Time brings all things to pass." -- Aeschylus',
     '"Time is a storm in which we are all lost." -- William Carlos Williams',
@@ -38,31 +38,30 @@ time_quotes = [
 ]
 
 # Generate list of countries per continent and the continent name list
-cont_dict = {}
+cont_dict: dict[str, list] = {}
 for country in countries:
     if country["continent"] not in cont_dict:
         cont_dict[country["continent"]] = [country]
     else:
         cont_dict[country["continent"]].append(country)
-continents = [{"name": name, "countries": countries} for name, countries in cont_dict.items()]
-cont_names = [c["name"] for c in continents]
+continents: list[dict] = [{"name": name, "countries": countries} for name, countries in cont_dict.items()]
+cont_names: list[str] = [c["name"] for c in continents]
 
 
-def get_time(tz) -> type[datetime]:
+def get_time(tz: str) -> type[datetime]:
     """
     Get a datetime object representing the current time in the given timezone.
     """
-    TZ = timezone(tz)
-    return datetime.now(TZ)
+    return datetime.now(timezone(tz))
 
 
-def gen_tz_strings(tzlist) -> list[str]:
+def gen_tz_strings(tzlist: list[str]) -> list[str]:
     """
     Generates blocks of timezone (time) pairs with nice spacing, ready for use in a pager.
     """
     tzlist = [(tz, get_time(tz).strftime("%I:%M %p")) for tz in tzlist]
     tz_blocks = [tzlist[i : i + 20] for i in range(0, len(tzlist), 20)]
-    max_block_lens = [len(max(list(zip(*tz_block))[0], key=len)) for tz_block in tz_blocks]
+    max_block_lens = [len(max(list(zip(*tz_block, strict=True))[0], key=len)) for tz_block in tz_blocks]
     block_strs = [
         ["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock]
         for i, tzblock in enumerate(tz_blocks)
@@ -110,7 +109,9 @@ async def tz_lookup(ctx: Context, search_str: str) -> str:
     if options:
         # Yay we found some matches
         tzid = await ctx.selector(
-            "Multiple matching timezones found, please select one!", gen_tz_strings(options), allow_single=False
+            "Multiple matching timezones found, please select one!",
+            gen_tz_strings(options),
+            allow_single=False,
         )
         return options[tzid] if tzid is not None else None
     # Nope, we tried our best but couldn't find any matches
@@ -247,15 +248,15 @@ async def cmd_time(ctx, flags):
             else:
                 methods.append(
                     "Try entering the name of your nearest capital city, e.g. `{prefix}ti --set London`, "
-                    "or your current time, e.g. `{prefix}ti --set 7:20`."
+                    "or your current time, e.g. `{prefix}ti --set 7:20`.",
                 )
             methods.append("Find your timezone in the complete list with `{prefix}ti --list`")
             methods.append(
-                "Use [this interactive map](http://kevalbhatt.github.io/timezone-picker) to find your timezone!"
+                "Use [this interactive map](http://kevalbhatt.github.io/timezone-picker) to find your timezone!",
             )
             methods.append(
                 "Get your timezone from your country and region "
-                "[here](http://www.timezoneconverter.com/cgi-bin/findzone)!"
+                "[here](http://www.timezoneconverter.com/cgi-bin/findzone)!",
             )
             methods.append("Or join our [support server]({support}) and ask one of our friendly support team!")
 

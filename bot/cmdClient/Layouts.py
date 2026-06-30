@@ -69,7 +69,7 @@ class SectionWithThumbnail(Section):
 
 class TextEmbed(LayoutView):
     def __init__(self, header: str, body: str, footer: str, accent_colour: Colour) -> None:
-        super().__init__(timeout=6000)
+        super().__init__(timeout=None)
 
         container = Container(
             Header(header, 1),
@@ -83,7 +83,7 @@ class TextEmbed(LayoutView):
 
 class GenericFullEmbed(LayoutView):
     def __init__(self, header: str, body: str, footer: str, thumbnail_url: str, accent_colour: Colour) -> None:
-        super().__init__(timeout=6000)
+        super().__init__(timeout=None)
 
         container = Container(
             Header(header, 2),

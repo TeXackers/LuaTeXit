@@ -58,7 +58,7 @@ async def cmd_help(ctx: Context):
             await ctx.reply(
                 "A brief description and guide on how to use me was sent to your DMs!\n"
                 f"Please use `{await ctx.best_prefix()}list` to see a list of all my commands, "
-                f"and `{await ctx.best_prefix()}help cmd` to get detailed help on a command!"
+                f"and `{await ctx.best_prefix()}help cmd` to get detailed help on a command!",
             )
     else:
         # Send specific command help
@@ -70,7 +70,7 @@ async def cmd_help(ctx: Context):
                 return await ctx.reply(
                     "~~You really shouldn't take it literally :upside_down:.~~ "
                     f"Please type `{await ctx.best_prefix()}help ping`, for example!\n"
-                    f"The full command list may be found using `{await ctx.best_prefix()}list`."
+                    f"The full command list may be found using `{await ctx.best_prefix()}list`.",
                 )
             # If this was triggered by the `h` alias, don't respond unless there's a space afterwards
             if ctx.alias == "h":
@@ -80,7 +80,7 @@ async def cmd_help(ctx: Context):
 
             return await ctx.error_reply(
                 f"Command `{ctx.arg_str}` not found!\n"
-                f"Use the `{await ctx.best_prefix()}list` command without arguments to see a list of commands."
+                f"Use the `{await ctx.best_prefix()}list` command without arguments to see a list of commands.",
             )
 
         help_fields = command.long_help.copy()
@@ -118,7 +118,8 @@ async def cmd_help(ctx: Context):
 
         # Build the help embed
         embed = discord.Embed(
-            title=f"`{command.name}` command documentation. {alias_str}", colour=discord.Colour(0x9B59B6)
+            title=f"`{command.name}` command documentation. {alias_str}",
+            colour=discord.Colour(0x9B59B6),
         )
         out_msg = None
 
@@ -139,7 +140,7 @@ async def cmd_help(ctx: Context):
             embed.description = f"{command.desc}"
 
             for fieldname, fieldvalue in help_fields:
-                if fieldname in ["Usage"]:
+                if fieldname == "Usage":
                     # Format the field
                     fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
                     fieldvalue += f"\n\nClick {more_emoji} to show more information."
@@ -232,8 +233,8 @@ async def cmd_list(ctx: Context) -> None:
                 )
         embed.set_footer(
             text="Use '{0}help' or '{0}help cmd' for detailed help, or get support with {0}support.".format(
-                await ctx.best_prefix()
-            )
+                await ctx.best_prefix(),
+            ),
         )
 
         # Send the command list
@@ -264,7 +265,7 @@ async def cmd_list(ctx: Context) -> None:
 
         if not groups:
             return await ctx.error_reply(
-                f"No matching modules! See `{await ctx.best_prefix()}ls` for a list of modules and their commands."
+                f"No matching modules! See `{await ctx.best_prefix()}ls` for a list of modules and their commands.",
             )
 
         # Sort the command groups based on sorted_cats and extract the required data
@@ -276,7 +277,7 @@ async def cmd_list(ctx: Context) -> None:
             if catname in groups:
                 cat = groups[catname][0]
                 try:
-                    props, values, commands = zip(*groups[catname][1])
+                    props, values, commands = zip(*groups[catname][1], strict=True)
                     table = prop_tabulate(props, values)
                     table = "\n".join(
                         ("~~{}~~" if commands[i].disabled else "{}").format(line)

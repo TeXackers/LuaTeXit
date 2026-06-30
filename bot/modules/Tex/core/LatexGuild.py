@@ -24,11 +24,11 @@ class LatexGuild:
         "preamble": None,
     }
 
-    def __init__(self, id, **kwargs):
+    def __init__(self, uid, **kwargs):
         if self._client is None:
             raise RuntimeError("Attempted to get a LatexGuild before data initialisation.")
 
-        self.id = id
+        self.id = uid
 
         # Whether latex is automatically compiled
         self.autotex: bool | None = None
@@ -88,10 +88,10 @@ class LatexGuild:
             self.preamble = rows[0]["preamble"] or self.preamble
 
     @classmethod
-    def get(cls, id):
-        if id not in cls.cached_guilds:
-            cls.cached_guilds[id] = cls(id)
-        return cls.cached_guilds[id]
+    def get(cls, uid):
+        if uid not in cls.cached_guilds:
+            cls.cached_guilds[uid] = cls(uid)
+        return cls.cached_guilds[uid]
 
 
 module.LatexGuild = LatexGuild

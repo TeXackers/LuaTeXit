@@ -518,9 +518,9 @@ class Emoji(SettingType):
             emojistr = emojistr.strip("<>")
             splits = emojistr.split(":")
             if len(splits) == 3:
-                animated, name, id = splits
+                animated, name, eid = splits
                 animated = bool(animated)
-                return discord.PartialEmoji(name, animated=animated, id=int(id))
+                return discord.PartialEmoji(name, animated=animated, id=int(eid))
         else:
             # TODO: Check whether this is a valid emoji
             return discord.PartialEmoji(emojistr)

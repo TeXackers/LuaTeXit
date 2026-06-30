@@ -1,28 +1,35 @@
 import re
 
 import discord
+from discord import Colour, Embed
 from github.Repository import Repository  # noqa
 from utils.lib import split_text
 
-from .GithubColours import GITHUB_LANG2COLOUR
+from .GithubColours import GITHUB_LANG2COLOUR, GithubColour
 
 
-async def _gh_pagination(text, basetitle="", header=None, colour=discord.Color.from_str("#0FBF3E"), syntax="latex"):
+async def _gh_pagination(
+    text: str,
+    basetitle: str = "",
+    header: str = "",
+    colour: Colour = GithubColour.github_green,
+    syntax: str = "latex",
+) -> list[Embed]:
     blocks: list[str] = split_text(text, 1000, code=True, syntax=syntax) if text else [""]
-    embeds = []
+    embeds: list[Embed | None] = []
 
     if len(blocks) == 1:
-        block = blocks[0] if blocks[0] else ""
-        desc = f"{header}\n\n{block or ''}" if header else block if block else None
+        block = blocks[0] or ""
+        desc = f"{header}\n\n{block or ''}" if header else block or None
 
-        embed = discord.Embed(title=basetitle, colour=colour, description=desc)
+        embed: Embed = discord.Embed(title=basetitle, colour=colour, description=desc)
         embeds.append(embed)
 
     elif len(blocks) > 1:
         for i, block in enumerate(blocks):
-            desc = f"{header}\n\n{block or ''}" if header else block if block else None
+            desc = f"{header}\n\n{block or ''}" if header else block or None
 
-            embed = discord.Embed(title=basetitle, colour=colour, description=desc)
+            embed: Embed = discord.Embed(title=basetitle, colour=colour, description=desc)
             embed.set_footer(text=f"{i + 1} / {len(blocks)}")
             embeds.append(embed)
 
@@ -37,8 +44,8 @@ async def gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
     return await msg
 
 
-async def _syntax_selection(filename) -> str:
-    filetype = filename.split(".")[-1]
+async def syntax_selection(filename: str) -> str:
+    filetype: str = filename.split(".")[-1]
     match filetype:
         case "cfg" | "lua":
             return "lua"
@@ -125,24 +132,4 @@ async def grab_image(text: str) -> list[str] | None:
     markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
     images.extend(re.findall(markdown_img_pattern, text))
 
-    return images if images else None
-
-
-def _grab_image(text: str) -> list[str] | None:
-    """
-    Grab image URLs from a Github issue/PR-context text.
-
-    Args:
-        text (str): Text from which the URLs are to be extracted.
-
-    Returns:
-        list[str] | None: A list of image URLs found in the text, or None if no URLs are found.
-    """
-    images: list[str] = []
-
-    html_img_pattern = r'<img.*?src=["\'](.*?)["\'].*?>'
-    images.extend(re.findall(html_img_pattern, text))
-    markdown_img_pattern = r"!\[.*?\]\((.*?)\)"
-    images.extend(re.findall(markdown_img_pattern, text))
-
-    return images if images else None
+    return images or None

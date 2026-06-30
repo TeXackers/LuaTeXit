@@ -5,7 +5,7 @@ from ModEvent import ModEvent
 def load_into(bot):
     @bot.util
     async def request_reason(ctx, action="ban"):
-        reason = await ctx.input(f"📋 Please provide a reason! (`no` for no reason or `c` to abort {action})")
+        reason = await ctx.on_input(f"📋 Please provide a reason! (`no` for no reason or `c` to abort {action})")
         if not reason:
             await ctx.reply("📋 Request timed out, aborting.")
             return None

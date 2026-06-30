@@ -12,7 +12,7 @@ def temp_disabled(func):
             This command has been temporarily disabled pending the next update.
         """
         await ctx.error_reply(
-            f"Sorry, the `{func.__name__[4:]}` command has been temporarily disabled pending the next update"
+            f"Sorry, the `{func.__name__[4:]}` command has been temporarily disabled pending the next update",
         )
 
     return _func

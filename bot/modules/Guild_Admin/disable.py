@@ -49,8 +49,9 @@ async def cmd_disable(ctx: Context):
                 "Disabled commands in this guild:{cmd_str}"
                 "Use `{prefix}disable cmd1, cmd2, ...` to disable commands.\n"
                 "Use `{prefix}enable cmd1, cmd2, ...` to renable commands.".format(
-                    prefix=await ctx.best_prefix(), cmd_str="```css\n{}\n```".format(", ".join(disabled))
-                )
+                    prefix=await ctx.best_prefix(),
+                    cmd_str="```css\n{}\n```".format(", ".join(disabled)),
+                ),
             )
     else:
         # Parse arguments
@@ -63,7 +64,7 @@ async def cmd_disable(ctx: Context):
                 await ctx.error_reply(f"Command or alias `{nonexistent[0]}` doesn't exist!")
             else:
                 await ctx.error_reply(
-                    "The following are not valid commands or aliases!\n`{}`".format("`, `".join(nonexistent))
+                    "The following are not valid commands or aliases!\n`{}`".format("`, `".join(nonexistent)),
                 )
             return None
 
@@ -85,7 +86,10 @@ async def cmd_disable(ctx: Context):
             await ctx.reply(f"The `{cmdnames[0]}` and its aliases have been {ctx.alias}d.")
         else:
             await ctx.reply(
-                "The following commands and their aliases have been {}d:\n`{}`".format(ctx.alias, "`, `".join(cmdnames))
+                "The following commands and their aliases have been {}d:\n`{}`".format(
+                    ctx.alias,
+                    "`, `".join(cmdnames),
+                ),
             )
     return None
 
@@ -169,5 +173,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_disabled_command_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False), "guild_disabled_commands"
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_disabled_commands",
     )

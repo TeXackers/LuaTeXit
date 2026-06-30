@@ -18,7 +18,9 @@ Handlers:
 async def log_left_guild(client: cmdClient, guild: discord.Guild):
     # Build embed
     embed = discord.Embed(
-        title=f"`{guild.name} (ID: {guild.id})`", colour=discord.Colour.red(), timestamp=discord.utils.utcnow()
+        title=f"`{guild.name} (ID: {guild.id})`",
+        colour=discord.Colour.red(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="Left guild!")
     embed.set_thumbnail(url=guild.icon)
@@ -63,7 +65,9 @@ async def log_joined_guild(client: cmdClient, guild: discord.Guild):
     created = guild.created_at.strftime("%I:%M %p, %d/%m/%Y")
 
     embed = discord.Embed(
-        title=f"`{guild.name} (ID: {guild.id})`", colour=discord.Colour.green(), timestamp=discord.utils.utcnow()
+        title=f"`{guild.name} (ID: {guild.id})`",
+        colour=discord.Colour.green(),
+        timestamp=discord.utils.utcnow(),
     )
     embed.set_author(name="Joined guild!")
     embed.set_thumbnail(url=icon)

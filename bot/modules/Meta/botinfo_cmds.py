@@ -44,11 +44,11 @@ async def cmd_curr_load(ctx: Context) -> None:
 
         # CPU Name
         table_fields.append(
-            ("CPU", subprocess.check_output(["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]).strip().decode())
+            ("CPU", subprocess.check_output(["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]).strip().decode()),
         )
         # CPU
         table_fields.append(
-            ("CPU Load", f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)")
+            ("CPU Load", f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)"),
         )
     else:
         # OS Name
@@ -78,23 +78,23 @@ async def cmd_curr_load(ctx: Context) -> None:
             .split("\n")[0]
             .split(", ")[1]
             .replace("Version ", ""),
-        )
+        ),
     )
     # XeTeX parsed differently
     # Example output:
     # XeTeX 3.141592653-2.6-0.999996 (TeX Live 2024/Arch Linux)
     table_fields.append(
-        ("XeTeX Version", subprocess.check_output(["xetex", "--version"]).decode().split("\n")[0].split(" ")[1])
+        ("XeTeX Version", subprocess.check_output(["xetex", "--version"]).decode().split("\n")[0].split(" ")[1]),
     )
     # Typst version
     table_fields.append(
-        ("Typst Version", subprocess.check_output(["typst", "--version"]).decode().split("\n")[0].split(" ")[1])
+        ("Typst Version", subprocess.check_output(["typst", "--version"]).decode().split("\n")[0].split(" ")[1]),
     )
     # Compiler version
     table_fields.append(("Compiler", compiler))
 
     # Tabulate
-    fields, values = zip(*table_fields)
+    fields, values = zip(*table_fields, strict=True)
     table: str = prop_tabulate(fields, values)
 
     # Build embed
@@ -151,7 +151,7 @@ async def cmd_about(ctx: Context):
     table_fields.append(("Platform", platform.platform(terse=True)))
 
     # Tabulate
-    fields, values = zip(*table_fields)
+    fields, values = zip(*table_fields, strict=True)
     table = prop_tabulate(fields, values)
 
     # Create info string for top of description
@@ -201,7 +201,7 @@ async def cmd_invite(ctx: Context):
          Replies with a link to invite me to your server.
     """
     await ctx.reply(
-        "Visit [here](https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot) to invite me!"
+        "Visit [here](https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot) to invite me!",
     )
 
 

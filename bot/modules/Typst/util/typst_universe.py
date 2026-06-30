@@ -50,10 +50,12 @@ async def get_typst_universe_package_info(soup: BeautifulSoup) -> tuple[str, str
     typst_universe_package_licence = typst_universe_package_metadata[1].text.strip()
     typst_universe_package_version = typst_universe_package_metadata[2].text.strip()
     typst_universe_package_latest_update = datetime.strptime(
-        typst_universe_package_metadata[3].text, "%B %d, %Y"
+        typst_universe_package_metadata[3].text,
+        "%B %d, %Y",
     ).isoformat()[:10]
     typst_universe_package_first_release = datetime.strptime(
-        typst_universe_package_metadata[4].text, "%B %d, %Y"
+        typst_universe_package_metadata[4].text,
+        "%B %d, %Y",
     ).isoformat()[:10]
     typst_universe_package_compat = typst_universe_package_metadata[5].text
 
@@ -183,7 +185,7 @@ async def cmd_typst_universe(ctx):
         desc = typst_universe_package_desc[:400]
         r_newline = desc.rfind("\n")
         r_space = desc.rfind(" ")
-        desc = desc[: r_newline if r_newline > r_space else r_space] + "..."
+        desc = desc[: max(r_space, r_newline)] + "..."
 
     # handle big tables
     if len(embed_table) > 700:

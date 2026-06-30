@@ -32,7 +32,7 @@ async def cmd_convertbinary(ctx: Context):
     bitstr = ctx.arg_str.replace(" ", "")
     if (not bitstr.isdigit()) or (len(bitstr) % 8 != 0):
         return await ctx.error_reply("Please provide a valid binary string!")
-    bytelist = map("".join, zip(*[iter(bitstr)] * 8))
+    bytelist = map("".join, zip(*[iter(bitstr)] * 8, strict=True))
     asciilist = [chr(sum([int(b) << 7 - n for (n, b) in enumerate(byte)])) for byte in bytelist]
     return await ctx.reply("Output: `{}`".format("".join(asciilist)))
 
@@ -69,10 +69,10 @@ async def cmd_discrim(ctx: Context):
         await ctx.reply("No users with this discriminator found!")
         return
     user_info = [(str(m), f"({m.id})") for m in found_members]
-    max_len = len(max(list(zip(*user_info))[0], key=len))
+    max_len = len(max(list(zip(*user_info, strict=True))[0], key=len))
     user_strs = ["{0[0]:^{max_len}} {0[1]:^25}".format(user, max_len=max_len) for user in user_info]
     await ctx.pager(
-        paginate_list(user_strs, title="{} user{} found".format(len(user_strs), "s" if len(user_strs) > 1 else ""))
+        paginate_list(user_strs, title="{} user{} found".format(len(user_strs), "s" if len(user_strs) > 1 else "")),
     )
 
 

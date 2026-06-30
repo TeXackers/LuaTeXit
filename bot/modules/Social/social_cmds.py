@@ -47,9 +47,13 @@ async def cmd_profile(ctx):
         embed.add_field(name="Badges", value=badges, inline=False)
 
     embed.add_field(name="Level", value="(Coming Soon!)", inline=True).add_field(
-        name="XP", value="(Coming Soon!)", inline=True
+        name="XP",
+        value="(Coming Soon!)",
+        inline=True,
     ).add_field(name="Reputation", value=f"{rep} Received | {given_rep} Given", inline=True).add_field(
-        name="Premium", value="No", inline=True
+        name="Premium",
+        value="No",
+        inline=True,
     )
     tz = await ctx.data.users.get(user.id, "tz")
     if tz:
@@ -57,7 +61,7 @@ async def cmd_profile(ctx):
             TZ = timezone(tz)
         except Exception:
             await ctx.reply(
-                "An invalid timezone was provided in the database. Aborting... \n **Error Code:** `ERR_CORRUPTED_DB`"
+                "An invalid timezone was provided in the database. Aborting... \n **Error Code:** `ERR_CORRUPTED_DB`",
             )
             return
         timestr = "%I:%M %p on %a, %d/%m/%Y"
@@ -100,7 +104,9 @@ async def cmd_rep(ctx):
             given_rep = await ctx.data.users.get(ctx.authid, "given_rep")
             last_rep_str = ctx.strfdelta(datetime.timedelta(seconds=given_ago))
             msg = "You have given **{}** reputation point{}! You last gave a reputation point **{}** ago.".format(
-                given_rep, "s" if int(given_rep) > 1 else "", last_rep_str
+                given_rep,
+                "s" if int(given_rep) > 1 else "",
+                last_rep_str,
             )
         await ctx.reply(msg)
         return

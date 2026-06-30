@@ -100,7 +100,7 @@ async def cmd_8ball(ctx):
         await anim_msg.edit(content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}")
         await asyncio.sleep(random.uniform(0.35, 0.95))
         await anim_msg.edit(
-            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}"
+            content=f"{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}{random.choice(EMOJI)}",
         )
         await asyncio.sleep(random.uniform(0.35, 0.95))
         ballsays = random.choice(BALL)
@@ -113,7 +113,7 @@ async def cmd_8ball(ctx):
                 f"{discord.utils.format_dt(discord.utils.utcnow(), 'F')}",
                 BALL_GIF,
                 BALL_COLOURS[BALL.index(ballsays)],
-            )
+            ),
         )
     return await ctx.error_reply("That doesn't look like a question.")
 
@@ -153,11 +153,11 @@ async def cmd_roll(ctx: Context):
     await msg.edit(content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}")
     await asyncio.sleep(random.uniform(0.35, 1.15))
     await msg.edit(
-        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"
+        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}",
     )
     await asyncio.sleep(random.uniform(0.35, 1.15))
     await msg.edit(
-        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}"
+        content=f"{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}{random.choice(random_shapes)}",
     )
     await asyncio.sleep(random.uniform(0.35, 1.15))
     return await msg.edit(content=rolls_str)

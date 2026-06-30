@@ -29,14 +29,16 @@ version_schema = tableSchema(
 )
 
 versionModule = paraModule(
-    "version_table", description="Skeleton module which loads the version table and checks the version on startup."
+    "version_table",
+    description="Skeleton module which loads the version table and checks the version on startup.",
 )
 
 
 @versionModule.data_init_task
 def load_version_table(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, version_schema, shared=True), "version"
+        tableInterface.from_schema(client.data, client.app, version_schema, shared=True),
+        "version",
     )
 
 
@@ -60,7 +62,7 @@ def check_data_version(client):
                 context="DATA_VERSION",
             )
             raise DataVersionMismatch(
-                f"Current version `{version}` not equal to required version `{REQUIRED_DATA_VERSION}`"
+                f"Current version `{version}` not equal to required version `{REQUIRED_DATA_VERSION}`",
             )
         client.log(f"Data Version: {version}", context="DATA_VERSION")
     else:

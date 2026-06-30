@@ -13,7 +13,7 @@ class Conf:
         self.configfile = configfile
 
         self.config = cfgp.ConfigParser(
-            converters={"intlist": self._getintlist, "list": self._getlist, "emoji": configEmoji.from_str}
+            converters={"intlist": self._getintlist, "list": self._getlist, "emoji": configEmoji.from_str},
         )
         self.config.read(configfile)
 

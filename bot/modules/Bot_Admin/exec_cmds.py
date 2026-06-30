@@ -44,7 +44,7 @@ async def cmd_async(ctx: Context) -> None:
         "**Async input:**\
                     \n```py\n{}\n```\
                     \n**Output {}:** \
-                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output)
+                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output),
     )
 
 
@@ -67,7 +67,7 @@ async def cmd_exec(ctx: Context) -> None:
         "**Exec input:**\
                     \n```py\n{}\n```\
                     \n**Output {}:** \
-                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output)
+                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output),
     )
 
 
@@ -93,7 +93,7 @@ async def cmd_eval(ctx: Context, flags) -> None:
             "**Eval input:**\
                         \n```py\n{}\n```\
                         \n**Output {}:** \
-                        \n```py\n{}\n```".format(ctx.args, "error" if error else "", output)
+                        \n```py\n{}\n```".format(ctx.args, "error" if error else "", output),
         )
     return None
 
@@ -115,7 +115,7 @@ async def cmd_shell(ctx: Context) -> None:
         f"**Command:**\
                     \n```sh\n{ctx.arg_str}\n```\
                     \n**Output:** \
-                    \n```\n{output}\n```"
+                    \n```\n{output}\n```",
     )
 
 

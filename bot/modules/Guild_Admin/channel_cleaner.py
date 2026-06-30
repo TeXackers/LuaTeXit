@@ -11,7 +11,9 @@ from .module import guild_admin_module as module
 
 # Define setting command
 @module.cmd(
-    "autoclean", desc="Automatic deletion of messages in the current channel.", aliases=["cleanch", "autodelete"]
+    "autoclean",
+    desc="Automatic deletion of messages in the current channel.",
+    aliases=["cleanch", "autodelete"],
 )
 @guild_manager()
 async def cmd_autoclean(ctx: Context):
@@ -56,7 +58,7 @@ async def cmd_autoclean(ctx: Context):
             return await ctx.error_reply("Provided `delay` must be less than an hour.")
     cleaned_channels.add_channel(ctx.ch.id, delay=delay)
     return await ctx.reply(
-        f"Messages in this channel will now be automatically deleted after `{delay}` seconds if they are not pinned."
+        f"Messages in this channel will now be automatically deleted after `{delay}` seconds if they are not pinned.",
     )
 
 
@@ -167,5 +169,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_cleanedchannel_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False), "guild_cleaned_channels"
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_cleaned_channels",
     )

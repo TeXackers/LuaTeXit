@@ -101,12 +101,12 @@ class paraModule(Module):
     async def on_exception(self, ctx: Context, exception: Exception):
         try:
             raise exception
-        except (FailedCheck, SafeCancellation):
+        except (FailedCheck, SafeCancellation) as e:
             # cmdClient generated and handled exceptions
-            raise exception
-        except (asyncio.CancelledError, asyncio.TimeoutError):
+            raise exception from e
+        except (asyncio.CancelledError, asyncio.TimeoutError) as e:
             # Standard command and task exceptions, cmdClient will also handle these
-            raise exception
+            raise exception from e
         except discord.Forbidden:
             # Unknown uncaught Forbidden
             try:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from discord import PartialEmoji
 
 
@@ -9,7 +11,7 @@ class configEmoji(PartialEmoji):
         self.fallback = fallback
 
     @classmethod
-    def from_str(cls, emojistr: str):
+    def from_str(cls: type[configEmoji], emojistr: str) -> type[configEmoji]:
         """
         Parses emoji strings of one of the following forms
             `<a:name:id> or fallback`
@@ -21,5 +23,5 @@ class configEmoji(PartialEmoji):
 
         fallback = splits[1] if len(splits) > 1 else None
         emojistr = splits[0].strip("<> ")
-        animated, name, id = emojistr.split(":")
-        return cls(name=name, fallback=PartialEmoji(name=fallback), animated=bool(animated), id=int(id))
+        animated, name, emoji_id = emojistr.split(":")
+        return cls(name=name, fallback=PartialEmoji(name=fallback), animated=bool(animated), id=int(emoji_id))

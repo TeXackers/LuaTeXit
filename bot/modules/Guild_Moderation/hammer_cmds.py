@@ -61,7 +61,7 @@ class HammerAction(ModAction):
 
         # Mute targets and gather results
         results = await asyncio.gather(*(self._single_target_action(target, **kwargs) for target in self.targets))
-        member_results = dict(zip(self.targets, results))
+        member_results = dict(zip(self.targets, results, strict=True))
         successful = [member.id for member, result in member_results.items() if result is ActionState.SUCCESS]
 
         if successful:
@@ -278,7 +278,7 @@ class PreBanAction(HammerAction):
                 try:
                     user = await self.ctx.client.fetch_user(userid)
                 except discord.NotFound:
-                    raise SafeCancellation(f"Couldn't find any users with id `{user_str}`")
+                    raise SafeCancellation(f"Couldn't find any users with id `{user_str}`") from None
             targets.append(user)
         return targets
 

@@ -109,7 +109,8 @@ class Ticket:
         """
         # Base embed
         embed = discord.Embed(
-            title=f"Ticket #{self.ticketgid}", timestamp=datetime.datetime.fromtimestamp(self.created_at)
+            title=f"Ticket #{self.ticketgid}",
+            timestamp=datetime.datetime.fromtimestamp(self.created_at),
         )
 
         # Moderator information
@@ -203,7 +204,8 @@ class Ticket:
 
         # Save the member data
         cls._member_data.insert_many(
-            *((ticketid, memberid) for memberid in memberids), insert_keys=("ticketid", "memberid")
+            *((ticketid, memberid) for memberid in memberids),
+            insert_keys=("ticketid", "memberid"),
         )
 
         return cls._create_ticket(ticketid, memberids, **kwargs)
@@ -283,7 +285,8 @@ class Ticket:
         if new_memberids is not None:
             self._member_data.delete_where(ticketid=self.ticketid)
             self._member_data.insertmany(
-                ("ticketid", "memberid"), *((self.ticketid, memberid) for memberid in new_memberids)
+                ("ticketid", "memberid"),
+                *((self.ticketid, memberid) for memberid in new_memberids),
             )
 
         return self

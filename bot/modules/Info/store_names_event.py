@@ -18,7 +18,7 @@ Member data:
 async def store_names(bot, before, after):
     if before.name != after.name:
         history = await bot.data.users_long.get(before.id, "name_history")
-        history = history if history else []
+        history = history or []
         names = [before.name, after.name]
         history.extend([name for name in names if name not in history])
         history = history[-40:]
@@ -26,7 +26,7 @@ async def store_names(bot, before, after):
 
     if before.nick != after.nick:
         history = await bot.data.members_long.get(before.server.id, before.id, "nickname_history")
-        history = history if history else []
+        history = history or []
         names = [before.nick, after.nick]
         history.extend([name for name in names if name not in history and name is not None])
         history = history[-40:]

@@ -125,7 +125,10 @@ class ModAction:
                 description = f"[Ticket #{self.ticket.ticketgid}]({self.ticket.jumpto}): {self.single_success_report.format(self=self, target=target, **kwargs)}"
             else:
                 description = self.single_failure_report.format(
-                    self=self, target=target, state=self.state_response_map[result], **kwargs
+                    self=self,
+                    target=target,
+                    state=self.state_response_map[result],
+                    **kwargs,
                 )
             await self.ctx.reply(embed=discord.Embed(description=description))
         else:
@@ -135,11 +138,11 @@ class ModAction:
             if len(targets_failed) != len(results):
                 summary_components.append(f"[Ticket #{self.ticket.ticketgid}]({self.ticket.jumpto}):")
                 summary_components.append(
-                    self.summary_success_report.format(self=self, count=len(results) - len(targets_failed), **kwargs)
+                    self.summary_success_report.format(self=self, count=len(results) - len(targets_failed), **kwargs),
                 )
             if targets_failed:
                 summary_components.append(
-                    self.summary_failure_report.format(self=self, count=len(targets_failed), **kwargs)
+                    self.summary_failure_report.format(self=self, count=len(targets_failed), **kwargs),
                 )
             summary = " ".join(summary_components)
 
@@ -154,7 +157,7 @@ class ModAction:
             target_line_blocks = ["\n".join(target_lines[i : i + 10]) for i in range(0, len(target_lines), 10)]
             embeds = [
                 discord.Embed(description=f"{summary}```{block}```").set_footer(
-                    text=f"Page {n + 1}/{len(target_line_blocks)}"
+                    text=f"Page {n + 1}/{len(target_line_blocks)}",
                 )
                 for n, block in enumerate(target_line_blocks)
             ]
@@ -168,7 +171,10 @@ class ModAction:
         for user_str in user_strs:
             try:
                 member = await self.ctx.find_member(
-                    user_str.strip(), interactive=True, collection=await self.get_collection(), silent_notfound=True
+                    user_str.strip(),
+                    interactive=True,
+                    collection=await self.get_collection(),
+                    silent_notfound=True,
                 )
             except ResponseTimedOut:
                 raise ResponseTimedOut(self.resp_seeker_timed_out) from None
@@ -187,7 +193,7 @@ class ModAction:
                 reason = self.flags["r"]
                 interactive = False
             else:
-                reason = await self.ctx.input(self.reason_prompt)
+                reason = await self.ctx.on_input(self.reason_prompt)
                 interactive = True
         except ResponseTimedOut:
             raise ResponseTimedOut(self.resp_reason_timed_out) from None
@@ -197,7 +203,8 @@ class ModAction:
             msg = "For display reasons, the reason must be under 1000 characters!"
             if interactive:
                 msg = await self.ctx.reply(
-                    msg, embed=discord.Embed(title="Provided reason", description=reason, colour=discord.Color.orange())
+                    msg,
+                    embed=discord.Embed(title="Provided reason", description=reason, colour=discord.Color.orange()),
                 )
                 asyncio.create_task(self.ctx.offer_delete(msg))
             else:

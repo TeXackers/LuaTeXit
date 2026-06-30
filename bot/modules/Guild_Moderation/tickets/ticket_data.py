@@ -29,9 +29,11 @@ member_schema = tableSchema(
 @module.data_init_task
 def attach_mod_ticket_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ticket_schema, shared=True), "guild_mod_tickets"
+        tableInterface.from_schema(client.data, client.app, ticket_schema, shared=True),
+        "guild_mod_tickets",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_schema, shared=True), "guild_mod_ticket_members"
+        tableInterface.from_schema(client.data, client.app, member_schema, shared=True),
+        "guild_mod_ticket_members",
     )

@@ -234,7 +234,7 @@ async def cmd_invitebot(ctx: Context):
             "Sure, I would love to!\n"
             "My official invite link is: {}\n"
             "If you don't want to invite me with my usual permissions, you can also use:\n"
-            "{}".format(ctx.client.app_info["invite_link"], invite_link)
+            "{}".format(ctx.client.app_info["invite_link"], invite_link),
         )
 
     if user is not None and not user.bot:
@@ -266,7 +266,9 @@ async def cmd_colour(ctx: Context):
             value_list = [js[prop]["value"][len(prop) :] for prop in prop_list]
             desc = prop_tabulate(prop_list, value_list)
             embed = discord.Embed(
-                title=f"Colour info for `#{hexstr}`", color=discord.Colour(int(hexstr, 16)), description=desc
+                title=f"Colour info for `#{hexstr}`",
+                color=discord.Colour(int(hexstr, 16)),
+                description=desc,
             )
             embed.set_thumbnail(url=f"http://placehold.it/150x150.png/{hexstr}/{inverted}?text=%23{hexstr}")
             embed.add_field(

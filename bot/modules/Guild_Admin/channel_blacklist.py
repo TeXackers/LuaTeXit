@@ -50,7 +50,8 @@ class disabled_channels(ListData, ChannelList, GuildSetting):
 
         client.objects["disabled_guild_channels"] = disabled_channels
         client.log(
-            f"r     |--disabled: {len(disabled_channels)} guilds (total: {channel_counter})", context="Guild Admin"
+            f"r     |--disabled: {len(disabled_channels)} guilds (total: {channel_counter})",
+            context="Guild Admin",
         )
 
 
@@ -67,5 +68,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_disabled_channel_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=False), "guild_disabled_channels"
+        tableInterface.from_schema(client.data, client.app, schema, shared=False),
+        "guild_disabled_channels",
     )

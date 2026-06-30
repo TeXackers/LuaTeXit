@@ -60,7 +60,7 @@ async def cmd_prune(ctx: Context, flags: dict):
     perms = ctx.ch.permissions_for(ctx.guild.me)
     if not perms.manage_messages or not perms.read_message_history:
         return await ctx.error_reply(
-            "I lack the `MANAGE MESSAGES` and `READ MESSAGE HISTORY` permissions I require to purge."
+            "I lack the `MANAGE MESSAGES` and `READ MESSAGE HISTORY` permissions I require to purge.",
         )
 
     # Get the after message id from the flag, if provided
@@ -93,7 +93,7 @@ async def cmd_prune(ctx: Context, flags: dict):
             reason = "None, forced prune."
         else:
             try:
-                reason = await ctx.input("Please enter a reason for this purge, or `c` to cancel.")
+                reason = await ctx.on_input("Please enter a reason for this purge, or `c` to cancel.")
             except ResponseTimedOut:
                 raise ResponseTimedOut("Reason prompt timed out, cancelling purge.") from None
             if reason.lower() == "c":
@@ -112,7 +112,7 @@ async def cmd_prune(ctx: Context, flags: dict):
     except discord.Forbidden:
         return await ctx.error_reply(
             "I do not have permissions to delete messages here.\n"
-            "If this is in error, please give me the `MANAGE MESSAGES` permission."
+            "If this is in error, please give me the `MANAGE MESSAGES` permission.",
         )
 
     # Start going through the channel history, counting messages
@@ -151,13 +151,13 @@ async def cmd_prune(ctx: Context, flags: dict):
         [
             "\t**{name}** ({key}): ***{count}*** messages".format(**count_dict["bots"][key], key=key)
             for key in count_dict["bots"]
-        ]
+        ],
     )
     user_lines = "\n".join(
         [
             "\t**{name}** ({key}): ***{count}*** messages".format(**count_dict["users"][key], key=key)
             for key in count_dict["users"]
-        ]
+        ],
     )
     bot_counts = f"__**Bots**__\n{bot_lines}" if bot_lines else ""
     user_counts = f"__**Users**__\n{user_lines}" if user_lines else ""
@@ -167,7 +167,7 @@ async def cmd_prune(ctx: Context, flags: dict):
         out_msg = await ctx.reply(
             f"Purging **{len(message_list)}** messages. Message Breakdown:\n"
             f"{counts}\n--------------------\n"
-            "Please type `confirm` to delete the above messages or `abort` to abort now."
+            "Please type `confirm` to delete the above messages or `abort` to abort now.",
         )
         try:
             reply_msg = await ctx.listen_for(allowed_input=["abort", "confirm"], timeout=60)

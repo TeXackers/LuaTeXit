@@ -133,4 +133,4 @@ class latex_channels(ListData, ChannelList, GuildSetting):
         Add a default to the data formatter.
         """
         formatted = super()._format_data(*args, **kwargs)
-        return formatted if formatted else "No Channels"
+        return formatted or "No Channels"

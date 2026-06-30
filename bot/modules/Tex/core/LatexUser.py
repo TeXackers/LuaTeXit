@@ -25,8 +25,8 @@ class LatexUser:
     # Stored client for accessing data interfaces
     _client = None
 
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, uid):
+        self.id = uid
 
         # Explicitly typed user configuration settings
         self.autotex: bool = False
@@ -50,7 +50,9 @@ class LatexUser:
         rows = self._client.data.user_latex_config.select_where(userid=self.id)
         for name, setting in self.settings.items():
             value = setting._data_to_value(
-                self._client, self.id, setting.default if not rows or rows[0][name] is None else rows[0][name]
+                self._client,
+                self.id,
+                setting.default if not rows or rows[0][name] is None else rows[0][name],
             )
             setattr(self, name, value)
 
@@ -72,8 +74,8 @@ class LatexUser:
         return setting._data_from_value(self._client, self.id, value)
 
     @classmethod
-    def get(cls, id):
-        return cls(id)
+    def get(cls, uid):
+        return cls(uid)
 
 
 @module.data_init_task

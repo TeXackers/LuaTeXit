@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from cmdClient import Context  # noqa
-from cmdClient.Layouts import GenericFullEmbed
+from constants import LuaTeXitCC
 from utils.lib import prop_tabulate, split_text
 
 from .module import latex_module as module
@@ -318,7 +318,7 @@ async def cmd_ctan(ctx: Context):
         desc = desc[:700]
         r_newline = desc.rfind("\n")
         r_space = desc.rfind(" ")
-        desc = desc[: r_space if r_space > r_newline else r_newline] + "..."
+        desc = desc[: max(r_newline, r_space)] + "..."
     if len(table) > 900:
         table = table[:900]
         rightmost_newline = table.rfind("\n")
@@ -360,7 +360,7 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
         # User enters glyph(s)
         if len(a) == 1:
             # It's a glyph
-            output.append(f"{hex(ord(a))[2:]:0>5}")
+            output.append(f"{ord(a):05x}")
 
         # User enters unicode(s)
         elif len(a) > 1:
@@ -385,7 +385,7 @@ async def fc_pagination(
     basetitle="Font Query",
     header=None,
     time=None,
-    colour=discord.Colour.from_str("#EFEA4F"),
+    colour=LuaTeXitCC["yellow"],
     flags: dict | None = None,
 ):
     if text:
@@ -398,8 +398,8 @@ async def fc_pagination(
     blocknum = len(blocks)
 
     if blocknum == 1:
-        block = blocks[0] if blocks[0] else None
-        desc = f"{header}\n{block or ''}" if header else block if block else None
+        block = blocks[0] or None
+        desc = f"{header}\n{block or ''}" if header else block or None
 
         embed = discord.Embed(title=basetitle, color=colour, timestamp=time, description=desc)
 
@@ -431,7 +431,10 @@ async def view_embeds(ctx, text, title, start_page=0, **pagination_args):
 
 
 @module.cmd(
-    "findfont", desc="Looks for fonts supporting a given argument", aliases=["fc"], flags=["char==", "lang==", "name=="]
+    "findfont",
+    desc="Looks for fonts supporting a given argument",
+    aliases=["fc"],
+    flags=["char==", "lang==", "name=="],
 )
 async def cmd_findfont(ctx, flags):
     """
@@ -508,5 +511,8 @@ async def cmd_findfont(ctx, flags):
         fc_out = [f for f in fc_out if f]
 
     return await view_embeds(
-        ctx, "\n".join(fc_out), f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})", flags=params_dict
+        ctx,
+        "\n".join(fc_out),
+        f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
+        flags=params_dict,
     )

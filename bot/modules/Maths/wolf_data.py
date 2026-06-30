@@ -47,5 +47,6 @@ schema = tableSchema(
 @module.data_init_task
 def attach_wolf_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True), "guild_wolfram_appid"
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "guild_wolfram_appid",
     )

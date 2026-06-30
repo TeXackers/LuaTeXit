@@ -113,7 +113,7 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
     try:
         result_msg = await ctx.listen_for(valid_input, timeout=timeout)
     except ResponseTimedOut:
-        raise ResponseTimedOut("Selector timed out waiting for a response.")
+        raise ResponseTimedOut("Selector timed out waiting for a response.") from None
 
     # Try and delete the selector message and the user response.
     try:
@@ -199,7 +199,7 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
     try:
         result_msg = await ctx.client.wait_for("message", check=_check, timeout=timeout)
     except asyncio.TimeoutError:
-        raise ResponseTimedOut("Selector timed out waiting for a response.")
+        raise ResponseTimedOut("Selector timed out waiting for a response.") from None
 
     # Try and delete the selector message and the user response.
     with suppress(discord.NotFound, discord.Forbidden):
@@ -215,7 +215,15 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
 
 
 @Context.util
-async def pager(ctx, pages, locked=True, blocking=False, destination=None, start_page=0, **kwargs):
+async def pager(
+    ctx: Context,
+    pages: list[str | discord.Embed],
+    locked: bool = True,
+    blocking: bool = False,
+    destination: bool = None,
+    start_page=0,
+    **kwargs,
+):
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.
@@ -338,7 +346,7 @@ async def _safe_async_future(future):
 
 
 @Context.util
-async def input(ctx, msg=None, delete_after=True, timeout=120):
+async def on_input(ctx: Context, msg: str | discord.Message = None, delete_after: bool = True, timeout: int = 120):
     """
     Listen for a response in the current channel, from ctx.author.
     Returns the response from ctx.author, if it is provided.

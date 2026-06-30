@@ -30,18 +30,19 @@ async def snippet_cmd(ctx, flags) -> None:
 
     if flags["create"]:
         # Create a snippet
-        name = await ctx.input("Please enter the snippet name, or `c` to cancel.")
+        name = await ctx.on_input("Please enter the snippet name, or `c` to cancel.")
         if name.lower() == "c":
             return await ctx.error_reply("Cancelling.")
         if " " in name:
             return await ctx.error_reply("Snippet names cannot have spaces.")
 
-        desc = await ctx.input("Please enter the snippet description, or `c` to cancel.")
+        desc = await ctx.on_input("Please enter the snippet description, or `c` to cancel.")
         if desc.lower() == "c":
             return await ctx.error_reply("Cancelling.")
 
-        content = await ctx.input(
-            "Please enter the snippet content, or `c` to cancel. (You have 10 minutes)", timeout=600
+        content = await ctx.on_input(
+            "Please enter the snippet content, or `c` to cancel. (You have 10 minutes)",
+            timeout=600,
         )
         if content.lower() == "c":
             return await ctx.error_reply("Cancelling.")

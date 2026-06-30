@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import discord
 from discord import (
     Message,
-    MessageReference,
 )
 
 if TYPE_CHECKING:
@@ -98,11 +98,13 @@ class Context:
         self.prefix: str = kwargs.pop("prefix", None)
 
         self.cleanup_on_edit: bool = kwargs.pop(
-            "cleanup_on_edit", self.cmd.handle_edits if self.cmd is not None else True
+            "cleanup_on_edit",
+            self.cmd.handle_edits if self.cmd is not None else True,
         )
 
         self.reparse_on_edit: bool = kwargs.pop(
-            "reparse_on_edit", self.cmd.handle_edits if self.cmd is not None else True
+            "reparse_on_edit",
+            self.cmd.handle_edits if self.cmd is not None else True,
         )
 
         self.args: str = self.arg_str or ""
@@ -150,16 +152,12 @@ class Context:
 async def reply(
     ctx: Context,
     content: str | None = None,
-    reference: MessageReference | None = None,
-    allowed_mentions: discord.AllowedMentions = discord.AllowedMentions.none(),
     **kwargs,
 ) -> Message:
     """
     Helper function to reply in the current channel.
     """
-    send_kwargs: dict[str, Any] = {"content": content, "allowed_mentions": allowed_mentions, **kwargs}
-    if reference is not None:
-        send_kwargs["reference"] = reference
+    send_kwargs: dict[str, Any] = {"content": content, **kwargs}
 
     message: Message = await cast("discord.abc.Messageable", ctx.ch).send(**send_kwargs)
     ctx.sent_messages.append(message)
@@ -172,18 +170,24 @@ async def error_reply(ctx: Context, error_str: str):
     Notify the user of a user level error.
     Typically, this will occur in a red embed, posted in the command channel.
     """
-    try:
+    with suppress(discord.Forbidden):
         message: Message = await ctx.reply(
-            view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
+            view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "F")),
         )
         ctx.sent_messages.append(message)
         return message
-    except discord.Forbidden:
-        message: Message = await ctx.reply(
-            view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
-        )
-        ctx.sent_messages.append(message)
-        return message
+    # try:
+    #     message: Message = await ctx.reply(
+    #         view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
+    #     )
+    #     ctx.sent_messages.append(message)
+    #     return message
+    # except discord.Forbidden:
+    #     message: Message = await ctx.reply(
+    #         view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
+    #     )
+    #     ctx.sent_messages.append(message)
+    #     return message
 
 
 @Context.util
@@ -191,15 +195,21 @@ async def traceback(ctx: Context, helper_msg: str, error_str: str):
     """
     Notify the user of an error, and show traceback
     """
-    try:
+    with suppress(discord.Forbidden):
         out_msg: Message = await ctx.reply(
-            view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
+            view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F")),
         )
         ctx.sent_messages.append(out_msg)
         return out_msg
-    except discord.Forbidden:
-        out_msg: Message = await ctx.reply(
-            view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
-        )
-        ctx.sent_messages.append(out_msg)
-        return out_msg
+    # try:
+    #     out_msg: Message = await ctx.reply(
+    #         view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
+    #     )
+    #     ctx.sent_messages.append(out_msg)
+    #     return out_msg
+    # except discord.Forbidden:
+    #     out_msg: Message = await ctx.reply(
+    #         view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
+    #     )
+    #     ctx.sent_messages.append(out_msg)
+    #     return out_msg

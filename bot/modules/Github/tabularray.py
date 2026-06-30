@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from .GithubColours import GithubColour
 from .GithubLayouts import GithubEmbed
 from .module import github_module as module
-from .util import _gh_pagination, _syntax_selection, grab_image, sanitise_image
+from .util import _gh_pagination, grab_image, sanitise_image, syntax_selection
 
 """
 Provides a quick and easy way to display github issues and pull requests for `tabularray` from Github.
@@ -116,9 +116,9 @@ async def cmd_tabularray(ctx: Context, flags):
                     "icon_url": f"https://avatars.githubusercontent.com/u/{_issue.user.id}?v=4",
                 },
                 footer_text=f"Status: {_state_msg}",
-                images=_thumbnail_url if _thumbnail_url else None,
+                images=_thumbnail_url or None,
                 created_at=_issue.created_at,
-            )
+            ),
         )
 
     if flags["file"]:
@@ -147,7 +147,7 @@ async def cmd_tabularray(ctx: Context, flags):
                 __file_content,
                 "tabularray-dev.sty",
                 "Content of the `tabularray-dev.sty` file in the `dev-version` branch.",
-                syntax=await _syntax_selection("tabularray-dev.sty"),
+                syntax=await syntax_selection("tabularray-dev.sty"),
             )
 
         # hopefully here query isn't empty
@@ -175,7 +175,7 @@ async def cmd_tabularray(ctx: Context, flags):
                 __file_content,
                 query,
                 f"Content of the `{query}` file in the `dev-version` branch.",
-                syntax=await _syntax_selection(query),
+                syntax=await syntax_selection(query),
             )
         await out_msg.delete()
         return await ctx.pager(embeds, locked=False)
@@ -202,7 +202,7 @@ async def cmd_tabularray(ctx: Context, flags):
                     listing += f"❓ `{content.path}`\n"
 
             return await out_msg.edit(
-                content=f"Listing of the root directory of the `dev-version` branch:\n\n{listing}"
+                content=f"Listing of the root directory of the `dev-version` branch:\n\n{listing}",
             )
 
         try:

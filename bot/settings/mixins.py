@@ -56,7 +56,7 @@ class ListData(_tableData):
         params = {"select_columns": [cls._data_column], cls._guildid_column: guildid}
         rows = table.select_where(**params)
         data_rows = [row[cls._data_column] for row in rows]
-        return data_rows if data_rows else None
+        return data_rows or None
 
     @classmethod
     def _writer(cls, client: cmdClient, guildid: int, data: list[Any], **kwargs):

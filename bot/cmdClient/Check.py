@@ -104,6 +104,6 @@ def check(*args, **kwargs) -> Callable[[Callable[..., Awaitable[bool]]], Check]:
     """
 
     def decorator(func: Callable[..., Awaitable[bool]]) -> Check:
-        return Check(check_func=func, *args, **kwargs)
+        return Check(*args, check_func=func, **kwargs)
 
     return decorator

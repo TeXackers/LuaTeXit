@@ -47,20 +47,20 @@ async def cmd_github_lookup(ctx: Context, flags):
         query = ctx.args.strip().split()
         if len(query) != 2:
             return await ctx.error_reply(
-                "Please provide a repository and an issue number to look up. For example, `typst/typst 123`."
+                "Please provide a repository and an issue number to look up. For example, `typst/typst 123`.",
             )
         orgrepo: str = query[0]
         issue_num: str = query[1]
 
         if not issue_num.isdigit():
             return await ctx.error_reply(
-                f"{issue_num} is not a valid issue number. Please provide a valid issue number."
+                f"{issue_num} is not a valid issue number. Please provide a valid issue number.",
             )
     else:
         query = ctx.args.strip()
         if not query:
             return await ctx.error_reply(
-                "Please provide a repository to look up. For example, `typst/typst` or `latex3`."
+                "Please provide a repository to look up. For example, `typst/typst` or `latex3`.",
             )
         orgrepo: str = query
         issue_num: str = ""
@@ -75,11 +75,11 @@ async def cmd_github_lookup(ctx: Context, flags):
             org = reponame = orgrepo
         case False, True:
             return await ctx.error_reply(
-                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`."
+                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`.",
             )
         case False, False:
             return await ctx.error_reply(
-                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`."
+                f"{orgrepo} is not a valid argument. Consider the following format: `{{org|user}}/{{repository}}`.",
             )
 
     # return await ctx.reply(f"Given {org}/{reponame} \#{issue_num}, I would look up the issue and display its information here. This is a placeholder response for now.")
@@ -110,7 +110,7 @@ async def cmd_github_lookup(ctx: Context, flags):
 
         await out_msg.delete()
 
-        desc_text = f"{repo.description if repo.description else 'No description provided.'}\n\n\n"
+        desc_text = f"{repo.description or 'No description provided.'}\n\n\n"
         # determine licence display: prefer SPDX id, if NOASSERTION use license name
         licence_value = "None"
         if repo.license:
@@ -214,6 +214,6 @@ async def cmd_github_lookup(ctx: Context, flags):
             },
             created_at=issue.created_at,
             footer_text=f"{_state_msg} {discord.utils.format_dt(_last_update, 'R')} | Requested by: {ctx.author.display_name}",
-            images=thumbnail_url if thumbnail_url else None,
+            images=thumbnail_url or None,
         ),
     )

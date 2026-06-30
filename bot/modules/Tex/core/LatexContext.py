@@ -198,14 +198,18 @@ class LatexContext:
 
     async def dm_source(self, target):
         embed = discord.Embed(
-            title="LaTeX source", description=f"```latex\n{self.source}\n```", timestamp=self._source_message.created_at
+            title="LaTeX source",
+            description=f"```latex\n{self.source}\n```",
+            timestamp=self._source_message.created_at,
         )
         embed.set_footer(text="Sent at")
         embed.set_author(name=self._header_name)
 
         if self._errors:
             embed.add_field(
-                name="Compile Errors", value="```{}```".format(self._errors.replace("```", "")), inline=False
+                name="Compile Errors",
+                value="```{}```".format(self._errors.replace("```", "")),
+                inline=False,
             )
 
         embed.add_field(
@@ -217,7 +221,7 @@ class LatexContext:
             await target.send(embed=embed)
         except discord.Forbidden:
             await self.ctx.error_reply(
-                f"Could not direct message you {target.mention}, do you have me blocked or direct messages disabled?"
+                f"Could not direct message you {target.mention}, do you have me blocked or direct messages disabled?",
             )
 
     async def delete_source(self, delay=0):
@@ -299,7 +303,9 @@ class LatexContext:
             if error:
                 self._show_emoji = self.emoji_show_errors
                 self._header_shown = "{}\n{}Compilation error:```{}```".format(
-                    self._header_name, source_message, error.replace("```", "")
+                    self._header_name,
+                    source_message,
+                    error.replace("```", ""),
                 )
                 self._header_collapsed = (
                     f"{self._header_name}\n## Compile Error!\n"
@@ -327,7 +333,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -419,7 +427,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -433,7 +443,11 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.makeluatex(
-            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
+            self.source,
+            self.luser.id,
+            self.preamble,
+            self.luser.colour,
+            pad=not self.wide,
         )
 
     async def xetexmake(self):
@@ -513,7 +527,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -605,7 +621,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -619,7 +637,11 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.make_plain_luatex(
-            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
+            self.source,
+            self.luser.id,
+            self.preamble,
+            self.luser.colour,
+            pad=not self.wide,
         )
 
     async def plain_pdftex_make(self):
@@ -699,7 +721,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -713,7 +737,11 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.make_plain_pdftex(
-            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
+            self.source,
+            self.luser.id,
+            self.preamble,
+            self.luser.colour,
+            pad=not self.wide,
         )
 
     async def pythontexmake(self):
@@ -793,7 +821,9 @@ class LatexContext:
             # Finally, send the output and start the reaction handler
             try:
                 self._output_message = await self.ctx.reply(
-                    content=self._header_collapsed, file=output_file, allowed_mentions=discord.AllowedMentions.none()
+                    content=self._header_collapsed,
+                    file=output_file,
+                    allowed_mentions=discord.AllowedMentions.none(),
                 )
                 self._lifetime_task = asyncio.ensure_future(self.activate_reactions())
                 self.ctx.tasks.append(self._lifetime_task)
@@ -807,7 +837,11 @@ class LatexContext:
         Compile the source
         """
         return await self.ctx.makepythontex(
-            self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide
+            self.source,
+            self.luser.id,
+            self.preamble,
+            self.luser.colour,
+            pad=not self.wide,
         )
 
     async def activate_reactions(self):

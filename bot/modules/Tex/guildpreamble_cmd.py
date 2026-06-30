@@ -66,7 +66,8 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
         # Ask the user if they are sure, handling timeout and negative response
         try:
             resp = await ctx.ask(
-                "Are you sure you want to reset the guild preamble? This is not reversible!", timeout=60
+                "Are you sure you want to reset the guild preamble? This is not reversible!",
+                timeout=60,
             )
         except ResponseTimedOut:
             return await ctx.error_reply("Timed out waiting for a response, the guild preamble was not modified.")
@@ -111,7 +112,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
         if args:
             if args not in preamble:
                 return await ctx.error_reply(
-                    "The requested text doesn't appear in the guild preamble! Nothing to remove."
+                    "The requested text doesn't appear in the guild preamble! Nothing to remove.",
                 )
             if "\n" in args:
                 # If the requested string has multiple lines and appears, just remove all of them
@@ -134,7 +135,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
 
             # Handle timeouts and negative response
             try:
-                response = await ctx.input(prompt_msg)
+                response = await ctx.on_input(prompt_msg)
             except ResponseTimedOut:
                 return await ctx.error_reply("Prompt timed out. The guild preamble was not modified.")
             if response.lower() == "c":
@@ -163,14 +164,14 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
                 return await ctx.error_reply(
                     "Couldn't parse your selection!\n"
                     "Please enter numbers and ranges of numbers separated by commas, e.g. "
-                    "`1, 2-5, 10-20`."
+                    "`1, 2-5, 10-20`.",
                 )
 
             # Calculate line indicies
             nums = [int(num) - 1 for num in nums]
             if not all(0 <= num < len(lines) for num in nums):
                 return await ctx.error_reply(
-                    "Couldn't remove requested lines, your selection goes outside of the guild preamble!"
+                    "Couldn't remove requested lines, your selection goes outside of the guild preamble!",
                 )
 
             # Remove duplicates and set the list of line indices to remove
@@ -195,7 +196,10 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
             await preamblelog(
-                ctx, "Material was removed from the preamble. New preamble below.", author=log_str, source=new_preamble
+                ctx,
+                "Material was removed from the preamble. New preamble below.",
+                author=log_str,
+                source=new_preamble,
             )
         return None
 
@@ -211,7 +215,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
                 f"**If you wish to *replace* the guild preamble, please rerun with `{await ctx.best_prefix()}preamble --replace`.**\n"
             )
             try:
-                args = await ctx.input(prompt, timeout=600)
+                args = await ctx.on_input(prompt, timeout=600)
             except ResponseTimedOut:
                 return await ctx.error_reply("Query timed out, the guild preamble was not modified.")
             if args.lower() == "c":
@@ -255,7 +259,11 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
         prompt = "Please confirm that you want to set the following updated guild preamble."
         try:
             result = await confirm(
-                ctx, prompt, new_submission, start_page=-1, extra_fields=[("Warnings", warnings)] if warnings else None
+                ctx,
+                prompt,
+                new_submission,
+                start_page=-1,
+                extra_fields=[("Warnings", warnings)] if warnings else None,
             )
         except ResponseTimedOut:
             return await ctx.error_reply("Prompt timed out, the guild preamble was not modified.")
@@ -288,7 +296,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
                 "cancel now and rerun with the file attached."
             )
             try:
-                new_submission = await ctx.input(prompt, timeout=600)
+                new_submission = await ctx.on_input(prompt, timeout=600)
             except ResponseTimedOut:
                 return await ctx.error_reply("Query timed out, the guild preamble was not modified.")
             if new_submission.lower() == "c":
@@ -311,13 +319,16 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
             await preamblelog(
-                ctx, "The guild preamble was replaced. New preamble below.", author=log_str, source=new_submission
+                ctx,
+                "The guild preamble was replaced. New preamble below.",
+                author=log_str,
+                source=new_submission,
             )
         return None
 
     # View the preamble
     if not guild_preamble:
         return await ctx.reply(
-            "No guild default preamble set. Users without a custom preamble will use the global default."
+            "No guild default preamble set. Users without a custom preamble will use the global default.",
         )
     return await view_preamble(ctx, guild_preamble, "Current Guild Preamble")

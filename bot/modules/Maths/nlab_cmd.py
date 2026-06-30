@@ -115,7 +115,7 @@ async def cmd_nlab(ctx: Context):
     title = soup.find("title")
     if title is None or "Search results" not in title.contents[0]:
         await out_msg.edit(
-            content="Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"])
+            content="Nlab redirected the search to the following page:\n{}".format(soup.find("a").attrs["href"]),
         )
         return None
     parsed = await search_page_parse(soup)
@@ -131,7 +131,8 @@ async def cmd_nlab(ctx: Context):
         in_title_fields_raw = field_pager(in_title_links)
 
         base_title = "{} result{} where query appeared in title.".format(
-            len(in_title), "" if len(in_title) == 1 else "s"
+            len(in_title),
+            "" if len(in_title) == 1 else "s",
         )
         if len(in_title_fields_raw) == 1:
             in_title_fields = [(base_title, in_title_fields_raw[0], 0)]

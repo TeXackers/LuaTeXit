@@ -65,7 +65,7 @@ async def cmd_prefix(ctx, flags):
         # Inform the user
         await ctx.reply(
             "Your personal command prefix has successfully been removed!\n"
-            "Mentions and the current guild or global prefix will still function."
+            "Mentions and the current guild or global prefix will still function.",
         )
 
     elif flags["set"] or ctx.args:
@@ -86,7 +86,7 @@ async def cmd_prefix(ctx, flags):
         # Inform the user
         await ctx.reply(
             f"Your personal command prefix has been set to `{prefix}`.\n"
-            "Mentions and the current guild or global prefix will still function."
+            "Mentions and the current guild or global prefix will still function.",
         )
 
     else:
@@ -107,11 +107,12 @@ async def cmd_prefix(ctx, flags):
 
         # Global prefix
         global_str = "The default prefix is `{}`{}.".format(
-            ctx.client.prefix, " (not active in favour of the guild prefix)" if guild_prefix else ""
+            ctx.client.prefix,
+            " (not active in favour of the guild prefix)" if guild_prefix else "",
         )
 
         # Create the response and reply
         return await ctx.reply(
-            f"{personal_str}\n{guild_str}\n{global_str}\nMentioning me will always work as a prefix: {ctx.client.user.mention}"
+            f"{personal_str}\n{guild_str}\n{global_str}\nMentioning me will always work as a prefix: {ctx.client.user.mention}",
         )
     return None

@@ -185,7 +185,7 @@ async def cmd_roleinfo(ctx: Context):
             desc_text,
             diff_str,
             discord.Colour.from_str(embed_colour),
-        )
+        ),
     )
 
 
@@ -261,7 +261,7 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
             "Seen in": f"{numshared} guild{'s' if numshared > 1 else ''}",
             "Joined at": discord.utils.format_dt(user.joined_at, "R") if user.joined_at else "N/A",
             "Created at": discord.utils.format_dt(user.created_at, "R"),
-        }
+        },
     )
 
     role_text = f"\n### Roles\n{('`' + '`, `'.join(roles) + '`') if roles else 'N/A'}"
@@ -290,10 +290,10 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
         container.add_item(
             discord.ui.MediaGallery(
                 discord.MediaGalleryItem(banner, description=f"Banner for {user.display_name}"),
-            )
+            ),
         )
     container.add_item(Header(f"{user}"))
-    container.add_item(SectionWithThumbnail(desc_text, av if av else user.display_avatar.url))
+    container.add_item(SectionWithThumbnail(desc_text, av or user.display_avatar.url))
     # add user's banner as Image if it exists
 
     container.add_item(Body(role_text))
@@ -327,17 +327,17 @@ async def cmd_guildinfo(ctx: Context) -> None:
             "Large?": "Yes" if ctx.server.large else "No",
             "Channels": f"{len(ctx.server.text_channels)} 📝, {len(ctx.server.voice_channels)} 🗣️ ({total} total)",
             "Premium": f"Level {ctx.server.premium_tier} | {ctx.server.premium_subscription_count} boost{'s' if ctx.server.premium_subscription_count != 1 else ''} total",
-        }
+        },
     )
 
     container = Container(
-        accent_colour=ctx.server.owner.colour if ctx.server.owner.colour.value else discord.Colour.teal()
+        accent_colour=ctx.server.owner.colour if ctx.server.owner.colour.value else discord.Colour.teal(),
     )
     if ctx.server.banner:
         container.add_item(
             discord.ui.MediaGallery(
                 discord.MediaGalleryItem(str(ctx.server.banner), description=f"Banner for {ctx.server.name}"),
-            )
+            ),
         )
     container.add_item(Header(f"{ctx.server}"))
     container.add_item(SectionWithThumbnail(desc_text, str(ctx.server.icon)))
@@ -468,7 +468,7 @@ async def cmd_avatar(ctx: Context, flags) -> None:
     container.add_item(
         discord.ui.MediaGallery(
             discord.MediaGalleryItem(avatar_url, description=f"Avatar for {user.display_name}"),
-        )
+        ),
     )
     container.add_item(Footer(f"Requested by: {ctx.author}"))
 

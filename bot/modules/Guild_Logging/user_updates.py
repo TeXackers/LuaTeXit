@@ -59,9 +59,9 @@ async def member_update_handler(client: cmdClient, before, after, from_user=Fals
     if before.avatar != after.avatar and UserLogEvent.AVATAR in userlog_events:
         # Handle avatar changes
         desc_lines.append(
-            f"**Avatar updated!**\n`Before:` [Old Avatar]({before.avatar})\n`After:` [New Avatar]({after.avatar})\n"
+            f"**Avatar updated!**\n`Before:` [Old Avatar]({before.avatar})\n`After:` [New Avatar]({after.avatar})\n",
         )
-        image = after.avatar if after.avatar else None
+        image = after.avatar or None
 
     if not from_user and before.roles != after.roles and UserLogEvent.ROLES in userlog_events:
         # Handle role changes
@@ -199,7 +199,7 @@ class guild_userlog_events(ListData, SettingList, GuildSetting):
             "Nickname": "Updates to a member's guild nickname.",
             "Roles": "New or removed roles for a member.",
         }
-        table = prop_tabulate(*zip(*event_types.items()))
+        table = prop_tabulate(*zip(*event_types.items(), strict=True))
         embed.add_field(name="Userlog Event types", value=table)
         return embed
 
@@ -231,13 +231,16 @@ ignores_schema = tableSchema(
 @module.data_init_task
 def attach_userlog_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False), "guild_userupdate_channel"
+        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False),
+        "guild_userupdate_channel",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, event_schema, shared=False), "guild_userupdate_events"
+        tableInterface.from_schema(client.data, client.app, event_schema, shared=False),
+        "guild_userupdate_events",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, ignores_schema, shared=False), "guild_userupdate_ignores"
+        tableInterface.from_schema(client.data, client.app, ignores_schema, shared=False),
+        "guild_userupdate_ignores",
     )

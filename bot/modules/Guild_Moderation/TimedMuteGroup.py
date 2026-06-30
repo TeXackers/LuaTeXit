@@ -209,11 +209,15 @@ class TimedMuteGroup:
                     *(
                         unmute_memberid(memberid, role, audit_reason=f"Automatic unmute (#{self.ticket.ticketgid}).")
                         for memberid in self.memberids
-                    )
+                    ),
                 )
                 reason = f"Automatic unmute after {strfdelta(datetime.timedelta(seconds=self.ticket.duration))}.\n[Click here for the original mute ticket]({self.ticket.jumpto})"
                 await TicketType.UNMUTE.Ticket.create(
-                    self.ticket.guildid, self.ticket.modid, self._client.user.id, self.memberids, reason=reason
+                    self.ticket.guildid,
+                    self.ticket.modid,
+                    self._client.user.id,
+                    self.memberids,
+                    reason=reason,
                 ).post()
 
         # Delete the group
@@ -234,5 +238,6 @@ member_schema = tableSchema(
 @module.data_init_task
 def attach_timed_mute_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, member_schema, shared=True), "guild_timed_mute_members"
+        tableInterface.from_schema(client.data, client.app, member_schema, shared=True),
+        "guild_timed_mute_members",
     )

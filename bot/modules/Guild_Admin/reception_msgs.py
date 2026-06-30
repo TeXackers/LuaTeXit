@@ -190,9 +190,11 @@ farewell_schema = tableSchema(
 @module.data_init_task
 def attach_reception_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, greeting_schema, shared=False), "guild_greetings"
+        tableInterface.from_schema(client.data, client.app, greeting_schema, shared=False),
+        "guild_greetings",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, farewell_schema, shared=False), "guild_farewells"
+        tableInterface.from_schema(client.data, client.app, farewell_schema, shared=False),
+        "guild_farewells",
     )

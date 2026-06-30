@@ -48,7 +48,7 @@ def sterilise_content(content: str) -> str:
     return content
 
 
-def flag_parser(args: str, flags: list[str] = []) -> tuple[dict[str, str | bool], str]:
+def flag_parser(args: str, flags: list[str] | None = None) -> tuple[dict[str, str | bool], str]:
     """
     Parses flags in args from the flags given in flags.
     Flag formats:
@@ -62,6 +62,9 @@ def flag_parser(args: str, flags: list[str] = []) -> tuple[dict[str, str | bool]
         The value of the flag for a long flag,
     If -- is present in the input as a word, all flags afterwards are ignored.
     """
+    if flags is None:
+        flags = []
+
     # Split across whitespace, keeping the whitespace
     params: list[str] = re.split(r"(\S+)", args)
 

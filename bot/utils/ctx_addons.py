@@ -1,28 +1,37 @@
 import asyncio
 import logging
+from asyncio.subprocess import Process
+from collections.abc import Coroutine
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 import discord
+from cmdClient import Context, cmdClient
+from discord import Colour
+
+if TYPE_CHECKING:
+    from discord import Embed
 import logger
-from cmdClient import Context  # noqa
 from cmdClient.lib import SafeCancellation
 
 from . import lib
 
+default_colour = discord.Colour(0x9B59B6)
+
 
 @Context.util
-async def embedreply(ctx, desc, colour=discord.Colour(0x9B59B6), **kwargs):
+async def embedreply(ctx: Context, desc: str, colour: Colour = default_colour, **kwargs):
     """
     Simple helper to embed replies.
     All arguments are passed to the embed constructor.
     `desc` is passed as the `description` kwarg.
     """
-    embed = discord.Embed(description=desc, colour=colour, **kwargs)
+    embed: Embed = discord.Embed(description=desc, colour=colour, **kwargs)
     return await ctx.reply(embed=embed)
 
 
 @Context.util
-async def live_reply(ctx, reply_func, update_interval=5, max_messages=20):
+async def live_reply(ctx: Context, reply_func: Coroutine, update_interval: int = 5, max_messages: int = 20):
     """
     Acts as `ctx.reply`, but asynchronously updates the reply every `update_interval` seconds
     with the value of `reply_func`, until the value is `None`.
@@ -64,7 +73,7 @@ async def live_reply(ctx, reply_func, update_interval=5, max_messages=20):
     return message
 
 
-async def _message_counter(client, channel, max_count):
+async def _message_counter(client: cmdClient, channel, max_count):
     """
     Helper for live_reply
     """
@@ -82,7 +91,7 @@ async def _message_counter(client, channel, max_count):
 
 
 @Context.util
-async def log(ctx: Context, *args, **kwargs):
+def log(ctx: Context, *args, **kwargs) -> None:
     """
     Shortcut to the logger which automatically adds the context.
     """
@@ -92,20 +101,18 @@ async def log(ctx: Context, *args, **kwargs):
 
 
 @Context.util
-async def run_in_shell(ctx: Context, script):
+async def run_in_shell(ctx: Context, script: str) -> str:
     """
     Execute a script or command asynchronously in a subprocess shell.
     """
-    process = await asyncio.create_subprocess_shell(script, stdout=asyncio.subprocess.PIPE)
+    process: Process = await asyncio.create_subprocess_shell(script, stdout=asyncio.subprocess.PIPE)
     ctx.log(
-        "Executing the following script:\n{}\nwith pid '{}'.".format(
-            "\n".join(f"\t{line}" for line in script.splitlines()), process.pid
-        ),
+        f"Executing the following script:\n{script}\nwith pid '{process.pid}'.",
         level=logging.DEBUG,
     )
     stdout, stderr = await process.communicate()
     ctx.log(
-        "Completed the script with pid '{}'{}".format(process.pid, " with errors" if process.returncode != 0 else ""),
+        f"Completed the script with pid '{process.pid}'{' with errors' if process.returncode != 0 else ''}",
         level=logging.DEBUG,
     )
     return stdout.decode(errors="backslashreplace").strip()
@@ -118,15 +125,11 @@ async def best_prefix(ctx: Context) -> str:
     This will be the server prefix if it is defined,
     otherwise the default client prefix.
     """
-    if ctx.guild:
-        prefix = ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
-    else:
-        prefix = ctx.client.prefix
-    return prefix
+    return ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
 
 
 @Context.util
-async def format_usage(ctx: Context):
+async def format_usage(ctx: Context) -> str:
     """
     Formats the usage string of the current command.
     Assumes the first section of the doc string is the usage string.
@@ -154,7 +157,7 @@ async def confirm_sent(ctx: Context, msg=None, reply=None):
         else:
             await msg.add_reaction("✅")
     except discord.Forbidden:
-        return await ctx.reply(reply if reply else "Check your DMs!")
+        return await ctx.reply(reply or "Check your DMs!")
 
 
 @Context.util
@@ -270,7 +273,7 @@ async def dm_reply(ctx: Context, *args, **kwargs):
     try:
         await ctx.author.send(*args, **kwargs)
     except discord.Forbidden:
-        raise SafeCancellation("I can't DM you! Do you have DMs disabled?")
+        raise SafeCancellation("I can't DM you! Do you have DMs disabled?") from None
 
 
 @Context.util

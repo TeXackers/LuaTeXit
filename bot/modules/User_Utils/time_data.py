@@ -14,5 +14,6 @@ schema: tuple[str, ...] = tableSchema(
 @module.data_init_task
 def attach_time_settings_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, schema, shared=True), "user_time_settings"
+        tableInterface.from_schema(client.data, client.app, schema, shared=True),
+        "user_time_settings",
     )

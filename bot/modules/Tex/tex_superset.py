@@ -42,7 +42,9 @@ async def cmd_texas(ctx: Context, flags: dict):
 
     # `texas help`
     if ctx.args.lower() in ("help", "--help"):
-        return await ctx.error_reply(f"Please use `{await ctx.best_prefix()}help texas` for detailed help on this command.")
+        return await ctx.error_reply(
+            f"Please use `{await ctx.best_prefix()}help texas` for detailed help on this command.",
+        )
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)

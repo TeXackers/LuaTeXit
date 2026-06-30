@@ -49,7 +49,7 @@ def prop_tabulate(prop_list, value_list, indent=True):
                 "" if str(value_list[i]).endswith("```") else "\n",
             )
             for i, prop in enumerate(prop_list)
-        ]
+        ],
     )
 
 
@@ -237,7 +237,7 @@ def substitute_ranges(ranges_str, max_match=20, max_range=1000, separator=","):
             raise ValueError("Provided range exceeds the allowed maximum.")
         return separator.join(str(i) for i in range(n1, n2 + 1))
 
-    return re.sub(r"(\d+)\s*-\s*(\d+)", _repl, ranges_str, max_match)
+    return re.sub(r"(\d+)\s*-\s*(\d+)", repl=_repl, string=ranges_str, count=max_match)
 
 
 def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
@@ -317,12 +317,12 @@ def convdatestring(datestring):
 class _rawChannel(discord.abc.Messageable):
     """
     Raw messageable class representing an arbitrary channel,
-    not necessarially seen by the gateway.
+    not necessarily seen by the gateway.
     """
 
-    def __init__(self, state, id):
+    def __init__(self, state, uid):
         self._state = state
-        self.id = id
+        self.id = uid
 
     async def _get_channel(self):
         return discord.Object(self.id)
@@ -380,7 +380,10 @@ def join_list(string, nfs=False):
     """
     if len(string) > 1:
         return "{}{} and {}{}".format(
-            (", ").join(string[:-1]), "," if len(string) > 2 else "", string[-1], "" if nfs else "."
+            (", ").join(string[:-1]),
+            "," if len(string) > 2 else "",
+            string[-1],
+            "" if nfs else ".",
         )
     return "{}{}".format("".join(string), "" if nfs else ".")
 

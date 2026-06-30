@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 import discord
 from cachetools import LRUCache
-from discord import Intents
 
 from .Command import Command  # noqa
 from .Context import Context, FlatContext
@@ -39,11 +38,9 @@ class cmdClient(discord.Client):
         owners: list[int] | None = None,
         ctx_cache: LRUCache | None = None,
         baseContext: type[Context] = Context,
-        intents: Intents = Intents.default(),
         **kwargs,
     ):
-        intents.message_content = True
-        super().__init__(intents=intents, **kwargs)
+        super().__init__(**kwargs)
         self.prefix = prefix
         self.owners = owners or []
         self.objects = {}
@@ -99,7 +96,7 @@ class cmdClient(discord.Client):
         return ()
 
     def set_valid_prefixes(self, func: Callable) -> None:
-        setattr(self, "valid_prefixes", func.__get__(self))
+        self.valid_prefixes = func.__get__(self)
 
     def initialise_modules(self) -> None:
         log("client module init")
@@ -121,7 +118,7 @@ class cmdClient(discord.Client):
         await self.launch_modules()
 
         ready_str = (
-            f"{self.user} ({self.user.id if self.user.id else 'Unknown ID'}) launching in {len(self.guilds)} guilds\n"
+            f"{self.user} ({self.user.id or 'Unknown ID'}) launching in {len(self.guilds)} guilds\n"
             f"Default prefix: {self.prefix}\n"
             f"Commands: {len(self.cmds)}\n"
             f"GOTOV"
@@ -225,7 +222,7 @@ class cmdClient(discord.Client):
         content: str = "\n".join("\t" + line for line in message.content.splitlines())
 
         log(
-            f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == 871997060239466496 else message.channel} ({'' if message.channel.id == 871997060239466496 else message.channel.id})\ngid: {message.guild if message.guild else ''} ({message.guild.id if message.guild else ''})\n\n{content}",
+            f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == 871997060239466496 else message.channel} ({'' if message.channel.id == 871997060239466496 else message.channel.id})\ngid: {message.guild or ''} ({message.guild.id if message.guild else ''})\n\n{content}",
             context=f"mid:{message.id}",
         )
 
@@ -240,7 +237,12 @@ class cmdClient(discord.Client):
 
         # Build the context
         ctx: Context = self.baseContext(
-            client=self, message=message, arg_str=arg_str, alias=cmdname, cmd=cmd, prefix=prefix
+            client=self,
+            message=message,
+            arg_str=arg_str,
+            alias=cmdname,
+            cmd=cmd,
+            prefix=prefix,
         )
 
         # Add command to command cache and active contexts
@@ -316,7 +318,8 @@ class cmdClient(discord.Client):
                 )
 
         self.extra_message_parsers.insert(
-            bisect([parser[1] for parser in self.extra_message_parsers], priority), (new_func, priority)
+            bisect([parser[1] for parser in self.extra_message_parsers], priority),
+            (new_func, priority),
         )
         log(f"+     |------{func.__name__} (priority: {priority})")
 

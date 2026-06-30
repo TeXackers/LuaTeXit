@@ -79,7 +79,7 @@ class Command:
 
             await ctx.reply(
                 "An unexpected internal error occurred while running your command! "
-                f"Please report the following error to the developer:\n`{only_error}`"
+                f"Please report the following error to the developer:\n`{only_error}`",
             )
         else:
             log("Command completed execution without error.", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)

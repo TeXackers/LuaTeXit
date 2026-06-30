@@ -26,7 +26,9 @@ Commands provided:
 
 
 @module.cmd(
-    "image", desc="Searches Pixabay for images matching the specified text.", aliases=["imagesearch", "images", "img"]
+    "image",
+    desc="Searches Pixabay for images matching the specified text.",
+    aliases=["imagesearch", "images", "img"],
 )
 async def cmd_image(ctx: Context):
     """
@@ -109,7 +111,10 @@ async def cmd_duck(ctx: Context, flags):
 
 
 @module.cmd(
-    "cat", desc="Sends a random cat image", aliases=["meow", "purr", "pussy"], flags=["t==", "c==", "cc=", "cs="]
+    "cat",
+    desc="Sends a random cat image",
+    aliases=["meow", "purr", "pussy"],
+    flags=["t==", "c==", "cc=", "cs="],
 )
 async def cmd_cat(ctx: Context, flags):
     """

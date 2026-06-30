@@ -220,7 +220,7 @@ class GithubColour(Colour):
                 muted: Colour = Colour.from_str("#818b98")
                 """Note: Discord doesn't support true transparency in embed colours, so this is just #818b98 in lieu of #818b981f"""
 
-            class open:
+            class open:  # noqa [A001]
                 emphasis: Colour = Colour.from_str("#1a7f37")
                 """#1a7f37"""
                 muted: Colour = Colour.from_str("#dafbe1")

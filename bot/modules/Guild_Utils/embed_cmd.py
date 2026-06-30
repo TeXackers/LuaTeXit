@@ -82,7 +82,8 @@ def menu_item(item_list, item_name):
 @menu_item(root_menu, "Set Title")
 async def set_title(ctx):
     await ctx.bot.edit_message(
-        ctx.objs["menu"]["msg"], "Please enter the title! (Max 256 characters, type c to cancel.)"
+        ctx.objs["menu"]["msg"],
+        "Please enter the title! (Max 256 characters, type c to cancel.)",
     )
 
     output = await ctx.wait_for_string(max_len=256)
@@ -98,7 +99,9 @@ async def set_author(ctx: Context):
     new_author = await ctx.wait_for_string(max_len=256)
     if new_author is not None:
         ctx.objs["embed_embed"].set_author(
-            name=new_author, url=ctx.objs["embed_embed"].author.url, icon_url=ctx.objs["embed_embed"].author.icon_url
+            name=new_author,
+            url=ctx.objs["embed_embed"].author.url,
+            icon_url=ctx.objs["embed_embed"].author.icon_url,
         )
 
 
@@ -110,7 +113,9 @@ async def set_author_icon(ctx: Context):
     output = await ctx.wait_for_string()
     if output is not None:
         ctx.objs["embed_embed"].set_author(
-            name=ctx.objs["embed_embed"].author.name, url=ctx.objs["embed_embed"].author.url, icon_url=output
+            name=ctx.objs["embed_embed"].author.name,
+            url=ctx.objs["embed_embed"].author.url,
+            icon_url=output,
         )
 
 
@@ -122,7 +127,9 @@ async def set_author_url(ctx: Context):
     output = await ctx.wait_for_string()
     if output is not None:
         ctx.objs["embed_embed"].set_author(
-            name=ctx.objs["embed_embed"].author.name, url=output, icon_url=ctx.objs["embed_embed"].author.icon_url
+            name=ctx.objs["embed_embed"].author.name,
+            url=output,
+            icon_url=ctx.objs["embed_embed"].author.icon_url,
         )
 
 
@@ -225,7 +232,7 @@ async def field_edit(ctx):
 @menu_item(root_menu, "Save and Exit")
 async def save_and_exit(ctx):
     server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
-    server_embeds = server_embeds if server_embeds else {}
+    server_embeds = server_embeds or {}
     if "embed_name" in ctx.objs and ctx.objs["embed_name"]:
         embed_name = ctx.objs["embed_name"]
     else:
@@ -243,11 +250,11 @@ async def save_and_exit(ctx):
         try:
             await ctx.data.servers_long.set(ctx.server.id, "server_embeds", server_embeds)
             await ctx.reply(
-                f"The embed has been saved!\n To view the embed use `{ctx.used_prefix}embed {embed_name}`, and reopen the Embed Editor with `{ctx.used_prefix}editembed {embed_name}`."
+                f"The embed has been saved!\n To view the embed use `{ctx.used_prefix}embed {embed_name}`, and reopen the Embed Editor with `{ctx.used_prefix}editembed {embed_name}`.",
             )
         except Exception:
             await ctx.reply(
-                "Sorry, you have exceeded the total embed size limit for this server! Your embed couldn't be saved."
+                "Sorry, you have exceeded the total embed size limit for this server! Your embed couldn't be saved.",
             )
         await ctx.bot.edit_message(ctx.objs["embed_preview_msg"], " ")
         asyncio.ensure_future(ctx.offer_delete(ctx.objs["embed_preview_msg"]))
@@ -262,7 +269,8 @@ async def exit_no_save(ctx):
 async def ask_for_field(ctx):
     field = {"name": None, "value": None, "inline": None}
     await ctx.bot.edit_message(
-        ctx.objs["menu"]["msg"], "Please enter the field name. (256 characters max, press c to cancel.))"
+        ctx.objs["menu"]["msg"],
+        "Please enter the field name. (256 characters max, press c to cancel.))",
     )
     field_name = await ctx.wait_for_string(max_len=256)
     if field_name is None:
@@ -270,7 +278,8 @@ async def ask_for_field(ctx):
     field["name"] = field_name
 
     await ctx.bot.edit_message(
-        ctx.objs["menu"]["msg"], "Please enter the field value. (1024 characters max, press c to cancel.))"
+        ctx.objs["menu"]["msg"],
+        "Please enter the field value. (1024 characters max, press c to cancel.))",
     )
     field_value = await ctx.wait_for_string(max_len=1024)
     if field_value is None:
@@ -300,7 +309,9 @@ async def remove_field(ctx):
         return
 
     result = await ctx.silent_selector(
-        "Please select a field to remove", [field.name for field in fields], use_msg=ctx.objs["menu"]["msg"]
+        "Please select a field to remove",
+        [field.name for field in fields],
+        use_msg=ctx.objs["menu"]["msg"],
     )
     if result is None:
         return
@@ -317,7 +328,9 @@ async def edit_field(ctx):
         return
 
     result = await ctx.silent_selector(
-        "Please select a field to edit", [field.name for field in fields], use_msg=ctx.objs["menu"]["msg"]
+        "Please select a field to edit",
+        [field.name for field in fields],
+        use_msg=ctx.objs["menu"]["msg"],
     )
     if result is None:
         return
@@ -343,7 +356,7 @@ async def get_server_embed(ctx, emb_name):
     server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
     if not server_embeds:
         await ctx.reply(
-            f"There are no saved embeds in this server! Moderators may create embeds using `{ctx.used_prefix}buildembed`"
+            f"There are no saved embeds in this server! Moderators may create embeds using `{ctx.used_prefix}buildembed`",
         )
         return None
     if emb_name == "":
@@ -436,7 +449,7 @@ async def cmd_embedinto(ctx):
         return
 
     out_msg = await ctx.reply(
-        "Searching for message, please wait {}".format(ctx.aemoji_mention(ctx.bot.objects["emoji_loading"]))
+        "Searching for message, please wait {}".format(ctx.aemoji_mention(ctx.bot.objects["emoji_loading"])),
     )
 
     message = await ctx.find_message(ctx.params[0])

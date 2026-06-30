@@ -142,7 +142,7 @@ async def cmd_dm(ctx: Context):
         await user.send(message)
     except discord.Forbidden:
         await ctx.error_reply(
-            "I couldn't send the message. Maybe we don't share any servers with this user or they have us blocked?"
+            "I couldn't send the message. Maybe we don't share any servers with this user or they have us blocked?",
         )
     else:
         await ctx.reply("Message sent!")

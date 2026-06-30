@@ -86,7 +86,7 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
                 print(r.status, r)
                 return None
         except Exception as e:
-            raise WolframAPIError("Unable to establish connection with Wolfram Alpha's API at `get_query`", e)
+            raise WolframAPIError("Unable to establish connection with Wolfram Alpha's API at `get_query`", e) from None
 
 
 async def assemble_pod_image(atoms: list[dict], dimensions: tuple[int, int]) -> Image.Image:
@@ -160,7 +160,10 @@ async def glue_pods(flat_pods: list[tuple[str | None, Image.Image | None, int]])
 
 
 async def flatten_pods(
-    pod_data: list[dict], level: int = 0, text: bool = False, text_field: str = "plaintext"
+    pod_data: list[dict],
+    level: int = 0,
+    text: bool = False,
+    text_field: str = "plaintext",
 ) -> list[tuple[str | None, Image.Image | None, int]]:
     """
     Takes the list of pods formatted as in wolf ouptut.
@@ -190,7 +193,7 @@ async def handle_image(image_data):
             async with session.get(target, allow_redirects=False) as resp:
                 response = await resp.read()
         except Exception as e:
-            raise WolframAPIError("Unable to establish API connection at `handle_image`", e)
+            raise WolframAPIError("Unable to establish API connection at `handle_image`", e) from None
     return Image.open(BytesIO(response))
     # return smart_trim(image, border=10)
 
@@ -225,7 +228,7 @@ async def pods_to_textdata(pod_data):
     for title, text, level in flat_pods:
         if level == 0:
             if current_lines:
-                fields.append((current_name if current_name else "Pod", "\n".join(current_lines), 0))
+                fields.append((current_name or "Pod", "\n".join(current_lines), 0))
             current_name = title
             current_lines = []
         elif title:
@@ -276,7 +279,7 @@ async def cmd_query(ctx: Context, flags: dict):
     # Handle no arguments
     if not ctx.args:
         return await ctx.error_reply(
-            f"Please submit a valid query! For example, `{prefix}ask differentiate x+y^2 with respect to x`."
+            f"Please submit a valid query! For example, `{prefix}ask differentiate x+y^2 with respect to x`.",
         )
 
     # Send the temporary loading message.
@@ -298,7 +301,8 @@ async def cmd_query(ctx: Context, flags: dict):
     except WolframAPIError as e:
         temp_msg = await ctx.safe_delete_msgs(temp_msg)
         ctx.client.log(
-            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+            level=logging.ERROR,
         )
         embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
         embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -311,7 +315,8 @@ async def cmd_query(ctx: Context, flags: dict):
         except WolframAPIError as e:
             temp_msg = await ctx.safe_delete_msgs(temp_msg)
             ctx.client.log(
-                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+                level=logging.ERROR,
             )
             embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
             embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -320,18 +325,18 @@ async def cmd_query(ctx: Context, flags: dict):
             temp_msg = await ctx.safe_delete_msgs(temp_msg)
             return await ctx.error_reply(
                 "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
-                "If the problem persists please contact support."
+                "If the problem persists please contact support.",
             )
 
     if not result:
         await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
-            "Failed to get a response from Wolfram Alpha.\nIf the problem persists, please contact support."
+            "Failed to get a response from Wolfram Alpha.\nIf the problem persists, please contact support.",
         )
     if "queryresult" not in result:
         await ctx.safe_delete_msgs(temp_msg)
         return await ctx.error_reply(
-            "Did not get a valid response from Wolfram Alpha.\nIf the problem persists, please contact support."
+            "Did not get a valid response from Wolfram Alpha.\nIf the problem persists, please contact support.",
         )
 
     # link = "[Click here to refine your query online]({})".format(
@@ -351,7 +356,8 @@ async def cmd_query(ctx: Context, flags: dict):
                     )
                 else:
                     desc = ("An unknown error occurred querying the WolframAlpha API!\n**ERROR:** {}\t{}").format(
-                        error["code"], error["msg"]
+                        error["code"],
+                        error["msg"],
                     )
             else:
                 desc = (
@@ -376,7 +382,8 @@ async def cmd_query(ctx: Context, flags: dict):
         except WolframAPIError as e:
             temp_msg = await ctx.safe_delete_msgs(temp_msg)
             ctx.client.log(
-                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
+                f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+                level=logging.ERROR,
             )
             embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
             embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -398,7 +405,8 @@ async def cmd_query(ctx: Context, flags: dict):
     except WolframAPIError as e:
         temp_msg = await ctx.safe_delete_msgs(temp_msg)
         ctx.client.log(
-            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}", level=logging.ERROR
+            f"Failed to get data from Wolfram Alpha API: {e}\nError message: {e.err_msg}",
+            level=logging.ERROR,
         )
         embed = discord.Embed(color=discord.Colour.red(), description=APIErrorDesc)
         embed.add_field(name="Details", value=f"{e}:\n```{e.err_msg}```")
@@ -406,7 +414,9 @@ async def cmd_query(ctx: Context, flags: dict):
 
     embed = discord.Embed(description="", colour=discord.Colour.dark_red())
     embed.set_author(
-        name="Results provided by WolframAlpha", icon_url=WOLF_SMALL_ICON, url="http://www.wolframalpha.com/pro/"
+        name="Results provided by WolframAlpha",
+        icon_url=WOLF_SMALL_ICON,
+        url="http://www.wolframalpha.com/pro/",
     )
     embed.set_footer(icon_url=ctx.author.avatar.url, text=f"Requested by {ctx.author}")
     # embed.set_thumbnail(url=WOLF_ICON)
@@ -454,8 +464,8 @@ async def cmd_query(ctx: Context, flags: dict):
             ctx.args = discord.utils.escape_markdown(ctx.args).replace("\n", " ")
             out_msgs = [
                 await ctx.reply(
-                    content=f"\n-# {ctx.author} queried [{ctx.args}](<{WEB}/input?i={parse.quote_plus(ctx.args)}>)"
-                )
+                    content=f"\n-# {ctx.author} queried [{ctx.args}](<{WEB}/input?i={parse.quote_plus(ctx.args)}>)",
+                ),
             ]
             for file_data in output_data[:-1]:
                 dfile = discord.File(file_data, filename="wolf.png")

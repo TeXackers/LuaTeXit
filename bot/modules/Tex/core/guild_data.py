@@ -26,9 +26,11 @@ channel_schema = tableSchema(
 @module.data_init_task
 def attach_latexguild_data(client):
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, config_schema, shared=False), "guild_latex_config"
+        tableInterface.from_schema(client.data, client.app, config_schema, shared=False),
+        "guild_latex_config",
     )
 
     client.data.attach_interface(
-        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False), "guild_latex_channels"
+        tableInterface.from_schema(client.data, client.app, channel_schema, shared=False),
+        "guild_latex_channels",
     )

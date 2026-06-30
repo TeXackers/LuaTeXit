@@ -79,7 +79,7 @@ async def cmd_editrole(ctx: Context, flags):
         return await ctx.error_reply("I require the permission `Manage Roles` to run this command.")
 
     if flags["colour"] or flags["color"]:
-        colour = flags["colour"] if flags["colour"] else flags["color"]
+        colour = flags["colour"] or flags["color"]
         hexstr = colour.strip("#")
         if not (len(hexstr) == 6 or all(c in string.hexdigits for c in hexstr)):
             return await ctx.error_reply("Please provide a valid hex colour (e.g. #0047AB).")
@@ -107,7 +107,7 @@ async def cmd_editrole(ctx: Context, flags):
             mention = False
         else:
             return await ctx.error_reply(
-                "An invalid argument was passed to `--mention`. Use `help editrole` for usage."
+                "An invalid argument was passed to `--mention`. Use `help editrole` for usage.",
             )
         edits["mentionable"] = mention
 
@@ -122,12 +122,16 @@ async def cmd_editrole(ctx: Context, flags):
             position = role.position - 1
         elif pos_flag.startswith("above"):
             target_role = await ctx.find_role(
-                (" ".join(pos_flag.split(" ")[1:])).strip(), create=False, interactive=True
+                (" ".join(pos_flag.split(" ")[1:])).strip(),
+                create=False,
+                interactive=True,
             )
             position = target_role.position + 1
         elif pos_flag.startswith("below"):
             target_role = await ctx.find_role(
-                (" ".join(pos_flag.split(" ")[1:])).strip(), create=False, interactive=True
+                (" ".join(pos_flag.split(" ")[1:])).strip(),
+                create=False,
+                interactive=True,
             )
             position = target_role.position
         else:

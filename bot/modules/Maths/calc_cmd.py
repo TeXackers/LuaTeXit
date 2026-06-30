@@ -32,7 +32,7 @@ async def cmd_calc(ctx: Context):
     """
     if not ctx.args:
         return await ctx.error_reply(
-            f"Please give me something to evaluate.\nSee `{await ctx.best_prefix()}help calc` for usage details."
+            f"Please give me something to evaluate.\nSee `{await ctx.best_prefix()}help calc` for usage details.",
         )
     exprs = ctx.args.split("\n")
     request = {"expr": exprs, "precision": 14}
@@ -40,17 +40,19 @@ async def cmd_calc(ctx: Context):
         answer = await resp.json()
     if "error" not in answer or "result" not in answer:
         return await ctx.error_reply(
-            "Sorry, could not complete your request.\nAn unknown error occurred during calculation!"
+            "Sorry, could not complete your request.\nAn unknown error occurred during calculation!",
         )
     if answer["error"]:
         await ctx.reply(
             "The following error occured while calculating:\n`{}`".format(
-                discord.utils.escape_mentions(answer["error"])
-            )
+                discord.utils.escape_mentions(answer["error"]),
+            ),
         )
         return None
     return await ctx.reply(
         "Result{}:\n```\n{}\n```\n-# Requested by: {}".format(
-            "s" if len(exprs) > 1 else "", "\n".join(answer["result"]), ctx.author
-        )
+            "s" if len(exprs) > 1 else "",
+            "\n".join(answer["result"]),
+            ctx.author,
+        ),
     )

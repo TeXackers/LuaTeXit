@@ -17,10 +17,16 @@ skip-magic-trailing-comma = false
 
 [lint]
 future-annotations = true
+
+# https://docs.astral.sh/ruff/rules/
 extend-select = [
+    "A",        # var names masking builtins
+    "B",        # bugbear
     "I",        # import sorting
     "UP",       # warnings wrt newer Python versions
     "C4",       # comprehensions, dict, list, etc
+    "COM",      # commas
+    "FA",       # future annotations
     "ISC",      # string concatenation
     "ICN",      # import conventions
     "RET",      # return practices
@@ -28,4 +34,10 @@ extend-select = [
     "TID",      # import practices
     "TC",       # enforce importing types in a TYPE_CHECKING block
     "PTH",      # pathlib in lieu of os.path
+    "FURB",     # idiomatic patterns
+]
+
+ignore = [
+    "TC003",
+    "TC004",
 ]

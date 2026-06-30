@@ -73,8 +73,8 @@ def tex_pagination(
     blocknum = len(blocks)
 
     if blocknum == 1:
-        block = blocks[0] if blocks[0] else None
-        desc = "{}\n{}".format(header, block or "") if header else (block if block else None)
+        block = blocks[0] or None
+        desc = "{}\n{}".format(header, block or "") if header else (block or None)
 
         embed = discord.Embed(title=basetitle, color=colour, description=desc, timestamp=time)
         if author is not None:
@@ -139,7 +139,7 @@ async def tex_pagination_diff(
             tofile="pending preamble",
             lineterm="",
             n=0,
-        )
+        ),
     )
 
     blocks: list[str | None] = split_text(diff, 1000, code=True, syntax="diff") if diff else [None]
@@ -153,8 +153,8 @@ async def tex_pagination_diff(
     blocknum = len(blocks)
 
     if blocknum == 1:
-        block = blocks[0] if blocks[0] else None
-        desc = "{}\n{}".format(header, block or "") if header else (block if block else None)
+        block = blocks[0] or None
+        desc = "{}\n{}".format(header, block or "") if header else (block or None)
 
         embed = discord.Embed(title=basetitle, color=colour, description=desc, timestamp=time)
         if author is not None:
@@ -235,7 +235,13 @@ async def sendfile_reaction_handler(ctx: Context, msg, contents, title, file_nam
 
 
 async def view_preamble(
-    ctx: Context, preamble: str, title: str, start_page=0, file_react=False, file_message=None, **pagination_args
+    ctx: Context,
+    preamble: str,
+    title: str,
+    start_page=0,
+    file_react=False,
+    file_message=None,
+    **pagination_args,
 ):
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
@@ -511,7 +517,10 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
         elif resp.startswith("y"):
             # Ask for the new field
             try:
-                result = await ctx.input("Please enter the additional approval message, or `c` to cancel!", timeout=600)
+                result = await ctx.on_input(
+                    "Please enter the additional approval message, or `c` to cancel!",
+                    timeout=600,
+                )
             except ResponseTimedOut:
                 await preview.edit(content="Preamble approval cancelled due to query timeout.")
                 raise ResponseTimedOut("Query timed out, aborting preamble approval.") from None
@@ -538,7 +547,10 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
     )
     ctx.client.data.user_pending_preambles.delete_where(userid=userid)
     await resolve_pending_preamble(
-        ctx, userid, f"Preamble approved by {manager.mention}", colour=discord.Colour.green()
+        ctx,
+        userid,
+        f"Preamble approved by {manager.mention}",
+        colour=discord.Colour.green(),
     )
     await preamblelog(
         ctx,
@@ -570,7 +582,7 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
             content=(
                 "Approved, but Discord didn't let me DM the user. "
                 "I might not be able to see them (no shared guilds), or they might have blocked me."
-            )
+            ),
         )
     except Exception as e:
         await preview.edit(content=("Approved, but something unexpected occurred while sending the approval message."))
@@ -600,7 +612,7 @@ async def deny_submission(ctx: Context, userid, manager, reason=None):
     if reason is None:
         preview = await ctx.reply(content="Please enter the rejection reason, or send `c` to cancel!", embed=embed)
         try:
-            result = await ctx.input(preview, delete_after=False, timeout=600)
+            result = await ctx.on_input(preview, delete_after=False, timeout=600)
         except ResponseTimedOut:
             await preview.edit(content="Preamble rejection cancelled due to query timeout.")
             return None
@@ -651,7 +663,7 @@ async def deny_submission(ctx: Context, userid, manager, reason=None):
             content=(
                 "Denied, but Discord didn't let me DM the user. "
                 "I might not be able to see them (no shared guilds), or they might have blocked me."
-            )
+            ),
         )
     except Exception as e:
         await preview.edit(content=("Denied, but something unexpected occurred while sending the rejection message."))

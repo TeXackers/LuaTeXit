@@ -21,8 +21,6 @@ class InvalidContext(Exception):
     Throw when the context available doesn't match the context expected.
     """
 
-    pass
-
 
 def sterilise_content(content: str) -> str:
     """

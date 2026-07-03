@@ -67,7 +67,9 @@ async def live_reply(ctx: Context, reply_func: Coroutine, update_interval: int =
                 break
 
     # Start the loop
-    asyncio.ensure_future(_reply_loop())
+    task = asyncio.create_task(_reply_loop())
+
+    task.add_done_callback(lambda t: future.cancel())
 
     # Return the original message
     return message
@@ -87,7 +89,6 @@ async def _message_counter(client: cmdClient, channel, max_count):
     while count < max_count:
         await client.wait_for("message", check=_check)
         count += 1
-    return
 
 
 @Context.util
@@ -110,7 +111,7 @@ async def run_in_shell(ctx: Context, script: str) -> str:
         f"Executing the following script:\n{script}\nwith pid '{process.pid}'.",
         level=logging.DEBUG,
     )
-    stdout, stderr = await process.communicate()
+    stdout, _ = await process.communicate()
     ctx.log(
         f"Completed the script with pid '{process.pid}'{' with errors' if process.returncode != 0 else ''}",
         level=logging.DEBUG,
@@ -161,7 +162,7 @@ async def confirm_sent(ctx: Context, msg=None, reply=None):
 
 
 @Context.util
-async def offer_delete(ctx: Context, *to_delete, timeout=300):
+async def offer_delete(ctx: Context, *to_delete, timeout=60):
     """
     Offers to delete the provided messages via a reaction on the last message.
     Removes the reaction if the offer times out.
@@ -211,7 +212,13 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
         await react_msg.add_reaction(emoji)
 
         # Wait for the user to press the reaction
-        reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
+        try:
+            await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            # Timed out or cancelled waiting for the reaction, attempt to remove the delete reaction
+            with suppress(Exception, discord.Forbidden, discord.NotFound, discord.HTTPException):
+                await react_msg.remove_reaction(emoji, ctx.client.user)
+            return
 
         # Since the check was satisfied, the reaction is correct. Delete the messages, ignoring any exceptions
         deleted = False
@@ -225,7 +232,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=300):
 
         # If we couldn't bulk delete, delete them one by one
         if not deleted:
-            with suppress(Exception):
+            with suppress(Exception, discord.Forbidden, discord.NotFound, discord.HTTPException):
                 await asyncio.gather(*[message.delete() for message in to_delete], return_exceptions=True)
 
 
@@ -250,14 +257,8 @@ async def safe_delete_msgs(ctx: Context, *msgs):
     msgs: Message
         The message(s) to delete.
     """
-    try:
+    with suppress(discord.Forbidden, discord.NotFound, discord.HTTPException, Exception):
         await asyncio.gather(*[msg.delete() for msg in msgs], return_exceptions=True)
-    except discord.Forbidden:
-        pass
-    except discord.NotFound:
-        pass
-    except Exception:
-        pass
 
 
 @Context.util
@@ -295,7 +296,7 @@ def clean_arg_str(ctx: Context):
 
 
 @Context.util
-def usage_embed(ctx: Context, custom_usage=None):
+def usage_embed(ctx: Context, custom_usage=None) -> discord.Embed:
     """
     Creates an embed displaying the current command's usage field.
     If `custom_usage` is provided, uses this instead of the help usage field.
@@ -341,4 +342,4 @@ def ts(ctx: Context, timestamp, mode="F") -> str:
         The formatted timestamp to be displayed in Discord.
 
     """
-    return f"<t:{int(round(timestamp.timestamp()))}:{mode}>" if timestamp else "Unknown"
+    return f"<t:{int(timestamp.timestamp())}:{mode}>" if timestamp else "Unknown"

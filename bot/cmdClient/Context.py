@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
@@ -61,21 +62,21 @@ class Context:
     """
 
     __slots__ = (
-        "client",
-        "msg",
-        "ch",
-        "guild",
-        "server",
-        "objects",
-        "args",
-        "arg_str",
-        "cmd",
         "alias",
+        "arg_str",
+        "args",
         "author",
-        "prefix",
-        "sent_messages",
+        "ch",
         "cleanup_on_edit",
+        "client",
+        "cmd",
+        "guild",
+        "msg",
+        "objects",
+        "prefix",
         "reparse_on_edit",
+        "sent_messages",
+        "server",
         "tasks",
     )
 
@@ -115,7 +116,7 @@ class Context:
         self.tasks: list[Task] = []
 
     @classmethod
-    def util(cls: type[Context], util_func: Callable[..., Awaitable]) -> None:
+    def util(cls: type[Context], util_func: Callable[..., Awaitable | None]) -> None:
         """
         Decorator to make a utility function available as a Context instance method
         """
@@ -170,24 +171,12 @@ async def error_reply(ctx: Context, error_str: str):
     Notify the user of a user level error.
     Typically, this will occur in a red embed, posted in the command channel.
     """
-    with suppress(discord.Forbidden):
+    with suppress(discord.Forbidden, asyncio.TimeoutError):
         message: Message = await ctx.reply(
             view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "F")),
         )
         ctx.sent_messages.append(message)
         return message
-    # try:
-    #     message: Message = await ctx.reply(
-    #         view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
-    #     )
-    #     ctx.sent_messages.append(message)
-    #     return message
-    # except discord.Forbidden:
-    #     message: Message = await ctx.reply(
-    #         view=ErrorEmbedView(error_str, discord.utils.format_dt(discord.utils.utcnow(), "R"))
-    #     )
-    #     ctx.sent_messages.append(message)
-    #     return message
 
 
 @Context.util
@@ -195,21 +184,9 @@ async def traceback(ctx: Context, helper_msg: str, error_str: str):
     """
     Notify the user of an error, and show traceback
     """
-    with suppress(discord.Forbidden):
+    with suppress(discord.Forbidden, asyncio.TimeoutError):
         out_msg: Message = await ctx.reply(
             view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F")),
         )
         ctx.sent_messages.append(out_msg)
         return out_msg
-    # try:
-    #     out_msg: Message = await ctx.reply(
-    #         view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
-    #     )
-    #     ctx.sent_messages.append(out_msg)
-    #     return out_msg
-    # except discord.Forbidden:
-    #     out_msg: Message = await ctx.reply(
-    #         view=DebugEmbedView(helper_msg, error_str, discord.utils.format_dt(discord.utils.utcnow(), style="F"))
-    #     )
-    #     ctx.sent_messages.append(out_msg)
-    #     return out_msg

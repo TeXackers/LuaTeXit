@@ -45,7 +45,7 @@ async def gh_view_pagination(ctx, text, title, start_page=0, **pagination_args):
 
 
 async def syntax_selection(filename: str) -> str:
-    filetype: str = filename.split(".")[-1]
+    filetype: str = filename.rsplit(".", maxsplit=1)[-1]
     match filetype:
         case "cfg" | "lua":
             return "lua"

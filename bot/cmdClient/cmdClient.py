@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import imp
 import itertools
@@ -5,7 +7,7 @@ import logging
 import sys
 import traceback
 from bisect import bisect
-from collections.abc import Callable  # noqa
+from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
@@ -15,22 +17,25 @@ if TYPE_CHECKING:
 
 import discord
 from cachetools import LRUCache
+from discord import Message
 
 from .Command import Command  # noqa
 from .Context import Context, FlatContext
 from .logger import log
 from .Module import Module
 
+LUATEXIT_ID = 871978350393065572
+
 
 class cmdClient(discord.Client):
     prefix: str | None
 
     baseModule: ClassVar[type[Module]] = Module
-    default_module: ClassVar[Module | None] = None
+    default_module: ClassVar[Module | None]
     # List of loaded modules
-    modules: list[Module] = []
+    modules: ClassVar[list[Module]] = []
     # Command name cache, including aliases
-    cmd_names: dict[str, Command] = {}
+    cmd_names: ClassVar[dict[str, Command]] = {}
 
     def __init__(
         self,
@@ -44,10 +49,12 @@ class cmdClient(discord.Client):
         self.prefix = prefix
         self.owners = owners or []
         self.objects = {}
+        self.app_info: dict = {}
         self.baseContext: type[Context] = Context
         self.ctx_cache: LRUCache = ctx_cache or LRUCache(1000)
         self.active_contexts: dict[int, Context] = {}
         self.extra_message_parsers = []
+        self.background_tasks: set = set()
 
     @property
     def cmds(self) -> list[Command]:
@@ -88,7 +95,7 @@ class cmdClient(discord.Client):
                         cmds[alias] = cmd
         cls.cmd_names = cmds
 
-    async def valid_prefixes(self, message: discord.Message) -> tuple[str, ...]:
+    async def valid_prefixes(self, message: Message) -> tuple[str, ...]:
         if self.prefix:
             return (self.prefix,)
         log("No prefix set and no prefix function implemented.", level=logging.ERROR)
@@ -132,14 +139,14 @@ class cmdClient(discord.Client):
         """
         log(f"Ignoring exception in {event_method}\n{traceback.format_exc()}", level=logging.ERROR)
 
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message(self, message: Message) -> None:
         """
         Event handler for `message`.
         Intended to be overridden.
         """
         await self.parse_message(message)
 
-    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
+    async def on_message_edit(self, before: Message, after: Message) -> None:
         if before.content != after.content:
             if after.id in self.ctx_cache:
                 flatctx: FlatContext = self.ctx_cache[after.id]
@@ -147,13 +154,14 @@ class cmdClient(discord.Client):
                 if flatctx.cleanup_on_edit:
                     if after.id in self.active_contexts and self.active_contexts[after.id].tasks:
                         ctx = self.active_contexts[after.id]
-                        [task.cancel() for task in ctx.tasks]
+                        for task in ctx.tasks:
+                            task.cancel()
 
-                        while after.id in self.active_contexts:
-                            await asyncio.sleep(0.1)
-                        asyncio.ensure_future(self.active_command_response_cleaner(ctx))
+                        await asyncio.gather(*ctx.tasks, return_exceptions=True)
+                        cleanup_task = asyncio.ensure_future(self.active_command_response_cleaner(ctx))
+                        ctx.tasks.append(cleanup_task)
                     else:
-                        asyncio.ensure_future(self.flat_command_response_cleaner(flatctx))
+                        cleanup_task = asyncio.ensure_future(self.flat_command_response_cleaner(flatctx))
 
                 if flatctx.reparse_on_edit:
                     await self.parse_message(after)
@@ -166,7 +174,7 @@ class cmdClient(discord.Client):
             for msgid in flatctx.sent_messages:
                 with suppress(Exception):
                     msg = await ch.fetch_message(msgid)
-                    asyncio.ensure_future(msg.delete())
+                    await msg.delete()
 
     async def active_command_response_cleaner(self, ctx: Context):
         with suppress(discord.NotFound):
@@ -200,15 +208,17 @@ class cmdClient(discord.Client):
 
         # Run the extra message parsers
         for parser in self.extra_message_parsers:
-            asyncio.ensure_future(parser[0](self, message), loop=self.loop)
+            task = asyncio.ensure_future(parser[0](self, message), loop=self.loop)
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
 
-    async def run_cmd(self, message: discord.Message, cmdname: str, arg_str: str, prefix: str):
+    async def run_cmd(self, message: Message, cmdname: str, arg_str: str, prefix: str):
         """
         Run a command and pass it the command message and the arg_str.
 
         Parameters
         ----------
-        message: discord.Message
+        message: Message
             The original command message.
         cmdname: str
             The name of the command to execute.
@@ -222,7 +232,7 @@ class cmdClient(discord.Client):
         content: str = "\n".join("\t" + line for line in message.content.splitlines())
 
         log(
-            f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == 871997060239466496 else message.channel} ({'' if message.channel.id == 871997060239466496 else message.channel.id})\ngid: {message.guild or ''} ({message.guild.id if message.guild else ''})\n\n{content}",
+            f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == LUATEXIT_ID else message.channel} ({'' if message.channel.id == LUATEXIT_ID else message.channel.id})\ngid: {message.guild or ''} ({message.guild.id if message.guild else ''})\n\n{content}",
             context=f"mid:{message.id}",
         )
 
@@ -230,10 +240,9 @@ class cmdClient(discord.Client):
             log("s     skip", context=f"mid:{message.id}")
             self.update_cmdnames()
 
-        if not cmd.module.ready:
+        if not cmd.module.ready.is_set():
             log(f"w     |-- waiting {cmd.module.name}", context=f"mid:{message.id}")
-            while not cmd.module.ready:
-                await asyncio.sleep(1)
+            await cmd.module.ready.wait()
 
         # Build the context
         ctx: Context = self.baseContext(
@@ -288,7 +297,7 @@ class cmdClient(discord.Client):
 
         Parameters
         ----------
-        func: Function(Client, discord.Message)
+        func: Function(Client, Message)
             Function taking the client and the discord message to process.
         priority: int
             Priority indiciating which order the parsers should be run.
@@ -362,7 +371,9 @@ class cmdClient(discord.Client):
         after_handler = "after_" + event
         if hasattr(self, after_handler):
             for handler in getattr(self, after_handler):
-                asyncio.ensure_future(handler[0](self, *args, **kwargs), loop=self.loop)
+                task = asyncio.ensure_future(handler[0](self, *args, **kwargs), loop=self.loop)
+                self.background_tasks.add(task)
+                task.add_done_callback(self.background_tasks.discard)
 
 
 cmd = cmdClient.cmd

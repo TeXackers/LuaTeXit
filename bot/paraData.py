@@ -16,7 +16,7 @@ REQUIRED_DATA_VERSION = 3
 # Version table and checker
 # ------------------------------
 raw_insert_line: str = (
-    f"INSERT INTO VERSION (version, updated_by) VALUES ({REQUIRED_DATA_VERSION}, 'Initial Creation');"
+    f"INSERT INTO VERSION (version, updated_by) VALUES ({REQUIRED_DATA_VERSION}, 'Initial Creation');"  # noqa
 )
 
 version_schema = tableSchema(

@@ -1,16 +1,19 @@
+from typing import ClassVar
+
 from cmdClient import cmdClient  # noqa
-from modules.Tex.core.tex_utils import AutoTexLevel, TexNameStyle  # noqa
+
+from modules.Tex.core.tex_utils import AutoTexLevel, TexNameStyle
 from modules.Tex.module import latex_module as module
 
 from . import (
     LatexUserSetting,
-    user_data,  # noqa
+    user_data,
 )
 
 
 class LatexUser:
     # User configuration settings
-    settings = {
+    settings: ClassVar[dict] = {
         "autotex": LatexUserSetting.autotex,
         "keepsourcefor": LatexUserSetting.keepsourcefor,
         "colour": LatexUserSetting.colour,
@@ -23,7 +26,7 @@ class LatexUser:
     __slots__ = (*settings.keys(), "id", "preamble")
 
     # Stored client for accessing data interfaces
-    _client = None
+    _client: ClassVar[None | cmdClient] = None
 
     def __init__(self, uid):
         self.id = uid

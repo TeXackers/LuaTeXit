@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from settings import Boolean, ChannelList, ColumnData, GuildSetting, IntegerEnum, ListData
 from wards import guild_manager
 
@@ -22,9 +24,10 @@ class autotex(ColumnData, Boolean, GuildSetting):
         "Affected by the other LaTeX guild settings, and personal configuration."
     )
 
-    _outputs = {True: "Enabled", False: "Disabled"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "Enabled", False: "Disabled"}
 
-    _default = LatexGuild.defaults["autotex"]
+    autotex_default = LatexGuild.defaults["autotex"]
+    default_setting = autotex_default
 
     _table_interface_name = "guild_latex_config"
     _data_column = "autotex"
@@ -50,9 +53,10 @@ class only_render_codeblocks(ColumnData, Boolean, GuildSetting):
 
     long_desc = "Whether automatic LaTeX recognition will only read and render codeblocks."
 
-    _outputs = {True: "True", False: "False"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "True", False: "False"}
 
-    _default = LatexGuild.defaults["require_codeblocks"]
+    only_render_codeblocks_default = LatexGuild.defaults["require_codeblocks"]
+    default_setting = only_render_codeblocks_default
 
     _table_interface_name = "guild_latex_config"
     _data_column = "require_codeblocks"
@@ -79,7 +83,8 @@ class latex_level(ColumnData, IntegerEnum, GuildSetting):
 
     long_desc = "Sets how strict the parser is when detecting LaTeX."
 
-    _default = LatexGuild.defaults["autotex_level"]
+    autotex_level_default = LatexGuild.defaults["autotex_level"]
+    default_setting = autotex_level_default
     _enum = AutoTexLevel
 
     _table_interface_name = "guild_latex_config"

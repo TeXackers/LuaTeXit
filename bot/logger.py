@@ -19,6 +19,13 @@ logger.setLevel(logging.INFO)
 _client = None
 
 
+def _level_name(level):
+    for name, value in logging.getLevelNamesMapping().items():
+        if value == level:
+            return name
+    return str(level)
+
+
 # Define the context log format and attach it to the command logger as well
 @cmd_log_handler
 def log(message, context="GLOBAL", level=logging.INFO, post=True):
@@ -27,7 +34,8 @@ def log(message, context="GLOBAL", level=logging.INFO, post=True):
 
     # Fire and forget to the channel logger, if it is set up
     if post and _client is not None:
-        asyncio.ensure_future(live_log(message, context, level))
+        task = asyncio.ensure_future(live_log(message, context, level))
+        task.add_done_callback(lambda t: t.exception() or None)
 
 
 # Live logger that posts to the logging channels
@@ -36,7 +44,7 @@ async def live_log(message, context, level):
         log_chid = _client.conf.get("log_channel")
 
         # Generate the log messages
-        header = f"[{logging.getLevelName(level)}][Shard {_client.shard_id}][{str(context)}]"
+        header = f"[{_level_name(level)}][Shard {_client.shard_id}][{context!s}]"
         blocks = split_text(message, blocksize=1900, code=False) if len(message) > 1900 else [message]
 
         if len(blocks) > 1:

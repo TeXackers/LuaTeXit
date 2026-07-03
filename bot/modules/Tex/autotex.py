@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import traceback
 
@@ -13,6 +12,8 @@ from .core.LatexUser import LatexUser
 from .core.tex_utils import AutoTexLevel, ParseMode
 from .module import latex_module as module
 
+LUATEXIT_ID = 871978350393065572
+
 
 async def latex_message_parser(client: cmdClient, message: Message):
     """
@@ -24,8 +25,7 @@ async def latex_message_parser(client: cmdClient, message: Message):
         return
 
     # Wait until module is ready
-    while not module.ready:
-        await asyncio.sleep(1)
+    await module.ready.wait()
 
     # Make sure there's content
     if not message.content:
@@ -83,19 +83,17 @@ async def latex_message_parser(client: cmdClient, message: Message):
 
     # We have a valid piece of LaTeX, and we are listening for it. We may now compile.
 
+    # for logging purposes, we can do some preprocessing of the source to make it more readable
+    if level == AutoTexLevel.CODEBLOCK:
+        chopped_src = source.replace("```tex\n", "").replace("```latex\n", "").replace("```", "")
+        # also remove final triple backticks if they exist
+        chopped_src = chopped_src.rstrip("`")
+    else:
+        chopped_src = None
+
     # Log the message
     log(
-        (
-            "Automatically rendering LaTeX "
-            "from user '{message.author}' (uid:{message.author.id}) "
-            "in guild '{message.guild}' (gid:{guildid}) "
-            "in channel '{message.channel}' (cid:{message.channel.id}).\n"
-            "{content}"
-        ).format(
-            message=message,
-            guildid=message.guild.id if message.guild else None,
-            content="\n".join("\t" + line for line in message.content.splitlines()),
-        ),
+        f"[ LaTeX ]\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == LUATEXIT_ID else message.channel} ({'' if message.channel.id == LUATEXIT_ID else message.channel.id})\ngid: {message.guild or ''} ({message.guild.id if message.guild else ''})```\nCode:\n```tex\n{chopped_src or source}",
         context=f"mid:{message.id}",
     )
 
@@ -128,7 +126,6 @@ async def latex_message_parser(client: cmdClient, message: Message):
             context=f"mid:{message.id}",
             level=logging.WARNING,
         )
-        pass
     except Exception as e:
         full_traceback = traceback.format_exc()
         log(

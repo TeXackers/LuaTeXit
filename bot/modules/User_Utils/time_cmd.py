@@ -5,10 +5,7 @@ from datetime import datetime
 import discord
 from cmdClient import Context  # noqa
 from pytz import all_timezones, timezone
-from utils import interactive, seekers  # noqa
-from utils.lib import paginate_list
 
-from . import time_data as tdata  # noqa
 from .countrymap import countries
 from .module import utils_module as module
 
@@ -30,11 +27,11 @@ time_quotes: list[str] = [
     '"Time brings all things to pass." -- Aeschylus',
     '"Time is a storm in which we are all lost." -- William Carlos Williams',
     '"The trouble is, you think you have time." -- Jack Kornfield',
-    '"The only reason for time is so that everything doesn’t happen at once." -- Albert Einstein',
+    '"The only reason for time is so that everything doesn\'t happen at once." -- Albert Einstein',
     '"Who controls the past, controls the future: who controls the present controls the past." -- George Orwell',
     '"They always say time changes things, but you actually have to change them yourself." -- Andy Warhol',
-    '"There’s never enough time to do all the nothing you want." -- Bill Watterson',
-    '"It’s not that we have little time, but more that we waste a good deal of it." -- Seneca',
+    '"There\'s never enough time to do all the nothing you want." -- Bill Watterson',
+    '"It\'s not that we have little time, but more that we waste a good deal of it." -- Seneca',
 ]
 
 # Generate list of countries per continent and the continent name list
@@ -48,7 +45,7 @@ continents: list[dict] = [{"name": name, "countries": countries} for name, count
 cont_names: list[str] = [c["name"] for c in continents]
 
 
-def get_time(tz: str) -> type[datetime]:
+def get_time(tz: str) -> datetime:
     """
     Get a datetime object representing the current time in the given timezone.
     """
@@ -59,17 +56,18 @@ def gen_tz_strings(tzlist: list[str]) -> list[str]:
     """
     Generates blocks of timezone (time) pairs with nice spacing, ready for use in a pager.
     """
-    tzlist = [(tz, get_time(tz).strftime("%I:%M %p")) for tz in tzlist]
-    tz_blocks = [tzlist[i : i + 20] for i in range(0, len(tzlist), 20)]
-    max_block_lens = [len(max(list(zip(*tz_block, strict=True))[0], key=len)) for tz_block in tz_blocks]
-    block_strs = [
-        ["{0[0]:^{max_len}} {0[1]:^10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock]
+    formatted_tzlist: list[tuple[str, str]] = [(tz, get_time(tz).strftime("%H:%M")) for tz in tzlist]
+    tz_blocks: list[list[tuple[str, str]]] = [formatted_tzlist[i : i + 20] for i in range(0, len(formatted_tzlist), 20)]
+    max_block_lens: list[int] = [len(max(next(zip(*tz_block, strict=True)), key=len)) for tz_block in tz_blocks]
+    # find the longest string in each block, and use that to format the output nicely
+    block_strs: list[list[str]] = [
+        ["{0[0]:<{max_len}} {0[1]:<10}".format(tzpair, max_len=max_block_lens[i]) for tzpair in tzblock]
         for i, tzblock in enumerate(tz_blocks)
     ]
     return list(itertools.chain(*block_strs))
 
 
-async def tz_lookup(ctx: Context, search_str: str) -> str:
+async def tz_lookup(ctx: Context, search_str: str) -> str | None:
     """
     Intelligently Lookup a timezone from a given partial or full string.
     """
@@ -113,7 +111,7 @@ async def tz_lookup(ctx: Context, search_str: str) -> str:
             gen_tz_strings(options),
             allow_single=False,
         )
-        return options[tzid] if tzid is not None else None
+        return options[tzid] or None
     # Nope, we tried our best but couldn't find any matches
     return await ctx.error_reply("No matching timezones were found!")
 
@@ -180,7 +178,7 @@ async def time_diff(ctx, tz, auth_tz, brief=False):
     flags=["set", "at", "list", "brief", "24h", "reset"],
     aliases=["ti"],
 )
-async def cmd_time(ctx, flags):
+async def cmd_time(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}time [user]
@@ -224,7 +222,7 @@ async def cmd_time(ctx, flags):
             # We have a timezone, display the success message, current time, and a warning about Etc if needed.
             user_time = get_timestr(tz, brief=brief)
             msg = f"Your timezone has been set to `{tz}`!\nYour current time is {user_time}."
-            if ctx.args and (tz.startswith("Etc/GMT+") or tz.startswith("Etc/GMT-")):
+            if ctx.args and tz.startswith(("Etc/GMT+", "Etc/GMT-")):
                 other_tz = tz.replace("+", "-").replace("-", "+")
                 other_time = get_timestr(other_tz, brief=brief)
                 proper_time = other_tz[4:]
@@ -283,7 +281,14 @@ async def cmd_time(ctx, flags):
                 msg = "The time in `{}` is {}{}".format(tz, timestr, tdiffstr or ".")
                 await ctx.reply(msg)
     elif flags["list"]:
-        await ctx.offer_delete(await ctx.pager(paginate_list(gen_tz_strings(all_timezones), title="Timezone list")))
+        tzl: list[tuple[str, str]] = [(tz, get_time(tz).strftime("%H:%M")) for tz in all_timezones]
+        max_len = len(max(next(zip(*tzl, strict=True)), key=len))
+        await ctx.pager_v2(
+            "\n".join([f"{tz:<{max_len}} | {time}" for tz, time in tzl]),
+            title="Timezone list",
+            code=True,
+            maxheight=30,
+        )
     elif flags["brief"]:
         brief = 1 - brief
         time_data.upsert(constraint="userid", userid=ctx.author.id, brief_display=bool(brief))
@@ -309,9 +314,11 @@ async def cmd_time(ctx, flags):
                 user = await ctx.find_member(str(ctx.msg.reference.resolved.author.id))
                 if not user:
                     return
+            else:
+                return
         else:
             user = (await ctx.find_member(ctx.args, interactive=True)) if ctx.args else ctx.author
-        if user is None:
+        if not user:
             # Failed to find the target user
             # find_member already complained, so just return
             return

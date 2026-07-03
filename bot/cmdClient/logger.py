@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable  # noqa
+from collections.abc import Callable
 
 logger = logging.getLogger()
 

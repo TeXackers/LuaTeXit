@@ -3,9 +3,8 @@ ABC and data definitions for manual moderation tickets.
 """
 
 import datetime
-from collections.abc import Mapping  # noqa
 from contextlib import suppress
-from typing import Any, TypeVar
+from typing import Any, TypeVar, ClassVar, Mapping
 
 import discord
 from cmdClient.cmdClient import cmdClient  # noqa
@@ -63,26 +62,26 @@ class Ticket:
     """
 
     __slots__ = (
-        "guildid",
-        "modid",
         "agentid",
-        "memberids",
-        "ticketid",
-        "ticketgid",
-        "created_at",
         "app",
-        "msgid",
         "auditid",
+        "created_at",
+        "guildid",
+        "memberids",
+        "modid",
+        "msgid",
         "reason",
+        "ticketgid",
+        "ticketid",
     )
-    _client: cmdClient = None  # Client, attached at initialisation
+    _client: ClassVar[cmdClient | None] = None  # Client, attached at initialisation
 
     # Data interfaces
-    _ticket_data: tableInterface = None  # Ticket properties, interface for the raw ticket table
-    _member_data: tableInterface = None  # Ticket members, interface for the ticket member table
+    _ticket_data: ClassVar[tableInterface | None] = None  # Ticket properties, interface for the raw ticket table
+    _member_data: ClassVar[tableInterface | None] = None  # Ticket members, interface for the ticket member table
 
     # Ticket properties with extra properties joined or derived from all ticket types
-    _combined_ticket_data: tableInterface = None
+    _combined_ticket_data: ClassVar[tableInterface | None] = None
 
     # Type of ticket the class represents
     _ticket_type = None
@@ -196,7 +195,7 @@ class Ticket:
             agentid=agentid,
             auditid=auditid,
             reason=reason,
-            created_at=int(datetime.datetime.now(datetime.UTC).timestamp()),
+            created_at=int(discord.utils.utcnow().timestamp()),
         )
 
         # Retrieve the ticket id

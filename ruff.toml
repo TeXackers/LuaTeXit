@@ -5,7 +5,11 @@ exclude = [
     "bot/main.py", # order-sensitive
     "bot/modules/Tex/__init__.py", # order-sensitive
     "bot/modules/Tex/core/__init__.py", # order-sensitive
-    "bot/modules/Guild_Moderation/old/**",
+    # low-priority
+    "bot/modules/Guild_Moderation/**",
+    "bot/modules/Guild_Utils/**",
+    "bot/modules/Guild_Admin/**",
+    "bot/modules/Guild_Logging/**",
     "bot/registry/**/*",
     "bot/utils/old/**",
     "data/migration/**",
@@ -21,23 +25,44 @@ future-annotations = true
 # https://docs.astral.sh/ruff/rules/
 extend-select = [
     "A",        # var names masking builtins
-    "B",        # bugbear
-    "I",        # import sorting
-    "UP",       # warnings wrt newer Python versions
+    "ASYNC",    # async practices
+    "B",        # flake8-bugbear
     "C4",       # comprehensions, dict, list, etc
-    "COM",      # commas
+    # "C90",      # mccabe complexity
+    "COM",      # flake8-commas
+    "DTZ",      # datetime practices
+    "E",        # pycodestyle (Error)
     "FA",       # future annotations
-    "ISC",      # string concatenation
-    "ICN",      # import conventions
-    "RET",      # return practices
-    "SIM",      # simplification rules
-    "TID",      # import practices
-    "TC",       # enforce importing types in a TYPE_CHECKING block
-    "PTH",      # pathlib in lieu of os.path
+    "FLY",      # flynt
     "FURB",     # idiomatic patterns
+    "I",        # isort
+    "ICN",      # import conventions
+    "INT",      # flake8-gettext
+    "ISC",      # string concatenation
+    "PERF",     # perflint
+    "PIE",      # flake8-pie
+    "PLC",      # pylint-convention
+    "PLE",      # pylint-error
+    "PTH",      # flake8-use-pathlib
+    "RET",      # return practices
+    "RSE",      # flake8-raise
+    "RUF",      # Ruff-specific rules
+    "S",        # bandit
+    "SIM",      # flake8-simplify
+    "SLF",      # flake8-self
+    "T20",      # flake8-print
+    "TC",       # flake8-type-checking
+    "TID",      # flake8-tidy-imports
+    "UP",       # pyupgrade
+    "YTT",      # sys version
 ]
 
 ignore = [
-    "TC003",
-    "TC004",
+    "S311",
+    "E501",
+    "SLF001", # private
+    "RUF001",
+    "TC003", # put in TYPE_CHECKING block
+    "TC004", # take it out of the TYPE_CHECKING block
+    "COM812", # trailing comma in function call
 ]

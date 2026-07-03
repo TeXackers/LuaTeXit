@@ -65,7 +65,7 @@ async def mute(ctx, user, **kwargs):
         unmute_event = ModEvent(ctx, "unmute", ctx.author, [user], "Scheduled Unmute after " + ctx.strfdelta(dur))
         embed = await unmute_event.embedify()
 
-        now = datetime.datetime.now(datetime.UTC).timestamp()
+        now = discord.utils.utcnow().timestamp()
         to_store = (user.id, now + dur.total_seconds(), embed.to_dict())
         scheduled_unmutes = (await ctx.data.servers_long.get(ctx.server.id, "unmutes")) or []
         scheduled_unmutes.append(to_store)
@@ -214,7 +214,7 @@ async def register_scheduled_unmutes(bot):
                     member = server.get_member(uid)
                     if not member:
                         continue
-                    dur = ts - datetime.datetime.now(datetime.UTC).timestamp()
+                    dur = ts - discord.utils.utcnow().timestamp()
                     dur = dur if dur > 0 else 1
                     embed = discord.Embed.from_data(embed_dict)
                     scheduled += 1

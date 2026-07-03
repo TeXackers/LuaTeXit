@@ -4,14 +4,14 @@ from discord import PartialEmoji
 
 
 class configEmoji(PartialEmoji):
-    __slots__ = PartialEmoji.__slots__ + ("fallback",)
+    __slots__ = (*PartialEmoji.__slots__, "fallback")
 
     def __init__(self, *args, fallback=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fallback = fallback
 
     @classmethod
-    def from_str(cls: type[configEmoji], emojistr: str) -> type[configEmoji]:
+    def from_str(cls, emojistr: str) -> configEmoji:
         """
         Parses emoji strings of one of the following forms
             `<a:name:id> or fallback`

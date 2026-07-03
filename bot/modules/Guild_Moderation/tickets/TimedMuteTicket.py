@@ -9,7 +9,7 @@ from . import (
     Ticket,
     TicketType,
     describes_ticket,
-    ticket_data,  # noqa
+    ticket_data,
 )
 
 

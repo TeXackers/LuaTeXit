@@ -1,10 +1,9 @@
-from enum import Enum  # noqa
-from typing import Any
+from enum import Enum
+from typing import Any, ClassVar
 
 import discord
 from cmdClient import Context, cmdClient  # noqa
 from cmdClient.lib import SafeCancellation
-from utils import seekers  # noqa
 
 from settings.GuildSetting import GuildSetting  # noqa
 
@@ -25,7 +24,7 @@ class SettingType:
     with the provided methods implementing converter methods for the setting.
     """
 
-    accepts: str | None = None  # User readable description of the acceptable values
+    accepts: ClassVar[str | None] = None  # User readable description of the acceptable values
 
     # Raw converters
     @classmethod
@@ -72,11 +71,11 @@ class Boolean(SettingType):
     accepts = "Yes/No, On/Off, True/False, Enabled/Disabled"
 
     # Values that are accepted as truthy and falsey by the parser
-    _truthy = {"yes", "true", "on", "enable", "enabled"}
-    _falsey = {"no", "false", "off", "disable", "disabled"}
+    _truthy: ClassVar[frozenset[str]] = frozenset({"yes", "true", "on", "enable", "enabled"})
+    _falsey: ClassVar[frozenset[str]] = frozenset({"no", "false", "off", "disable", "disabled"})
 
     # The user-friendly output strings to use for each value
-    _outputs = {True: "On", False: "Off"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "On", False: "Off"}
 
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: bool | None, **kwargs):
@@ -520,10 +519,10 @@ class Emoji(SettingType):
             if len(splits) == 3:
                 animated, name, eid = splits
                 animated = bool(animated)
-                return discord.PartialEmoji(name, animated=animated, id=int(eid))
+                return discord.PartialEmoji(name=name, animated=animated, id=int(eid))
         else:
             # TODO: Check whether this is a valid emoji
-            return discord.PartialEmoji(emojistr)
+            return discord.PartialEmoji(name=emojistr)
         return None
 
     @classmethod
@@ -621,9 +620,7 @@ class SettingList(SettingType):
         """
         if userstr.lower() in ("0", "none"):
             return []
-        data = []
-        for item in userstr.split(","):
-            data.append(await cls._setting._parse_userstr(ctx, guildid, item.strip()))
+        data = [await cls._setting._parse_userstr(ctx, guildid, item.strip()) for item in userstr.split(",")]
 
         if cls._force_unique:
             data = list(set(data))

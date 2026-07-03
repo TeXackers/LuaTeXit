@@ -1,4 +1,5 @@
 from .Bot_Admin import *
+from .Custom import *
 from .Fun import *
 from .Github import *
 from .Guild_Admin import *

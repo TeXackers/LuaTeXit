@@ -5,7 +5,6 @@ import discord
 from cmdClient.lib import SafeCancellation
 from wards import guild_moderator
 
-from . import mute_config  # noqa
 from .ModAction import ActionState, ModAction
 from .module import guild_moderation_module as module
 from .mute_utils import mute_member, unmute_member
@@ -145,7 +144,7 @@ class TimedMuteAction(_MuteTypeAction):
             # Temporary mute
 
             # Collect mute data
-            unmute_at = int(datetime.datetime.now(datetime.UTC).timestamp() + self.duration)
+            unmute_at = int(discord.utils.utcnow().timestamp() + self.duration)
 
             # Create and post ticket
             ticket = TicketType.TEMPMUTE.Ticket.create(
@@ -244,8 +243,8 @@ async def cmd_mute(ctx, flags):
         This command also requires that the `muterole` is\
             configured at `{prefix}config muterole`.
     Flags::
-        ​r: (reason) Provide a reason for the mute (avoids the reason prompt).
-        ​t: (time) Provide a duration for the mute, e.g. `1h 10m`.
+        \u200br: (reason) Provide a reason for the mute (avoids the reason prompt).
+        \u200bt: (time) Provide a duration for the mute, e.g. `1h 10m`.
     Examples``:
         {prefix}mute {ctx.author} -t 1d
     """
@@ -266,7 +265,7 @@ async def cmd_unmute(ctx, flags):
         This command also requires that the `muterole` is\
             configured at `{prefix}config muterole`.
     Flags::
-        ​r: (reason) Provide a reason for the unmute.
+        \u200br: (reason) Provide a reason for the unmute.
     Examples``:
         {prefix}unmute {ctx.author}
     """

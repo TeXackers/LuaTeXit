@@ -2,7 +2,7 @@ from registry import Column, ColumnType, tableInterface, tableSchema
 
 from .module import utils_module as module
 
-schema: tuple[str, ...] = tableSchema(
+schema = tableSchema(
     "user_time_settings",
     Column("userid", ColumnType.SNOWFLAKE, primary=True, required=True),
     Column("timezone", ColumnType.SHORTSTRING),

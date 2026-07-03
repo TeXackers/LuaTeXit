@@ -1,16 +1,18 @@
+import asyncio
 import random
 import re
-import subprocess as sh
 import urllib.parse
+from asyncio.subprocess import PIPE
 
 import discord
-import iso639
-import requests
+from aiohttp import ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from cmdClient import Context  # noqa
-from constants import LuaTeXitCC
-from utils.lib import prop_tabulate, split_text
+from cmdClient.Format import bf, footnote
+from cmdClient.Layouts import GenericFullEmbed
+from iso639 import Language, LanguageNotFoundError
+from utils.lib import tabulate
 
 from .module import latex_module as module
 
@@ -26,22 +28,23 @@ bend_url: str = "https://cdn.discordapp.com/attachments/1043075521476579398/1043
 thumbnails = [lion_url, bend_url]
 
 
-def soup_site(url: str) -> BeautifulSoup:
-    r = requests.get(url)
-    return BeautifulSoup(r.text, "html.parser")
+async def soup_site(url: str) -> BeautifulSoup:
+    async with ClientSession() as session, session.get(url, timeout=ClientTimeout(total=10)) as r:
+        text = await r.text()
+    return BeautifulSoup(text, "html.parser")
 
 
 line_beginning_re = re.compile(r"^", re.MULTILINE)
 whitespace_re = re.compile(r"[\r\n\s\t ]+")
 
 
-def escape(text):
+def escape(text: str) -> str:
     if not text:
         return ""
     return text.replace("_", r"\_")
 
 
-def chomp(text):
+def chomp(text: str) -> tuple[str, str, str]:
     """
     If the text in an inline tag like b, a, or em contains a leading or trailing
     space, strip the string and return a space as suffix of prefix, if needed.
@@ -58,11 +61,11 @@ class MarkdownConverter:
     def __init__(self):
         self.bullets = "-+*"
 
-    def convert(self, html):
+    def convert(self, html: str) -> str:
         soup = BeautifulSoup(html, "html.parser")
         return self.process_tag(soup)
 
-    def process_tag(self, node):
+    def process_tag(self, node) -> str:
         text = ""
         # markdown headings can't include block elements (elements w/newlines)
 
@@ -80,17 +83,17 @@ class MarkdownConverter:
         return text
 
     @staticmethod
-    def process_text(text):
+    def process_text(text: str) -> str:
         return escape(whitespace_re.sub(" ", text or ""))
 
     @staticmethod
-    def indent(text, level):
+    def indent(text: str, level: int) -> str:
         return line_beginning_re.sub("\t" * level, text) if text else ""
 
     @staticmethod
     def underline(text: str, pad_char: str) -> str:
-        text: str = (text or "").rstrip()
-        return f"{text}\n{pad_char * len(text)}\n\n" if text else ""
+        text_strip: str = (text or "").rstrip()
+        return f"{text_strip}\n{pad_char * len(text_strip)}\n\n" if text_strip else ""
 
     def convert_a(self, el, text: str) -> str:
         prefix, suffix, text = chomp(text)
@@ -105,7 +108,7 @@ class MarkdownConverter:
     def convert_b(self, el, text: str) -> str:
         return self.convert_strong(el, text)
 
-    def convert_span(self, text: str) -> str:
+    def convert_span(self, el, text: str) -> str:
         return f"{text}" if text else ""
 
     def convert_blockquote(self, el, text) -> str:
@@ -114,7 +117,7 @@ class MarkdownConverter:
     def convert_br(self, el, text) -> str:
         return "  \n"
 
-    def convert_em(self, text: str) -> str:
+    def convert_em(self, el, text: str) -> str:
         prefix, suffix, text = chomp(text)
         if not text:
             return ""
@@ -157,17 +160,17 @@ class MarkdownConverter:
             bullet = self.bullets[depth % len(bullets)]
         return f"{bullet} {text or ''}\n"
 
-    def convert_p(self, text: str) -> str:
+    def convert_p(self, el, text: str) -> str:
         return f"{text}" if text else ""
 
-    def convert_strong(self, text: str) -> str:
+    def convert_strong(self, el, text: str) -> str:
         prefix, suffix, text = chomp(text)
         if not text:
             return ""
         return f"{prefix}**{text}**{suffix}"
 
 
-def search_n_parse(soup: BeautifulSoup):
+def search_n_parse(soup: BeautifulSoup) -> tuple[str, str, list[str], list[str]]:
     title = soup.find("h1")
 
     if title and title.contents and "Not Found" in str(title.contents[0]):
@@ -224,15 +227,27 @@ async def cmd_texdoc(ctx: Context):
         {prefix}texdoc <package_name>
     Description:
         Gives a link to the documentation of `package_name` from [texdoc](http://texdoc.net).
-        This does not check whether the page exists.
     Examples``:
         {prefix}texdoc tikz
     """
+    out_msg = await ctx.reply(
+        f"Searching the texdoc database, please wait... {ctx.client.conf.emojis.getemoji('loading')}",
+    )
     if len(ctx.args) > 800:
+        await out_msg.delete()
         return await ctx.error_reply("Given query is too long!")
     if not ctx.args:
+        await out_msg.delete()
         return await ctx.error_reply("Please give me something to search for!")
+    # ping to check if it exists
+    addr: str = texdoc_url.format(urllib.parse.quote_plus(ctx.args))
+    async with ClientSession() as session, session.get(addr, timeout=ClientTimeout(total=10)) as page:
+        status = page.status
+    if status == 404:
+        await out_msg.delete()
+        return await ctx.error_reply(f"I couldn't find `{ctx.args}` in the texdoc database!")
 
+    await out_msg.delete()
     return await ctx.reply(f"Documentation for `{ctx.args}`: {texdoc_url.format(urllib.parse.quote_plus(ctx.args))}")
 
 
@@ -276,7 +291,7 @@ async def cmd_ctan(ctx: Context):
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     out_msg = await ctx.reply(f"Searching the CTAN, please wait... {loading_emoji}")
 
-    soup = soup_site(url)
+    soup: BeautifulSoup = soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
 
     if ctx.alias.lower() == "ctans":
@@ -312,7 +327,7 @@ async def cmd_ctan(ctx: Context):
     if not title:
         return await out_msg.edit(content=f"I couldn't find a package named `{ctx.args}`!")
 
-    table = prop_tabulate(prop_list, value_list) if prop_list else ""
+    table = tabulate(dict(zip(prop_list, value_list, strict=True))) if prop_list else ""
     read_more = f"Read more at [CTAN page]({url}) of the package."
     if len(desc) > 700:
         desc = desc[:700]
@@ -323,17 +338,25 @@ async def cmd_ctan(ctx: Context):
         table = table[:900]
         rightmost_newline = table.rfind("\n")
         table = table[: rightmost_newline + 1]
-    emb_desc = desc + "\n" + table + read_more
-    embed = discord.Embed(
-        title=title,
-        url=url,
-        description=emb_desc,
-        color=discord.Color.from_rgb(66, 66, 133),  # ctan's #424285 color
-    )
-    # randomly choose url from thumbnail list
-    embed.set_thumbnail(url=random.choice(thumbnails))
+    emb_desc = desc + "\n" + table
 
-    return await out_msg.edit(content="", embed=embed)
+    v = GenericFullEmbed(
+        header=title,
+        body=emb_desc,
+        footer=read_more,
+        thumbnail_url=random.choice(thumbnails),
+        accent_colour=discord.Colour.from_rgb(66, 66, 133),
+    )
+
+    # embed = discord.Embed(
+    #     title=title,
+    #     url=url,
+    #     description=emb_desc,
+    #     color=discord.Color.from_rgb(66, 66, 133),  # ctan's #424285 color
+    # )
+    # randomly choose url from thumbnail list
+
+    return await out_msg.edit(content="", view=v)
 
 
 def glyph_or_unicode(arg: str) -> list[str] | None:
@@ -345,7 +368,8 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
     The final output is a string containing a four (preferred) or five-letter unicode hex value.
     Remove any U+ as fontconfig doesn't need it.
     """
-    assert arg is not None, "No argument given."
+    if not arg:
+        raise ValueError("Argument cannot be empty.")
 
     # if space or comma in arg, split it
     if "," in arg:
@@ -380,54 +404,17 @@ def glyph_or_unicode(arg: str) -> list[str] | None:
     return [o for o in output if o is not None]
 
 
-async def fc_pagination(
-    text,
-    basetitle="Font Query",
-    header=None,
-    time=None,
-    colour=LuaTeXitCC["yellow"],
-    flags: dict | None = None,
-):
-    if text:
-        blocks: list[str] = split_text(text, 1000, code=True, syntax="sh")
-    else:
-        blocks: list[None] = [None]
-
-    time = discord.utils.utcnow() if time is None else discord.utils.format_dt(time, "f")
-
-    blocknum = len(blocks)
-
-    if blocknum == 1:
-        block = blocks[0] or None
-        desc = f"{header}\n{block or ''}" if header else block or None
-
-        embed = discord.Embed(title=basetitle, color=colour, timestamp=time, description=desc)
-
-        if flags:
-            for key, value in flags.items():
-                embed.add_field(name=key, value=value, inline=False)
-        return [embed]
-
-    embeds = []
-    for i, block in enumerate(blocks):
-        desc = f"{header}\n{block}" if header else block
-
-        embed = discord.Embed(title=basetitle, color=colour, timestamp=time, description=desc)
-
-        embed.set_footer(text=f"Page {i + 1}/{blocknum}")
-
-        if flags:
-            for key, value in flags.items():
-                embed.add_field(name=key, value=value, inline=False)
-        embeds.append(embed)
-
-    return embeds
-
-
-async def view_embeds(ctx, text, title, start_page=0, **pagination_args):
-    pages = await fc_pagination(text, basetitle=title, **pagination_args)
-
-    return await ctx.pager(pages, start_page=start_page, locked=False)
+def clean_md(text: str) -> str:
+    """
+    Cleans up markdown text by removing unnecessary whitespace and formatting.
+    """
+    if not text:
+        return ""
+    # remove all markdown formatting things, i.e. <>!@#$%^&*()_+-=~`[]{}|;:'",.<>?/
+    text = re.sub(r"[<>!@#$%^&*()_+\-=\~`[\]{}|;:'\",.<>?/]", "", text)
+    # remove all whitespace characters, i.e. \n, \r, \t, space
+    text = re.sub(r"[\n\r\t ]+", " ", text)
+    return text.strip()
 
 
 @module.cmd(
@@ -436,7 +423,7 @@ async def view_embeds(ctx, text, title, start_page=0, **pagination_args):
     aliases=["fc"],
     flags=["char==", "lang==", "name=="],
 )
-async def cmd_findfont(ctx, flags):
+async def cmd_findfont(ctx: Context, flags: dict):
     """
     Usage``:
         {prefix}findfont <feature>
@@ -449,51 +436,62 @@ async def cmd_findfont(ctx, flags):
     """
     fclist_chars: str = ""
     fclist_lang: str = ""
-    params_dict: dict = {}
+    params_dict: dict = {"query": None, "type": None}
+    out_msg = await ctx.reply(f"Searching for fonts, please wait... {ctx.client.conf.emojis.getemoji('loading')}")
 
     if flags["char"]:
-        requested_chars = glyph_or_unicode(flags["char"])
+        requested_chars = glyph_or_unicode(clean_md(flags["char"]))
         if not requested_chars:
+            await out_msg.delete()
             return await ctx.error_reply("Invalid unicode or glyph(s).")
-        if len(requested_chars) == 1:
+        if len(requested_chars) > 1:
+            fclist_chars = ":charset=" + ",".join(requested_chars)
+            params_dict["Characters"] = ", ".join(requested_chars)
+        elif len(requested_chars) == 1:
             fclist_chars = ":charset=" + str(requested_chars[0])
             params_dict["Characters"] = str(requested_chars[0])
         else:
-            fclist_chars = ":charset=" + ",".join(requested_chars)
-            params_dict["Characters"] = ", ".join(requested_chars)
+            await out_msg.delete()
+            ctx.log(f"Requested characters: {requested_chars}", context="findfont")
+            return await ctx.error_reply("Something went wrong while processing the characters.")
+
+        params_dict["query"] = clean_md(flags["char"])
+        params_dict["type"] = "character" if len(requested_chars) == 1 else "characters"
 
     if flags["lang"]:
+        requested_language: Language
         if len(flags["lang"]) > 3:
             try:
-                requested_language = iso639.Language.match(flags["lang"].capitalize())
-            except iso639.LanguageNotFoundError:
+                requested_language = Language.match(clean_md(flags["lang"]).capitalize())
+            except LanguageNotFoundError:
+                await out_msg.delete()
                 return await ctx.error_reply("Invalid language code.")
         else:
             try:
-                requested_language = iso639.Language.match(flags["lang"])
-            except iso639.LanguageNotFoundError:
+                requested_language = Language.match(clean_md(flags["lang"]).lower())
+            except LanguageNotFoundError:
+                await out_msg.delete()
                 return await ctx.error_reply("Invalid language code.")
 
-        params_dict["Languages"] = requested_language.name
+        params_dict["query"] = requested_language.name
+        params_dict["type"] = "language"
 
-        if requested_language.part1:
-            fclist_lang = ":lang=" + requested_language.part1
-        else:
-            fclist_lang = ":lang=" + requested_language.part2t
+        fclist_lang: str = ":lang=" + str(requested_language.part1 or requested_language.part2t)
 
-    fclist_params = "".join([fclist_chars, fclist_lang])
-    findfont_cmd = ["fc-list", fclist_params, ":", "family"]
+    findfont_cmd = ["fc-list", f"{fclist_chars}{fclist_lang}", ":", "family"]
 
-    fc = sh.Popen(findfont_cmd, stdout=sh.PIPE, stderr=sh.PIPE)
-    fc_out, fc_err = fc.communicate()
+    proc = await asyncio.create_subprocess_exec(*findfont_cmd, stdout=PIPE, stderr=PIPE)
+    fc_out, fc_err = await proc.communicate()
 
     # Error out early
     if fc_err:
-        return await ctx.error_reply(f"Error: {fc_err.decode('utf-8')}")
+        await out_msg.delete()
+        return await ctx.error_reply(f"{fc_err.decode('utf-8')}")
 
     fc_out = fc_out.decode("utf-8").split("\n")
 
     if not fc_out:
+        await out_msg.delete()
         return await ctx.error_reply("No fonts found.")
 
     # Remove fonts that start with `.`
@@ -502,17 +500,25 @@ async def cmd_findfont(ctx, flags):
     fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
 
     if flags["name"]:
-        params_dict["Name Query"] = flags["name"]
-        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if flags["name"].lower() in f]
-        fc_out = sorted(set(fc_out))
-    else:
-        fc_out = sorted(set(fc_out_preprocessed))
-        # remove empty strings
-        fc_out = [f for f in fc_out if f]
+        params_dict["query"] = clean_md(flags["name"])
+        params_dict["type"] = "name"
+        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if clean_md(flags["name"]).lower() in f]
+        if not fc_out:
+            await out_msg.delete()
+            return await ctx.error_reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
 
-    return await view_embeds(
-        ctx,
-        "\n".join(fc_out),
-        f"Font Query ({len(fc_out)} result{'' if len(fc_out) == 1 else 's'})",
-        flags=params_dict,
+    fc_out_sorted: list[str] = sorted(set(fc_out_preprocessed))
+    fc_out: list[str] = [f for f in fc_out_sorted if f]
+    footnote_text = (
+        f"searching for {bf(params_dict['query'])} by {bf(params_dict['type'])}"
+        if params_dict["query"] and params_dict["type"]
+        else "Showing all fonts"
     )
+    title_text = (
+        f"Font query ({len(fc_out)} results)\n{footnote(footnote_text)}"
+        if flags
+        else f"Font query ({len(fc_out)} results)"
+    )
+
+    await out_msg.delete()
+    return await ctx.pager_v2(content=fc_out, title=title_text, code=True, maxheight=25)

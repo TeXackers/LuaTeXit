@@ -1,10 +1,8 @@
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
-from utils import interactive, seekers  # noqa
 from wards import in_guild
 
-from . import selfrole_data  # noqa
 from .module import utils_module as module
 
 # Provides giveme

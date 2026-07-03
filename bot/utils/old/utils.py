@@ -244,7 +244,7 @@ def load_into(bot):
 
     @bot.util
     async def from_now(ctx, time_diff):
-        now = datetime.datetime.now(datetime.UTC).timestamp()
+        now = discord.utils.utcnow().timestamp()
         return now + time_diff
 
     @bot.util

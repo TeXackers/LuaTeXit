@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
 import time
 from contextlib import suppress
-from pathlib import Path
+from typing import ClassVar
 
 import discord
+from anyio import Path as AsyncPath
 from cmdClient import Context, cmdClient  # noqa
 from logger import log
 
@@ -30,15 +33,11 @@ class BucketFull(Exception):
     Throw when a requested Bucket is already full
     """
 
-    pass
-
 
 class BucketOverFull(BucketFull):
     """
     Throw when a requested Bucket is overfull
     """
-
-    pass
 
 
 class Bucket:
@@ -82,28 +81,28 @@ class Bucket:
 
 class LatexContext:
     __slots__ = (
-        "ctx",
-        "source",
-        "lguild",
-        "luser",
-        "_force_wide",
-        "wide",
-        "keepsourcefor",
-        "preamble",
-        "_errors",
-        "_source_message",
         "_dm_source",
-        "_header_name",
-        "_spoiler_output",
-        "_output_message",
-        "_source_shown",
+        "_errors",
+        "_force_wide",
         "_header_collapsed",
+        "_header_name",
         "_header_shown",
+        "_last_reaction",
+        "_lifetime_task",
+        "_mask_id",
+        "_output_message",
         "_show_emoji",
         "_source_deletion_task",
-        "_lifetime_task",
-        "_last_reaction",
-        "_mask_id",
+        "_source_message",
+        "_source_shown",
+        "_spoiler_output",
+        "ctx",
+        "keepsourcefor",
+        "lguild",
+        "luser",
+        "preamble",
+        "source",
+        "wide",
     )
 
     # Compiled regex for the `$` latex content checker
@@ -111,22 +110,22 @@ class LatexContext:
     double_dollars_pattern = re.compile(r"\$\$[^$]+\$\$")
 
     # Locks to avoid simultaneous compilation for each user
-    user_locks = {}  # userid: Lock
+    user_locks: ClassVar[dict[int, asyncio.Lock]] = {}  # userid: Lock
 
     # Buckets to ratelimit latex requests
-    user_buckets = {}  # userid: Bucket
+    user_buckets: ClassVar[dict[int, Bucket]] = {}  # userid: Bucket
 
     # Collection of LatexContexts listening for reactions by output message id
-    active_contexts = {}
+    active_contexts: ClassVar[dict[int, LatexContext]] = {}
 
     # Time to stay active for, after the last reaction
     active_lifetime = 300
 
     # Emojis, populated on initialisation
-    emoji_delete = None
-    emoji_show_source = None
-    emoji_show_errors = None
-    emoji_delete_source = None
+    emoji_delete: ClassVar[str | None] = None
+    emoji_show_source: ClassVar[str | None] = None
+    emoji_show_errors: ClassVar[str | None] = None
+    emoji_delete_source: ClassVar[str | None] = None
 
     def __init__(self, ctx: Context, source, lguild=None, luser=None, wide=None, spoiler=False, **kwargs):
         self.ctx = ctx
@@ -150,15 +149,15 @@ class LatexContext:
         self._spoiler_output = spoiler
 
         # Running latex state
-        self._errors = None
-        self._output_message = None
+        self._errors: str | None = None
+        self._output_message: discord.Message | None = None
         self._source_shown = False
-        self._header_collapsed = None
-        self._header_shown = None
-        self._show_emoji = None
-        self._source_deletion_task = None
-        self._lifetime_task = None
-        self._last_reaction = None
+        self._header_collapsed: str | None = None
+        self._header_shown: str | None = None
+        self._show_emoji: str | None = None
+        self._source_deletion_task: asyncio.Task | None = None
+        self._lifetime_task: asyncio.Task | None = None
+        self._last_reaction: float | None = None
 
     # Compute configuration in current context from user, guild, and defaults
     def get_preamble(self):
@@ -323,9 +322,9 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path: Path = Path(f"tex/staging/{luser.id}/{luser.id}.png")
-            exists = bool(file_path.is_file())
-            file_path = Path(failed_image_path) if not exists else file_path
+            file_path_staged: AsyncPath = AsyncPath(f"tex/staging/{luser.id}/{luser.id}.png")
+            exists = await file_path_staged.is_file()
+            file_path = AsyncPath(failed_image_path) if not exists else file_path_staged
 
             # Build the file object for sending, possibly spoilered
             output_file = discord.File(file_path, spoiler=exists and self._spoiler_output)
@@ -850,6 +849,12 @@ class LatexContext:
         """
         ctx = self.ctx
         msg = self._output_message
+        if msg is None:
+            raise RuntimeError("activate_reactions() must run after the output message is sent")
+        if self._show_emoji is None:
+            raise RuntimeError("activate_reactions() must run after compilation has set the show emoji")
+        if self.emoji_delete is None or self.emoji_delete_source is None:
+            raise RuntimeError("emoji_delete/emoji_delete_source must be populated by LatexContext.init() before use")
 
         # Quit early if we can't add reactions, nothing to listen for
         if ctx.guild and not ctx.ch.permissions_for(ctx.guild.me).add_reactions:
@@ -867,8 +872,7 @@ class LatexContext:
                 await msg.add_reaction(self.emoji_delete_source)
 
             # Keep waiting until we have been idle longer than our lifetime
-            while time.time() - self._last_reaction <= self.active_lifetime:
-                await asyncio.sleep(self.active_lifetime // 2)
+            await asyncio.sleep(self.active_lifetime)
 
             # Clear the reactions we added
             if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
@@ -882,7 +886,6 @@ class LatexContext:
                 context=f"mid:{self.ctx.msg.id}",
                 level=logging.DEBUG,
             )
-            pass
         except discord.Forbidden:
             pass
         except discord.NotFound:
@@ -998,16 +1001,17 @@ class LatexContext:
 
 
 async def reaction_listener(client: cmdClient, reaction, user):
+    # Extractions for faster lookups
+    lctx = LatexContext.active_contexts.get(reaction.message.id)
+
     # Ignore reaction if it isn't from an active context
-    if reaction.message.id not in LatexContext.active_contexts:
+    if lctx is None:
         return
 
     # Ignore reaction if it is from me
     if user == client.user:
         return
 
-    # Extractions for faster lookups
-    lctx = LatexContext.active_contexts.get(reaction.message.id)
     luser = lctx.luser
     ctx = lctx.ctx
 
@@ -1027,7 +1031,7 @@ async def reaction_listener(client: cmdClient, reaction, user):
             # Check the user is the author or if they allow other people to view the source
             if user.id == luser.id or reaction.message.channel.permissions_for(user).manage_messages:
                 # Toggle the shown state
-                lctx._source_shown = 1 - lctx._source_shown
+                lctx._source_shown = not lctx._source_shown
 
                 # Update the message
                 await reaction.message.edit(content=lctx.get_header())

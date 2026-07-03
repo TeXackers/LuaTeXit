@@ -42,9 +42,9 @@ def prop_tabulate(prop_list, value_list, indent=True):
     return "".join(
         [
             "`{}{}{}`\t{}{}".format(
-                "​ " * (max_len - len(prop)) if indent else "",
+                "\u200b " * (max_len - len(prop)) if indent else "",
                 prop,
-                ":" if len(prop) else "​ " * 2,
+                ":" if len(prop) else "\u200b " * 2,
                 value_list[i],
                 "" if str(value_list[i]).endswith("```") else "\n",
             )
@@ -183,8 +183,7 @@ def strfdelta(delta, sec=False, minutes=True, short=False):
         reply_msg.append(f"{output[0][0]}{output[0][1]} ")
     if output[0][0] != 0 or output[1][0] != 0 or len(output) == 2:
         reply_msg.append(f"{output[1][0]}{output[1][1]} ")
-    for i in range(2, len(output) - 1):
-        reply_msg.append(f"{output[i][0]}{output[i][1]} ")
+    reply_msg.extend([f"{output[i][0]}{output[i][1]} " for i in range(2, len(output) - 1)])
     if not short and reply_msg:
         reply_msg.append("and ")
     reply_msg.append(f"{output[-1][0]}{output[-1][1]}")

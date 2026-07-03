@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, ClassVar
 
 import discord
 from cmdClient import Context, cmdClient  # noqa
@@ -16,22 +16,22 @@ class GuildSetting:
     the setting in a user-friendly manner for display purposes.
     """
 
-    attr_name: str = None  # Internal name for the setting
+    attr_name: ClassVar[str | None] = None  # Internal name for the setting
     _default: Any = None  # Default data value for the setting.. this may be None if the setting overrides 'default'.
 
     # Read and write checks.
     # These are not guaranteed to be checked internally, and should be handled by the caller
-    read_check: type[Check] = None  # Check that needs to be passed to read the setting
-    write_check: type[Check] = None  # Check that needs to be passed before changing the setting
+    read_check: ClassVar[Check | None] = None  # Check that needs to be passed to read the setting
+    write_check: ClassVar[Check | None] = None  # Check that needs to be passed before changing the setting
 
     # Configuration interface descriptions
-    hidden: bool = False  # Whether this setting should appear in the configuration
-    category: str = None  # The name of the category this setting belongs to
+    hidden: ClassVar[bool] = False  # Whether this setting should appear in the configuration
+    category: ClassVar[str | None] = None  # The name of the category this setting belongs to
 
-    name: str = None  # User readable name of the setting
-    desc: str = None  # User readable brief description of the setting
-    long_desc: str = None  # User readable long description of the setting
-    accepts: str = None  # User readable description of the acceptable values
+    name: ClassVar[str | None] = None  # User readable name of the setting
+    desc: ClassVar[str | None] = None  # User readable brief description of the setting
+    long_desc: ClassVar[str | None] = None  # User readable long description of the setting
+    accepts: ClassVar[str | None] = None  # User readable description of the acceptable values
 
     def __init__(self, client: cmdClient, guildid: int, data: Any, **kwargs):
         self.client = client
@@ -83,6 +83,14 @@ class GuildSetting:
         """
         data = await cls._parse_userstr(ctx, ctx.guild.id, userstr, **kwargs)
         return cls(ctx.client, ctx.guild.id, data, **kwargs)
+
+    @classmethod
+    def set_default(cls, value) -> None:
+        """
+        Override the static default data value for this setting.
+        Intended for apps to configure setting defaults at load time.
+        """
+        cls._default = value
 
     # Main interface
     @property
@@ -199,4 +207,3 @@ class GuildSetting:
         The setting does not run this itself,
         but may assume this has been run before instantiation.
         """
-        pass

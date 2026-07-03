@@ -89,7 +89,7 @@ async def _snip_async(ctx, snip, snipargs):
     exec_string = "async def _temp_exec():\n"
     exec_string += "\n".join(" " * 4 + line for line in snip.split("\n"))
     try:
-        exec(exec_string, env)
+        exec(exec_string, env)  # noqa
         result = (redirected_output.getvalue(), 0)
     except Exception:
         return (str(traceback.format_exc()), 1)

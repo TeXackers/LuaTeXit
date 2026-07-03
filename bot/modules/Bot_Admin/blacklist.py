@@ -1,7 +1,8 @@
 import asyncio
+import logging
 
+from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
-from utils.interactive import pager  # noqa
 from utils.lib import paginate_list
 from wards import is_master
 
@@ -71,7 +72,16 @@ def attach_user_blacklist(client):
 
 @module.launch_task
 async def launch_user_blacklist_monitor(client):
-    asyncio.ensure_future(autorefresher(client))
+    task = asyncio.create_task(autorefresher(client))
+
+    def _log_task_error(t):
+        if t.cancelled():
+            return
+        exc = t.exception()
+        if exc:
+            log(f"User blacklist monitor task exited with exception: {exc}", level=logging.ERROR)
+
+    task.add_done_callback(_log_task_error)
 
 
 schema = tableSchema(

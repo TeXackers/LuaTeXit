@@ -71,7 +71,7 @@ async def approval_queue(ctx: Context):
                 title="Preamble submission!",
                 start_page=-1,
                 author=waiting_list[result],
-                time=datetime.fromtimestamp(judging["submission_time"]),
+                time=datetime.fromtimestamp(float(judging["submission_time"]), tz=datetime.now().astimezone().tzinfo),
                 header=judging["submission_summary"],
             )
             # Give a warning, if required, about not being able to see the user
@@ -128,7 +128,7 @@ async def user_admin(ctx: Context, userid: int):
     except discord.HTTPException:
         user = None
 
-    author = f"{str(user)} ({userid})" if user else str(userid)
+    author = f"{user!s} ({userid})" if user else str(userid)
 
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
@@ -168,22 +168,21 @@ async def user_admin(ctx: Context, userid: int):
             # Grab response content, using the contents of the first attachment if it exists
             if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
                 await ctx.error_reply("User menu cancelled.")
+            elif result_msg.attachments:
+                attachment = result_msg.attachments[0]
+
+                # Check the filesize, over 500KB is not okay
+                if attachment.size >= 500000:
+                    return await ctx.error_reply("Attached file is too large.")
+
+                try:
+                    preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
+                except UnicodeError:
+                    return await ctx.error_reply(
+                        "Couldn't decode the attached file, please ensure it uses the `utf-8` encoding.",
+                    )
             else:
-                if result_msg.attachments:
-                    attachment = result_msg.attachments[0]
-
-                    # Check the filesize, over 500KB is not okay
-                    if attachment.size >= 500000:
-                        return await ctx.error_reply("Attached file is too large.")
-
-                    try:
-                        preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
-                    except UnicodeError:
-                        return await ctx.error_reply(
-                            "Couldn't decode the attached file, please ensure it uses the `utf-8` encoding.",
-                        )
-                else:
-                    preamble = result_msg.content
+                preamble = result_msg.content
 
             # If out of all that we didn't get a preamble, return
             if preamble is None:
@@ -247,7 +246,7 @@ async def user_admin(ctx: Context, userid: int):
                 "Preamble submission!",
                 start_page=-1,
                 author="{} ({})".format(judging["username"], userid),
-                time=datetime.fromtimestamp(judging["submission_time"]),
+                time=datetime.fromtimestamp(judging["submission_time"], tz=discord.utils.utcnow().astimezone().tzinfo),
                 header=judging["submission_summary"],
             )
 
@@ -300,7 +299,7 @@ async def guild_admin(ctx: Context, guildid: int):
     except discord.HTTPException:
         guild = None
 
-    author = f"{str(guild)} ({guildid})" if guild else str(guildid)
+    author = f"{guild!s} ({guildid})" if guild else str(guildid)
 
     # Run the selector and show the menu
     result = await ctx.selector(menu_message, menu_items)
@@ -336,22 +335,21 @@ async def guild_admin(ctx: Context, guildid: int):
             # Grab response content, using the contents of the first attachment if it exists
             if result_msg is None or result_msg.content.lower() in ["c", "cancel"]:
                 await ctx.error_reply("Guild menu cancelled.")
+            elif result_msg.attachments:
+                attachment = result_msg.attachments[0]
+
+                # If the file is over 1MB, it probably isn't a valid preamble.
+                if attachment.size >= 1000000:
+                    return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
+
+                try:
+                    preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
+                except UnicodeError:
+                    return await ctx.error_reply(
+                        "Couldn't decode the attached file, please ensure it uses the `utf-8` codec.",
+                    )
             else:
-                if result_msg.attachments:
-                    attachment = result_msg.attachments[0]
-
-                    # If the file is over 1MB, it probably isn't a valid preamble.
-                    if attachment.size >= 1000000:
-                        return await ctx.error_reply("Attached file is too large to process (over `1MB`).")
-
-                    try:
-                        preamble = str(await attachment.read(), encoding="utf-8", errors="strict")
-                    except UnicodeError:
-                        return await ctx.error_reply(
-                            "Couldn't decode the attached file, please ensure it uses the `utf-8` codec.",
-                        )
-                else:
-                    preamble = result_msg.content
+                preamble = result_msg.content
 
             # If out of all that we didn't get a preamble, return
             if preamble is None:
@@ -394,7 +392,6 @@ async def guild_admin(ctx: Context, guildid: int):
 
 async def general_menu(ctx):
     await ctx.reply("Not implemented yet!")
-    pass
 
 
 @module.cmd(

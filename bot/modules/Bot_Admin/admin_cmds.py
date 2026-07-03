@@ -3,8 +3,6 @@ import inspect
 import aiohttp
 import discord
 from cmdClient import Context  # noqa
-from utils.ctx_addons import format_usage  # noqa
-from utils.interactive import pager  # noqa
 from utils.lib import split_text
 from wards import is_manager, is_master
 
@@ -200,6 +198,5 @@ async def cmd_showcmd(ctx: Context) -> None:
     cmd_func = command.func
     source = inspect.getsource(cmd_func)
     source = source.replace("```", "[codeblock]")
-    blocks = split_text(source, 1800, syntax="python")
 
-    return await ctx.offer_delete(await ctx.pager(blocks, locked=False))
+    return await ctx.pager_v2(source, title=f"Showing source for {ctx.arg_str}", code=True, syntax="python")

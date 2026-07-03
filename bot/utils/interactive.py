@@ -304,13 +304,12 @@ async def _pager(ctx, out_msg, pages, locked, start_page=0):
         # Wait for a valid reaction, break if we time out
         try:
             reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=300)
-        except asyncio.TimeoutError:
-            break
-        except asyncio.CancelledError:
+        except (asyncio.TimeoutError, asyncio.CancelledError):
             break
 
         # Attempt to remove the user's reaction, silently ignore errors
-        asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
+        task = asyncio.ensure_future(_safe_async_future(out_msg.remove_reaction(reaction.emoji, user)))
+        task.add_done_callback(lambda t: ctx.client.background_tasks.discard(t))
 
         # Change the page number
         page += 1 if reaction.emoji == next_emoji else -1
@@ -387,11 +386,9 @@ async def on_input(ctx: Context, msg: str | discord.Message = None, delete_after
 
     # Attempt to delete the prompt and reply messages
     if delete_after:
-        try:
+        with suppress(Exception):
             await offer_msg.delete()
             await result_msg.delete()
-        except Exception:
-            pass
 
     return result
 
@@ -433,12 +430,11 @@ async def ask(ctx, msg, timeout=30, use_msg=None, add_hints=True, del_on_timeout
                 await offer_msg.delete()
         return None
     result = result_msg.content.lower()
-    try:
+    with suppress(Exception):
         if not use_msg:
             await offer_msg.delete()
         await result_msg.delete()
-    except Exception:
-        pass
+
     if result in ["n", "no"]:
         return 0
     return 1

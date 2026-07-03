@@ -4,7 +4,6 @@ import traceback
 from io import StringIO
 
 from cmdClient import Context  # noqa
-from utils.ctx_addons import run_in_shell  # noqa
 from wards import is_master
 
 from .module import bot_admin_module as module
@@ -122,7 +121,7 @@ async def cmd_shell(ctx: Context) -> None:
 async def _eval(ctx: Context):
     output = None
     try:
-        output = eval(ctx.args)
+        output = eval(ctx.args)  # noqa
     except Exception:
         return (str(traceback.format_exc()), 1)
     if asyncio.iscoroutine(output):
@@ -135,7 +134,7 @@ async def _exec(ctx: Context):
     redirected_output = sys.stdout = StringIO()
     result = None
     try:
-        exec(ctx.args)
+        exec(ctx.args)  # noqa
         result = (redirected_output.getvalue(), 0)
     except Exception:
         result = (str(traceback.format_exc()), 1)
@@ -145,7 +144,7 @@ async def _exec(ctx: Context):
 
 
 async def _async(ctx: Context):
-    env = {"ctx": ctx}
+    env: dict[str, object] = {"ctx": ctx}
     env.update(globals())
     old_stdout = sys.stdout
     redirected_output = sys.stdout = StringIO()
@@ -153,7 +152,7 @@ async def _async(ctx: Context):
     exec_string = "async def _temp_exec():\n"
     exec_string += "\n".join(" " * 4 + line for line in ctx.args.split("\n"))
     try:
-        exec(exec_string, env)
+        exec(exec_string, env)  # noqa
         result = (redirected_output.getvalue(), 0)
     except Exception:
         return (str(traceback.format_exc()), 1)

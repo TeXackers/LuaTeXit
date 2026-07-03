@@ -1,5 +1,6 @@
 import asyncio
 import re
+from typing import ClassVar
 
 import discord
 from cmdClient.lib import SafeCancellation
@@ -15,7 +16,7 @@ class HammerAction(ModAction):
     """
 
     Ticket = None
-    required_permissions: discord.Permissions = None
+    required_permissions: ClassVar[discord.Permissions | None] = None
     lack_permissions_resp: str = "You don't have the required permissions to do this!"
 
     def __init__(self, ctx, flags):
@@ -83,7 +84,7 @@ class BanAction(HammerAction):
     resp_reason_cancelled = "Reason prompt cancelled, no members were banned."
     reason_prompt = "Please enter a reason for the ban, or `c` to cancel."
 
-    state_response_map = {
+    state_response_map: ClassVar[dict] = {
         ActionState.INTERNAL_UNKNOWN: "An unknown error occurred!",
         ActionState.SUCCESS: "Banned",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the member to ban them!",
@@ -125,8 +126,8 @@ async def cmd_ban(ctx, flags):
 
         To use this command, you need to be able to ban members manually, or have the configured `modrole`.
     Flags::
-        ​r: (reason) Provide a reason for the ban (avoids the reason prompt).
-        ​p: (purge) Number of days of messages to purge (defaults to 1).
+        \u200br: (reason) Provide a reason for the ban (avoids the reason prompt).
+        \u200bp: (purge) Number of days of messages to purge (defaults to 1).
     """
     await BanAction(ctx, flags).run(days=int(flags["p"]) if isinstance(flags["p"], str) else 1)
 
@@ -138,7 +139,7 @@ class UnbanAction(HammerAction):
     resp_reason_cancelled = "Reason prompt cancelled, no users were unbanned."
     reason_prompt = "Please enter a reason for the unban, or `c` to cancel."
 
-    state_response_map = {
+    state_response_map: ClassVar[dict] = {
         ActionState.INTERNAL_UNKNOWN: "An unknown error occurred!",
         ActionState.SUCCESS: "Unbanned",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the user to unban them!",
@@ -154,7 +155,7 @@ class UnbanAction(HammerAction):
     summary_failure_report = "Failed to unban {count} users."
 
     Ticket = TicketType.UNBAN.Ticket
-    required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
+    required_permissions: ClassVar[discord.Permissions | None] = discord.Permissions(ban_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to unban users here!"
     audit_reason = "Unbanned by {self.mod.id}: {self.short_reason}"
 
@@ -182,7 +183,7 @@ async def cmd_unban(ctx, flags):
 
         To use this command, you need to be able to unban users manually, or have the configured `modrole`.
     Flags::
-        ​r: (reason) Provide a reason for the unban (avoids the reason prompt).
+        \u200br: (reason) Provide a reason for the unban (avoids the reason prompt).
     """
     await UnbanAction(ctx, flags).run()
 
@@ -194,7 +195,7 @@ class KickAction(HammerAction):
     resp_reason_cancelled = "Reason prompt cancelled, no members were kicked."
     reason_prompt = "Please enter a reason for the kick, or `c` to cancel."
 
-    state_response_map = {
+    state_response_map: ClassVar[dict] = {
         ActionState.INTERNAL_UNKNOWN: "An unknown error occurred!",
         ActionState.SUCCESS: "Kicked",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the member to kick them!",
@@ -208,7 +209,7 @@ class KickAction(HammerAction):
     summary_failure_report = "Failed to kick {count} users."
 
     Ticket = TicketType.KICK.Ticket
-    required_permissions: discord.Permissions = discord.Permissions(kick_members=True)
+    required_permissions: ClassVar[discord.Permissions | None] = discord.Permissions(kick_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to kick members here!"
     audit_reason = "Kicked by {self.mod.id}: {self.short_reason}"
 
@@ -236,7 +237,7 @@ async def cmd_kick(ctx, flags):
 
         To use this command, you need to be able to kick users manually, or have the configured `modrole`.
     Flags::
-        ​r: (reason) Provide a reason for the kick (avoids the reason prompt).
+        \u200br: (reason) Provide a reason for the kick (avoids the reason prompt).
     """
     await KickAction(ctx, flags).run()
 
@@ -246,7 +247,7 @@ class PreBanAction(HammerAction):
     resp_reason_cancelled = "Reason prompt cancelled, no users were banned."
     reason_prompt = "Please enter a reason for the preban, or `c` to cancel."
 
-    state_response_map = {
+    state_response_map: ClassVar[dict] = {
         ActionState.INTERNAL_UNKNOWN: "An unknown error occurred!",
         ActionState.SUCCESS: "Prebanned",
         ActionState.MEMBER_NOTFOUND: "Couldn't find the user to preban them!",
@@ -260,7 +261,7 @@ class PreBanAction(HammerAction):
     summary_failure_report = "Failed to preban {count} users."
 
     Ticket = TicketType.PREBAN.Ticket
-    required_permissions: discord.Permissions = discord.Permissions(ban_members=True)
+    required_permissions: ClassVar[discord.Permissions | None] = discord.Permissions(ban_members=True)
     lack_permissions_resp: str = "You don't have the required permissions to ban users here!"
     audit_reason = "Pre-banned by {self.mod.id}: {self.short_reason}"
 
@@ -304,6 +305,6 @@ async def cmd_preban(ctx, flags):
 
         To use this command, you need to be able to ban users manually, or have the configured `modrole`.
     Flags::
-        ​r: (reason) Provide a reason for the preban (avoids the reason prompt).
+        \u200br: (reason) Provide a reason for the preban (avoids the reason prompt).
     """
     await PreBanAction(ctx, flags).run()

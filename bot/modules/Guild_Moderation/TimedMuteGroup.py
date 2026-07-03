@@ -14,7 +14,7 @@ from .tickets import TicketType
 
 
 class TimedMuteGroup:
-    __slots__ = ("ticket", "memberids", "_task", "_cancelled")
+    __slots__ = ("_cancelled", "_task", "memberids", "ticket")
     _client: cmdClient
 
     _member_data: type[tableInterface]
@@ -171,7 +171,7 @@ class TimedMuteGroup:
         """
         try:
             # Sleep for the required time
-            await asyncio.sleep(self.ticket.unmute_timestamp - datetime.datetime.now(datetime.UTC).timestamp())
+            await asyncio.sleep(self.ticket.unmute_timestamp - discord.utils.utcnow().timestamp())
 
             # Execute the unmutes
             await self._unmute_members()

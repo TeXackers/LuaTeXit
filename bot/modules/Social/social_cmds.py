@@ -37,7 +37,7 @@ async def cmd_profile(ctx):
                 badges += str(badge_emoj) + " "
     ctx.authid = tempid
 
-    created_ago = ctx.strfdelta(datetime.datetime.now(datetime.UTC) - user.created_at)
+    created_ago = ctx.strfdelta(discord.utils.utcnow() - user.created_at)
     created = user.created_at.strftime("%I:%M %p, %d/%m/%Y")
     rep = await ctx.data.users.get(user.id, "rep")
     given_rep = await ctx.data.users.get(user.id, "given_rep")
@@ -65,7 +65,7 @@ async def cmd_profile(ctx):
             )
             return
         timestr = "%I:%M %p on %a, %d/%m/%Y"
-        timestr = iso8601.parse_date(datetime.datetime.now(datetime.UTC).isoformat()).astimezone(TZ).strftime(timestr)
+        timestr = iso8601.parse_date(discord.utils.utcnow().isoformat()).astimezone(TZ).strftime(timestr)
         embed.add_field(name="Current Time", value=f"{timestr}", inline=False)
     embed.add_field(name="Created at", value=f"{created} ({created_ago} ago)", inline=False)
     await ctx.reply(embed=embed)
@@ -83,7 +83,7 @@ async def cmd_rep(ctx):
         With stats, shows how many times you have repped and your last rep time.
     """
     cooldown = 24 * 60 * 60
-    now = datetime.datetime.now(datetime.UTC)
+    now = discord.utils.utcnow()
     now_timestamp = int(now.strftime("%s"))
     last_rep = await ctx.data.users.get(ctx.authid, "last_rep_time")
 

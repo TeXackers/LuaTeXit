@@ -1,13 +1,12 @@
-import datetime
 import logging
 from contextlib import suppress
-from logging import log
 
+import discord
 from aiohttp import payload
 from cmdClient.lib import UserCancelled
+from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import BoolData, Boolean, GuildSetting, ListData, RoleList
-from utils.interactive import ask  # noqa
 from wards import guild_admin, guild_manager
 
 from .module import guild_admin_module as module
@@ -103,7 +102,7 @@ async def store_roles(client, member):
     role_list = [role.id for role in member.roles]
 
     # Don't update if the member joined in the last 10 seconds, to allow time for autoroles and role addition
-    if datetime.datetime.now(datetime.UTC).timestamp() - member.joined_at.timestamp() < 10:
+    if discord.utils.utcnow().timestamp() - member.joined_at.timestamp() < 10:
         return
 
     # Delete the stored roles associated to this member
@@ -167,9 +166,9 @@ async def restore_roles(client, member):
                 await member.add_roles(*roles, reason="Restoring member roles (Role persistence)")
             except Exception as e:
                 log(
-                    f"Failed to restore roles for new member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
-                    context="RESTORE_ROLE",
                     level=logging.WARNING,
+                    msg=f"Failed to restore roles for new member '{member}' (uid:{member.id}) in guild '{member.guild.name} (gid:{member.guild.id}). Exception: {e.__repr__()}",
+                    context="RESTORE_ROLE",
                 )
 
 

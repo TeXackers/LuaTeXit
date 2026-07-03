@@ -4,7 +4,6 @@ from contextlib import suppress
 import aiohttp
 import discord
 from cmdClient import Context  # noqa
-from utils import seekers  # noqa
 from utils.lib import prop_tabulate, split_text
 from wards import in_guild
 

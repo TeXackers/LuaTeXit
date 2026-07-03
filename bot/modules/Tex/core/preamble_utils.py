@@ -1,15 +1,17 @@
 import asyncio
 import datetime
 import difflib
+from collections.abc import Awaitable
 from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 
+import anyio
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from constants import LuaTeXitCC
-from utils import interactive  # noqa
+from discord import Colour, Member, User
 from utils.lib import mail, split_text
 from wards import is_reviewer
 
@@ -62,13 +64,13 @@ def tex_pagination(
     Break up source LaTeX code into a number of embedded pages,
     with the code in codeblocks of maximum 1k chars
     """
-    blocks: list[str | None] = split_text(text, 1000, code=True, syntax="latex") if text else [None]
+    blocks = split_text(text, 1000, code=True, syntax="latex") if text else [None]
 
     # Change time to a datetime object if it isn't one
     if time is None:
-        time = datetime.datetime.now(datetime.UTC)
+        time = discord.utils.utcnow()
     elif isinstance(time, (float, int)):
-        time = datetime.datetime.fromtimestamp(time)
+        time = datetime.datetime.fromtimestamp(time, tz=discord.utils.utcnow().astimezone().tzinfo)
 
     blocknum = len(blocks)
 
@@ -113,9 +115,9 @@ async def tex_pagination_diff(
     text_old: str | None,
     tex_new: str,
     basetitle="",
-    header=None,
-    timestamp=True,
-    author=None,
+    header: str | None = None,
+    timestamp: bool = True,
+    author: Member | User | None = None,
     time=None,
     colour=LuaTeXitCC["yellow"],
     extra_fields=None,
@@ -128,8 +130,8 @@ async def tex_pagination_diff(
         # if text_old is None, that means it's the default preamble
         # default preamble is in paradox/bot/modules/Tex/resources/default_preamble.tex
         default_preamble_path: str = str(Path("bot") / "modules" / "Tex" / "resources" / "default_preamble.tex")
-        with Path(default_preamble_path).open() as f:
-            text_old = f.read()
+        async with await anyio.open_file(default_preamble_path) as f:
+            text_old = await f.read()
 
     diff = "\n".join(
         difflib.unified_diff(
@@ -142,13 +144,13 @@ async def tex_pagination_diff(
         ),
     )
 
-    blocks: list[str | None] = split_text(diff, 1000, code=True, syntax="diff") if diff else [None]
+    blocks = split_text(diff, 1000, code=True, syntax="diff") if diff else [None]
 
     # Change time to a datetime object if it isn't one
     if time is None:
-        time = datetime.datetime.now(datetime.UTC)
+        time = discord.utils.utcnow()
     elif isinstance(time, (float, int)):
-        time = datetime.datetime.fromtimestamp(time)
+        time = datetime.datetime.fromtimestamp(time, tz=discord.utils.utcnow().astimezone().tzinfo)
 
     blocknum = len(blocks)
 
@@ -211,7 +213,7 @@ async def sendfile_reaction_handler(ctx: Context, msg, contents, title, file_nam
 
     while True:
         try:
-            reaction, user = await ctx.client.wait_for("reaction_add", check=_check, timeout=300)
+            _, user = await ctx.client.wait_for("reaction_add", check=_check, timeout=300)
         except asyncio.TimeoutError:
             break
 
@@ -242,13 +244,16 @@ async def view_preamble(
     file_react=False,
     file_message=None,
     **pagination_args,
-):
+) -> Awaitable[discord.Message | None]:
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
     if file_react and out_msg is not None:
         # Add the sendfile reaction if required
-        asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
+        task = asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
+        task.cancel()  # Don't wait for it to finish, just let it run in the background
+
+    return out_msg
 
     return out_msg
 
@@ -259,7 +264,7 @@ async def view_preamble_diff(
     preamble_pending: str,
     title: str,
     start_page=0,
-    file_react=False,
+    file_react: bool = False,
     file_message=None,
     **pagination_args,
 ):
@@ -273,11 +278,9 @@ async def confirm(ctx: Context, question: str, preamble: str, **kwargs):
     result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=120)
 
     result = result_msg.content.lower()
-    try:
+    with suppress(Exception):
         await out_msg.delete()
         await result_msg.delete()
-    except Exception:
-        pass
 
     return result not in ["n", "no"]
 
@@ -354,7 +357,6 @@ async def resolve_pending_preamble(ctx, userid, info, colour=None):
     #         msg_embed = discord.Embed.from_data(embed)
     #         msg_embed.colour = colour
     #         await ctx.bot.edit_message(msg, embed=msg_embed)
-    pass
 
 
 async def submit_preamble(ctx: Context, user, submission, info):
@@ -368,7 +370,7 @@ async def submit_preamble(ctx: Context, user, submission, info):
         app=ctx.client.app,
         username=user.name,
         pending_preamble=submission,
-        submission_time=int(datetime.datetime.now(datetime.UTC).timestamp()),
+        submission_time=int(discord.utils.utcnow().timestamp()),
         submission_summary=info,
         submission_source_id=ctx.author.id if not ctx.guild else ctx.guild.id,
         submission_source_name="DM" if not ctx.guild else ctx.guild.name,
@@ -393,7 +395,7 @@ async def submit_preamble(ctx: Context, user, submission, info):
 #     # Send the preamble request to the submission channel
 #     title = "New preamble submission!"
 #     author = "{} ({})".format(user, user.id)
-#     time = datetime.datetime.now(datetime.UTC)
+#     time = discord.utils.utcnow()
 
 #     submission_channel = ctx.bot.objects["latex_preamble_subch"]
 #     sub_msg = await view_preamble(ctx, submission, title, start_page=-1,
@@ -443,18 +445,16 @@ async def judgement_reactions(ctx: Context, userid, msg):
     # Reaction action loop
     while True:
         try:
-            reaction, user = await ctx.client.wait_for("reaction_add", check=_check, timeout=600)
+            reaction, _ = await ctx.client.wait_for("reaction_add", check=_check, timeout=600)
         except asyncio.TimeoutError:
             # If the user still has a pending preamble, continue the loop
             if ctx.client.data.user_pending_preambles.select_where(userid=userid):
                 continue
             # Otherwise, remove the reactions and return
-            try:
+            with suppress(Exception):
                 await msg.remove_reaction(approve, ctx.client.user)
                 await msg.remove_reaction(deny, ctx.client.user)
                 await msg.remove_reaction(test, ctx.client.user)
-            except Exception:
-                pass
             break
 
         # If the user no longer has a pending preamble, let the reviewer know and exit
@@ -482,7 +482,7 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
         \nYour preamble has been modified and may be seen using the `preamble` command.\
         \nShould you wish to revert these changes, please use `preamble --revert`."
     embed = discord.Embed(title="Preamble request approval", description=default_msg)
-    embed.timestamp = datetime.datetime.now(datetime.UTC)
+    embed.timestamp = discord.utils.utcnow()
 
     # If the user no longer has a pending preamble, let the reviewer know and exit
     if not ctx.client.data.user_pending_preambles.select_where(userid=userid):
@@ -606,7 +606,7 @@ async def deny_submission(ctx: Context, userid, manager, reason=None):
         "If you want assistance setting your preamble, please join our [support guild]({})."
     ).format(ctx.client.app_info["support_guild"])
     embed = discord.Embed(title="Preamble request rejection", description=default_msg)
-    embed.timestamp = datetime.datetime.now(datetime.UTC)
+    embed.timestamp = discord.utils.utcnow()
 
     # Check whether this needs editing
     if reason is None:
@@ -698,7 +698,11 @@ async def test_submission(ctx, userid, manager):
             case "pdflatex":
                 log = await ctx.maketex(preamble_test_code, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
+                dfile = (
+                    discord.File(file_path)
+                    if await anyio.Path(file_path).is_file()
+                    else discord.File(failed_image_path)
+                )
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""
@@ -710,7 +714,11 @@ async def test_submission(ctx, userid, manager):
             case "lualatex":
                 log = await ctx.makeluatex(preamble_test_code_luatex, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
+                dfile = (
+                    discord.File(file_path)
+                    if await anyio.Path(file_path).is_file()
+                    else discord.File(failed_image_path)
+                )
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""
@@ -722,7 +730,11 @@ async def test_submission(ctx, userid, manager):
             case "xelatex":
                 log = await ctx.makexetex(preamble_test_code_xetex, testid, preamble=preamble)
 
-                dfile = discord.File(file_path) if Path(file_path).is_file() else discord.File(failed_image_path)
+                dfile = (
+                    discord.File(file_path)
+                    if await anyio.Path(file_path).is_file()
+                    else discord.File(failed_image_path)
+                )
 
                 if not log:
                     message = f"""No errors for {engine} and pending preamble of {userid}"""

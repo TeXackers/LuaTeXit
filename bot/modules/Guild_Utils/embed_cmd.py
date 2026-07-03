@@ -233,7 +233,7 @@ async def field_edit(ctx):
 async def save_and_exit(ctx):
     server_embeds = await ctx.data.servers_long.get(ctx.server.id, "server_embeds")
     server_embeds = server_embeds or {}
-    if "embed_name" in ctx.objs and ctx.objs["embed_name"]:
+    if ctx.objs.get("embed_name"):
         embed_name = ctx.objs["embed_name"]
     else:
         new_msg = "Please enter a short name for this embed, for viewing and editing."

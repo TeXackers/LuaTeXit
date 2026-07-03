@@ -1,7 +1,6 @@
 from typing import Any
 
 from cmdClient import cmdClient  # noqa
-from registry import tableInterface  # noqa
 
 
 class _tableData:

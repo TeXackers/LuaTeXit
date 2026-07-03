@@ -44,4 +44,3 @@ async def cmd_disable(ctx):
     Example:
         {prefix}bancmd secho, echo
     """
-    pass

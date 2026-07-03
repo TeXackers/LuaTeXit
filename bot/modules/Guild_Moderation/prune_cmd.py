@@ -6,7 +6,6 @@ from cmdClient import Context  # noqa
 
 # from datetime import datetime
 from cmdClient.lib import ResponseTimedOut, UserCancelled
-from utils import seekers  # noqa
 from wards import guild_moderator
 
 from .module import guild_moderation_module as module

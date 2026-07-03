@@ -2,6 +2,7 @@ import logging
 import shutil
 from pathlib import Path
 
+from anyio import Path as AsyncPath
 from cmdClient import Context
 from logger import log
 
@@ -157,7 +158,7 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
     shutil.rmtree(path, ignore_errors=True)
 
     # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
+    await AsyncPath(path).mkdir(parents=True, exist_ok=True)
 
     fn: Path = Path(f"{path}/{targetid}.tex")
 
@@ -171,10 +172,12 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
                 source=source,
             ),
         )
-        work.close()
+
+    with Path.open(fn, "w") as work:
+        work.write(content)
 
     # Build compile script
-    script = (f"{pdflatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
+    script = f"{script_path} {targetid} || exit;\ncd {path}\n"
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)

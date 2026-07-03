@@ -1,5 +1,6 @@
 aiohttp>=3.10.11
 aiosignal
+anyio
 attrs
 beautifulsoup4
 cachetools
@@ -12,15 +13,11 @@ idna
 iso8601
 multidict
 pillow
-portalocker
 psutil
 pygithub
-pyparsing
 python-iso639
 pytz
-requests
 soupsieve
-urllib
 urllib3
 yarl
 zombie-imp

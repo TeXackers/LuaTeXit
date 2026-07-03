@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import traceback
-from collections.abc import Callable  # noqa
+from collections.abc import Callable
 
 import discord
 from cmdClient import Context, Module, cmdClient

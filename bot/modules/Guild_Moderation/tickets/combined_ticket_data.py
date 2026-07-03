@@ -2,7 +2,6 @@ from registry import tableInterface
 
 from modules.Guild_Moderation.module import guild_moderation_module as module
 
-from . import FlatTickets, TimedMuteTicket  # noqa
 from .ticket_data import ticket_schema
 
 combined_raw_schema = """\

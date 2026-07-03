@@ -4,11 +4,11 @@ import discord
 from cmdClient import Context
 from cmdClient.lib import InvalidContext, ResponseTimedOut, SafeCancellation, UserCancelled
 
-from . import interactive as _interactive  # noqa
-
 
 @Context.util
-async def find_role(ctx: Context, userstr: str, create=False, interactive=False, collection=None, allow_notfound=True):
+async def find_role(
+    ctx: Context, userstr: str, create=False, interactive=False, collection=None, allow_notfound=True
+) -> discord.Role | None:
     """
     Find a guild role given a partial matching string,
     allowing custom role collections and several behavioural switches.
@@ -79,27 +79,26 @@ async def find_role(ctx: Context, userstr: str, create=False, interactive=False,
     elif len(roles) == 1:
         # Select our lucky winner
         role = roles[0]
+    # We have multiple matching roles!
+    elif interactive:
+        # Interactive prompt with the list of roles, handle `Object`s
+        role_names = [role.name if isinstance(role, discord.Role) else str(role.id) for role in roles]
+
+        try:
+            selected = await ctx.selector(
+                f"`{len(roles)}` roles found matching `{userstr}`!",
+                role_names,
+                timeout=60,
+            )
+        except UserCancelled:
+            raise UserCancelled("User cancelled role selection.") from None
+        except ResponseTimedOut:
+            raise ResponseTimedOut("Role selection timed out.") from None
+
+        role = roles[selected]
     else:
-        # We have multiple matching roles!
-        if interactive:
-            # Interactive prompt with the list of roles, handle `Object`s
-            role_names = [role.name if isinstance(role, discord.Role) else str(role.id) for role in roles]
-
-            try:
-                selected = await ctx.selector(
-                    f"`{len(roles)}` roles found matching `{userstr}`!",
-                    role_names,
-                    timeout=60,
-                )
-            except UserCancelled:
-                raise UserCancelled("User cancelled role selection.") from None
-            except ResponseTimedOut:
-                raise ResponseTimedOut("Role selection timed out.") from None
-
-            role = roles[selected]
-        else:
-            # Just select the first one
-            role = roles[0]
+        # Just select the first one
+        role = roles[0]
 
     # Handle non-existence of the role
     if role is None:
@@ -201,27 +200,26 @@ async def find_channel(ctx: Context, userstr: str, interactive=False, collection
     elif len(channels) == 1:
         # Select our lucky winner
         chan = channels[0]
+    # We have multiple matching channels!
+    elif interactive:
+        # Interactive prompt with the list of channels
+        chan_names = [f"{chan.name:<24} {chan.type!s:<12}" for chan in channels]
+
+        try:
+            selected = await ctx.selector(
+                f"`{len(channels)}` channels found matching `{userstr}`!",
+                chan_names,
+                timeout=60,
+            )
+        except UserCancelled:
+            raise UserCancelled("User cancelled channel selection.") from None
+        except ResponseTimedOut:
+            raise ResponseTimedOut("Channel selection timed out.") from None
+
+        chan = channels[selected]
     else:
-        # We have multiple matching channels!
-        if interactive:
-            # Interactive prompt with the list of channels
-            chan_names = [f"{chan.name:<24} {str(chan.type):<12}" for chan in channels]
-
-            try:
-                selected = await ctx.selector(
-                    f"`{len(channels)}` channels found matching `{userstr}`!",
-                    chan_names,
-                    timeout=60,
-                )
-            except UserCancelled:
-                raise UserCancelled("User cancelled channel selection.") from None
-            except ResponseTimedOut:
-                raise ResponseTimedOut("Channel selection timed out.") from None
-
-            chan = channels[selected]
-        else:
-            # Just select the first one
-            chan = channels[0]
+        # Just select the first one
+        chan = channels[0]
 
     if chan is None:
         await ctx.error_reply(f"Couldn't find a channel matching `{userstr}`!")
@@ -230,7 +228,9 @@ async def find_channel(ctx: Context, userstr: str, interactive=False, collection
 
 
 @Context.util
-async def find_member(ctx: Context, userstr: str, interactive=False, collection=None, silent_notfound=False):
+async def find_member(
+    ctx: Context, userstr: str, interactive=False, collection=None, silent_notfound=False
+) -> discord.Member | None:
     """
     Find a guild member given a partial matching string,
     allowing custom member collections.
@@ -295,33 +295,32 @@ async def find_member(ctx: Context, userstr: str, interactive=False, collection=
     elif len(members) == 1:
         # Select our lucky winner
         member = members[0]
+    # We have multiple matching members!
+    elif interactive:
+        # Interactive prompt with the list of members
+        member_names = [
+            "{} {}".format(
+                member.nick or member,
+                (f"({member})") if member.nick else "",
+            )
+            for member in members
+        ]
+
+        try:
+            selected = await ctx.selector(
+                f"`{len(members)}` members found matching `{userstr}`!",
+                member_names,
+                timeout=60,
+            )
+        except UserCancelled:
+            raise UserCancelled("User cancelled member selection.") from None
+        except ResponseTimedOut:
+            raise ResponseTimedOut("Member selection timed out.") from None
+
+        member = members[selected]
     else:
-        # We have multiple matching members!
-        if interactive:
-            # Interactive prompt with the list of members
-            member_names = [
-                "{} {}".format(
-                    member.nick or (member if members.count(member) > 1 else member),
-                    (f"({member})") if member.nick else "",
-                )
-                for member in members
-            ]
-
-            try:
-                selected = await ctx.selector(
-                    f"`{len(members)}` members found matching `{userstr}`!",
-                    member_names,
-                    timeout=60,
-                )
-            except UserCancelled:
-                raise UserCancelled("User cancelled member selection.") from None
-            except ResponseTimedOut:
-                raise ResponseTimedOut("Member selection timed out.") from None
-
-            member = members[selected]
-        else:
-            # Just select the first one
-            member = members[0]
+        # Just select the first one
+        member = members[0]
 
     if member is None and not silent_notfound:
         await ctx.error_reply(f"Couldn't find a member matching `{userstr}`!")

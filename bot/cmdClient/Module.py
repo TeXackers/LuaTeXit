@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from .cmdClient import cmdClient
     from .Context import Context
 
-from . import cmdClient
 from .Command import Command
 from .logger import log
 
@@ -24,13 +25,15 @@ class Module:
 
         self.cmds: list[Command] = []
         self.initialised: bool = False
-        self.ready: bool = False
+        self.ready: asyncio.Event = asyncio.Event()
         self.enabled: bool = True
 
         self.launch_tasks: list[Callable] = []
         self.init_tasks: list[Callable] = []
 
-        cmdClient.cmdClient.modules.append(self)
+        from .cmdClient import cmdClient  # noqa: PLC0415
+
+        cmdClient.modules.append(self)
 
         log("     module", context=self.name)
 
@@ -46,9 +49,11 @@ class Module:
         cmdClass = cmdClass or self.baseCommand
 
         def decorator(func: Callable) -> Command:
+            from .cmdClient import cmdClient  # noqa: PLC0415
+
             cmd: Command = cmdClass(name, func, self, **kwargs)
             self.cmds.append(cmd)
-            cmdClient.cmdClient.update_cmdnames()
+            cmdClient.update_cmdnames()
             return cmd
 
         return decorator
@@ -76,7 +81,7 @@ class Module:
         log(f"i     |--[init] {func.__name__}", context=self.name)
         return func
 
-    def initialise(self, client: cmdClient.cmdClient) -> None:
+    def initialise(self, client: cmdClient) -> None:
         """
         Initialise hook.
         Executed by `client.initialise_modules`,
@@ -93,20 +98,20 @@ class Module:
         else:
             log("s     |--[skip]", context=self.name)
 
-    async def launch(self, client: cmdClient.cmdClient) -> None:
+    async def launch(self, client: cmdClient) -> None:
         """
         Launch hook.
         Executed in `client.on_ready`.
         Must set `ready` to `True`, otherwise all commands will hang.
         """
-        if not self.ready:
+        if not self.ready.is_set():
             log("launching", context=self.name)
 
             for task in self.launch_tasks:
                 log(f"t     |--[task] {task.__name__}", context=self.name)
                 await task(client)
 
-            self.ready = True
+            self.ready.set()
         else:
             log("s     |--[skip]", context=self.name)
 
@@ -115,14 +120,12 @@ class Module:
         Pre-command hook.
         Executed before a command is run.
         """
-        pass
 
     async def post_command(self, ctx: Context):
         """
         Post-command hook.
         Executed after a command is run without exception.
         """
-        pass
 
     async def on_exception(self, ctx: Context, exception: Exception):
         """
@@ -131,4 +134,3 @@ class Module:
         This is executed before "standard" exceptions are caught.
         """
         raise exception
-        pass

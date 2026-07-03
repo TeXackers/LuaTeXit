@@ -1,10 +1,12 @@
+from typing import ClassVar
+
 import discord
 from cmdClient import Context, cmdClient  # noqa
 from constants import LuaTeXitCC
 from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
 from utils.lib import prop_tabulate
 
-from . import user_data  # noqa
+from . import user_data
 from .tex_utils import AutoTexLevel, TexNameStyle
 
 
@@ -27,16 +29,16 @@ class LatexUserSetting(SettingType):
     """
 
     # The human-readable name of the setting
-    name: str = None
+    name: str | None = None
 
     # The default setting value
     default = None
 
     # The message to send on parsing failure (i.e. BadUserInput)
-    _parsing_failed_response: str = None
+    _parsing_failed_response: str | None = None
 
     # The data column name
-    _data_column: str = None
+    _data_column: str | None = None
 
     # The upsert constraint
     _upsert_constraint = "userid"
@@ -104,10 +106,11 @@ class autotex(LatexUserSetting, Boolean):
     desc = "Whether to automatically compile LaTeX in your messages."
 
     default = False
-    _outputs = {
+    _outputs: ClassVar[dict[bool, str]] = {
         True: "Enabled (may be restricted by guild settings)",
         False: "Disabled (may be overriden by guild settings)",
     }
+
     _parsing_failed_response = "Unknown option `{userstr}`.\nPlease use `on` or `off`."
 
     _data_column = "autotex"
@@ -163,7 +166,7 @@ class colour(LatexUserSetting, String):
     name = "colour"
     accepts = "One of the colourschemes listed below."
 
-    colourschemes = {
+    colourschemes: ClassVar[dict[str, str]] = {
         "white": "Pure white background, with black text.",
         "light": "Very light grey background, with black text.",
         "ash": "Discord's `ash` background, with white text.",
@@ -175,7 +178,7 @@ class colour(LatexUserSetting, String):
     tabled_colourschemes = prop_tabulate(list(colourschemes.keys()), list(colourschemes.values()))
 
     default = "white"
-    _options = list(colourschemes.keys()) + ["grey", "gray", "trans_white", "darkgrey", "darkgray", "black", "default"]
+    _options = set(colourschemes.keys()) | {"grey", "gray", "trans_white", "darkgrey", "darkgray", "black", "default"}
     _parsing_failed_response = f"Unknown colourscheme `{{userstr}}`. Valid colourschemes:\n{tabled_colourschemes}"
 
     _data_column = "colour"
@@ -207,7 +210,7 @@ class alwaysmath(LatexUserSetting, Boolean):
     desc = "Whether to always use mathmode with the `tex` command."
 
     default = False
-    _outputs = {True: "Enabled", False: "Disabled"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "Enabled", False: "Disabled"}
     _parsing_failed_response = "Unknown option `{userstr}`.\nPlease use `on` or `off`."
 
     _data_column = "alwaysmath"
@@ -224,7 +227,7 @@ class alwayswide(LatexUserSetting, Boolean):
     desc = "Whether to skip the automatic horizontal addition of transparent pixels to LaTeX output."
 
     default = False
-    _outputs = {True: "Enabled", False: "Disabled"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "Enabled", False: "Disabled"}
     _parsing_failed_response = "Unknown option `{userstr}`.\nPlease use `on` or `off`."
 
     _data_column = "alwayswide"
@@ -246,7 +249,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
     name = "namestyle"
     desc = "The type of name to display with your LaTeX output."
     accepts = "One of the types listed below."
-    namestyles = {
+    namestyles: ClassVar[dict[str, str]] = {
         "USERNAME": "Your global username. (**{ctx.author.name}**)",
         "NICKNAME": "Your server nickname. (**{ctx.author.display_name}**)",
         "MENTION": "A mention. {ctx.author.mention}",
@@ -290,7 +293,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
     desc = "How strict the parser is when looking for LaTeX in your messages."
     accepts = "One of the levels listed below."
 
-    tex_levels = {
+    tex_levels: ClassVar[dict[str, str]] = {
         "CODEBLOCK": r"The strictest level, require a `tex` or `latex` syntax codeblock.",
         "STRICT": r"Also recognise environments, `$$...$$`, `\(...\)` and `\[...\]`.",
         "WEAK": r"Also recognise paired single dollars, i.e. `$...$`, but not `\$...\$`",

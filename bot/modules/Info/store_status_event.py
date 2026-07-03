@@ -1,9 +1,9 @@
-import datetime
+import discord
 
 
 async def store_status(bot, before, after):
     if before.status != after.status:
-        status = (str(before.status), str(after.status), int(datetime.datetime.now(datetime.UTC).strftime("%s")))
+        status = (str(before.status), str(after.status), int(discord.utils.utcnow().strftime("%s")))
         old_status = bot.objects["user_status"].pop(before.id, None)
         if old_status is None or status[0] != old_status[0]:
             await bot.data.users.set(before.id, "old_status", status)

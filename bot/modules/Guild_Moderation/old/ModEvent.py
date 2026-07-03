@@ -33,7 +33,7 @@ class ModEvent:
         self.user_strs = [f"`{user.id}`: {user.__str__()}" for user in users]
         self.timeout = timeout
         self.reason = reason
-        self.init_time = datetime.datetime.now(datetime.UTC)
+        self.init_time = discord.utils.utcnow()
         self.embed = None
 
     async def embedify(self):

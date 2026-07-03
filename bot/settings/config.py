@@ -1,9 +1,12 @@
+from typing import ClassVar
+
+
 class _guild_config:
     """
     Namespace class to hold the guild settings.
     """
 
-    settings = {}
+    settings: ClassVar[dict] = {}
     __slots__ = ()
 
     def __init__(self):

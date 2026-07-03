@@ -1,22 +1,26 @@
+from typing import ClassVar
+
+from cmdClient import cmdClient  # noqa
+
 from modules.Tex.module import latex_module as module
 
 from . import (
-    guild_config,  # noqa
-    guild_data,  # noqa
+    guild_config,
+    guild_data,
 )
 from .tex_utils import AutoTexLevel
 
 
 class LatexGuild:
-    __slots__ = ("id", "autotex", "autotex_level", "require_codeblocks", "latex_channels", "preamble")
+    __slots__ = ("autotex", "autotex_level", "id", "latex_channels", "preamble", "require_codeblocks")
     # Cache of all guilds the client requests
-    cached_guilds = {}
+    cached_guilds: ClassVar[dict] = {}
 
     # Stored client for accessing data interfaces
-    _client = None
+    _client: ClassVar[None | cmdClient] = None
 
     # Defaults
-    defaults = {
+    defaults: ClassVar[dict] = {
         "autotex": False,
         "autotex_level": AutoTexLevel.WEAK,
         "require_codeblocks": False,

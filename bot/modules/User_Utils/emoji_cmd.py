@@ -99,7 +99,7 @@ async def cmd_emoji(ctx: Context, flags: dict):
                 "Use this command to search for custom emojis from my other guilds.",
             )
 
-        emojistrs = [f"{str(e)}`{e.id}` {e.name}" for e in emojis]
+        emojistrs = [f"{e!s}`{e.id}` {e.name}" for e in emojis]
         blocks = ["\n".join(emojistrs[i : i + 10]) for i in range(0, len(emojistrs), 10)]
         embeds = [
             discord.Embed(

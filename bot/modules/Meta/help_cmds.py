@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 import discord
 from cmdClient import Context  # noqa
 from constants import sorted_cats
-from utils import ctx_addons  # noqa
 from utils.lib import prop_tabulate
 from wards import is_manager
 
@@ -147,7 +146,8 @@ async def cmd_help(ctx: Context):
 
                     embed.add_field(name=fieldname, value=fieldvalue, inline=False)
             out_msg = await ctx.reply(embed=embed)
-            asyncio.ensure_future(ctx.offer_delete(out_msg))
+            task = asyncio.ensure_future(ctx.offer_delete(out_msg))
+            task.add_done_callback(lambda t: t.exception())
             await out_msg.add_reaction(more_emoji)
             try:
                 await ctx.client.wait_for(

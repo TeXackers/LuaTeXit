@@ -1,7 +1,7 @@
 from contextlib import suppress
 
 import discord
-from paraCH import paraCH  # noqa
+from paraCH import paraCH
 
 cmds = paraCH()
 

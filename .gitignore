@@ -1,7 +1,7 @@
 # Data file
 *.db
 data/**
-logs/**
+logs
 scripts/**
 **/__pycache__
 
@@ -13,9 +13,6 @@ scripts/**
 *.swp
 RCS
 tags
-
-# ContextBot contents
-contextBot/*
 
 # Tex files except for tex/failed dir
 **.aux

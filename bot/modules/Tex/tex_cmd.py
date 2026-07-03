@@ -168,7 +168,7 @@ async def cmd_tex(ctx: Context, flags: dict):
 
         case "xetex" | "xelatex":
             return await ctx.error_reply(
-                "Xe(La)TeX support has been temporarily disabled.\nPlease use LuaLaTeX or pdfLaTeX instead.\n"
+                "Xe(La)TeX support has been temporarily disabled.\nPlease use LuaLaTeX or pdfLaTeX instead.\n",
             )
 
         case "plainlua":

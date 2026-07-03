@@ -10,4 +10,4 @@ __all__ = [
     "guild_config",
     "BadUserInput",
     "GuildSetting",
-]  # noqa
+]

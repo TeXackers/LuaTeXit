@@ -3,8 +3,10 @@ output-format = "grouped"
 
 exclude = [
     "bot/main.py", # order-sensitive
+    "bot/cmdClient/__init__.py", # order-sensitive
     "bot/modules/Tex/__init__.py", # order-sensitive
     "bot/modules/Tex/core/__init__.py", # order-sensitive
+    "bot/settings/__init__.py", # order-sensitive
     # low-priority
     "bot/modules/Guild_Moderation/**",
     "bot/modules/Guild_Utils/**",
@@ -58,6 +60,7 @@ extend-select = [
 ]
 
 ignore = [
+    "F",
     "S311",
     "E501",
     "SLF001", # private

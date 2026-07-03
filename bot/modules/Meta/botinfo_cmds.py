@@ -152,7 +152,7 @@ async def cmd_about(ctx: Context):
             # use bot's avatar
             thumbnail_url=ctx.client.user.display_avatar.url,
             accent_colour=LuaTeXitCC["yellow"],
-        )
+        ),
     )
 
 

@@ -4,10 +4,6 @@ from cmdClient import cmdClient  # noqa
 
 from modules.Tex.module import latex_module as module
 
-from . import (
-    guild_config,
-    guild_data,
-)
 from .tex_utils import AutoTexLevel
 
 

@@ -7,7 +7,12 @@ from cmdClient.lib import InvalidContext, ResponseTimedOut, SafeCancellation, Us
 
 @Context.util
 async def find_role(
-    ctx: Context, userstr: str, create=False, interactive=False, collection=None, allow_notfound=True
+    ctx: Context,
+    userstr: str,
+    create=False,
+    interactive=False,
+    collection=None,
+    allow_notfound=True,
 ) -> discord.Role | None:
     """
     Find a guild role given a partial matching string,
@@ -229,7 +234,11 @@ async def find_channel(ctx: Context, userstr: str, interactive=False, collection
 
 @Context.util
 async def find_member(
-    ctx: Context, userstr: str, interactive=False, collection=None, silent_notfound=False
+    ctx: Context,
+    userstr: str,
+    interactive=False,
+    collection=None,
+    silent_notfound=False,
 ) -> discord.Member | None:
     """
     Find a guild member given a partial matching string,

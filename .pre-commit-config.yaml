@@ -3,5 +3,5 @@
   rev: v0.15.20
   hooks:
     - id: ruff-check
-      args: [ "--ignore=F401,F403", "--fix" ]
+      args: [ --fix ]
     - id: ruff-format

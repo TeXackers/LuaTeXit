@@ -11,7 +11,7 @@ import discord
 from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from constants import LuaTeXitCC
-from discord import Colour, Member, User
+from discord import Member, User
 from utils.lib import mail, split_text
 from wards import is_reviewer
 
@@ -264,7 +264,12 @@ async def view_preamble_v2(
     file_message=None,
 ):
     out_msg = await ctx.pager_v2(
-        content=preamble, title=title, code=True, syntax="latex", block_length=1500, maxheight=30
+        content=preamble,
+        title=title,
+        code=True,
+        syntax="latex",
+        block_length=1500,
+        maxheight=30,
     )
 
     if file_react and out_msg is not None:

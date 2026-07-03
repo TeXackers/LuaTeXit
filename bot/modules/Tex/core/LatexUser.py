@@ -7,7 +7,6 @@ from modules.Tex.module import latex_module as module
 
 from . import (
     LatexUserSetting,
-    user_data,
 )
 
 

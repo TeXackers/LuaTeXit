@@ -6,7 +6,6 @@ from constants import LuaTeXitCC
 from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
 from utils.lib import prop_tabulate
 
-from . import user_data
 from .tex_utils import AutoTexLevel, TexNameStyle
 
 

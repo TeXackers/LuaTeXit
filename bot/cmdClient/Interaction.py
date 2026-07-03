@@ -150,7 +150,8 @@ class PagerView(LayoutView):
     async def _on_delete(self, interaction: Interaction) -> None:
         if self.author is not None and interaction.user != self.author:
             await interaction.response.send_message(
-                "You must have invoked the command to be able to delete this pager.", ephemeral=True
+                "You must have invoked the command to be able to delete this pager.",
+                ephemeral=True,
             )
             return
         self.stop()

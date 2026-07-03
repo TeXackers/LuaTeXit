@@ -140,10 +140,26 @@ to_compile_plaintex: str = r"""
 \bye"""
 
 
-@Context.util
-async def maketex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+async def _run_tex_compile(
+    ctx: Context,
+    source: str,
+    targetid: str,
+    engine_name: str,
+    script_path: Path,
+    *,
+    plaintex: bool = False,
+    preamble: str = default_preamble,
+    colour: str = "default",
+    header: str = header,
+    pad: bool = True,
+):
+    """
+    Shared staging/rendering/compilation logic used by all the engine-specific
+    maketex* utils below; only the template, script and log label vary.
+    """
     log(
-        "Beginning LaTeX compilation for (tid:{targetid}).\n{content}".format(
+        "Beginning {engine} compilation for (tid:{targetid}).\n{content}".format(
+            engine=engine_name,
             targetid=targetid,
             content="\n".join("\t" + line for line in source.splitlines()),
         ),
@@ -162,15 +178,15 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
 
     fn: Path = Path(f"{path}/{targetid}.tex")
 
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile.format(
-                colour=colourschemes[colour] or "",
-                alwayswide="minpagewidth=110pt" if pad else "",
-                header=header,
-                preamble=preamble,
-                source=source,
-            ),
+    if plaintex:
+        content = to_compile_plaintex.format(source=source)
+    else:
+        content = to_compile.format(
+            colour=colourschemes[colour] or "",
+            alwayswide="minpagewidth=110pt" if pad else "",
+            header=header,
+            preamble=preamble,
+            source=source,
         )
 
     with Path.open(fn, "w") as work:
@@ -184,85 +200,56 @@ async def maketex(ctx, source, targetid, preamble=default_preamble, colour="defa
 
 
 @Context.util
-async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
-    log(
-        "Beginning LuaLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join("\t" + line for line in source.splitlines()),
-        ),
-        level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+async def maketex(
+    ctx: Context,
+    source: str,
+    targetid: str,
+    preamble: str = default_preamble,
+    colour: str = "default",
+    header: str = header,
+    pad: bool = True,
+):
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "LaTeX",
+        pdflatex_script_path,
+        preamble=preamble,
+        colour=colour,
+        header=header,
+        pad=pad,
     )
 
-    # Target's staging directory
-    path = f"tex/staging/{targetid}"
 
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    fn: Path = Path(f"tex/staging/{targetid}/{targetid}.tex")
-
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile.format(
-                colour=colourschemes[colour] or "",
-                alwayswide="minpagewidth=110pt" if pad else "",
-                header=header,
-                preamble=preamble,
-                source=source,
-            ),
-        )
-        work.close()
-
-    # Build compile script
-    script = (f"{lualatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
+@Context.util
+async def makeluatex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "LuaLaTeX",
+        lualatex_script_path,
+        preamble=preamble,
+        colour=colour,
+        header=header,
+        pad=pad,
+    )
 
 
 @Context.util
 async def makexetex(ctx, source, targetid, preamble=default_preamble, colour="default", header=header, pad=True):
-    log(
-        "Beginning XeLaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join("\t" + line for line in source.splitlines()),
-        ),
-        level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "XeLaTeX",
+        xelatex_script_path,
+        preamble=preamble,
+        colour=colour,
+        header=header,
+        pad=pad,
     )
-
-    # Target's staging directory
-    path = f"tex/staging/{targetid}"
-
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    fn: Path = Path(f"{path}/{targetid}.tex")
-
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile.format(
-                colour=colourschemes[colour] or "",
-                alwayswide="minpagewidth=110pt" if pad else "",
-                header=header,
-                preamble=preamble,
-                source=source,
-            ),
-        )
-        work.close()
-
-    # Build compile script
-    script = (f"{xelatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
 
 
 @Context.util
@@ -272,46 +259,19 @@ async def make_plain_luatex(
     targetid,
     preamble=default_preamble,
     colour="default",
-    # header=header,
     pad=True,
 ):
-    log(
-        "Beginning plain LuaTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join("\t" + line for line in source.splitlines()),
-        ),
-        level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "plain LuaTeX",
+        luatex_script_path,
+        plaintex=True,
+        preamble=preamble,
+        colour=colour,
+        pad=pad,
     )
-
-    # Target's staging directory
-    path = f"tex/staging/{targetid}"
-
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    fn: Path = Path(f"{path}/{targetid}.tex")
-
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile_plaintex.format(
-                # colour = colourschemes[colour] or "",
-                # alwayswide = "minpagewidth=110pt" if pad else "",
-                # header = header,
-                # preamble = preamble,
-                source=source,
-            ),
-        )
-        work.close()
-
-    # Build compile script
-    script = (f"{luatex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
 
 
 @Context.util
@@ -321,46 +281,19 @@ async def make_plain_pdftex(
     targetid,
     preamble=default_preamble,
     colour="default",
-    # header=header,
     pad=True,
 ):
-    log(
-        "Beginning plain pdfTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join("\t" + line for line in source.splitlines()),
-        ),
-        level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "plain pdfTeX",
+        pdftex_script_path,
+        plaintex=True,
+        preamble=preamble,
+        colour=colour,
+        pad=pad,
     )
-
-    # Target's staging directory
-    path = f"tex/staging/{targetid}"
-
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    fn: Path = Path(f"{path}/{targetid}.tex")
-
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile_plaintex.format(
-                # colour = colourschemes[colour] or "",
-                # alwayswide = "minpagewidth=110pt" if pad else "",
-                # header = header,
-                # preamble = preamble,
-                source=source,
-            ),
-        )
-        work.close()
-
-    # Build compile script
-    script = (f"{pdftex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
 
 
 @Context.util
@@ -370,46 +303,18 @@ async def makepythontex(
     targetid,
     preamble=default_preamble,
     colour="default",
-    # header=header,
     pad=True,
 ):
-    log(
-        "Beginning pythonTeX compilation for (tid:{targetid}).\n{content}".format(
-            targetid=targetid,
-            content="\n".join("\t" + line for line in source.splitlines()),
-        ),
-        level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+    return await _run_tex_compile(
+        ctx,
+        source,
+        targetid,
+        "pythonTeX",
+        pythontex_script_path,
+        preamble=preamble,
+        colour=colour,
+        pad=pad,
     )
-
-    # Target's staging directory
-    path = f"tex/staging/{targetid}"
-
-    # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
-
-    # Recreate staging directory
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    fn: Path = Path(f"{path}/{targetid}.tex")
-
-    with Path.open(fn, "w") as work:
-        work.write(
-            to_compile.format(
-                colour=colourschemes[colour] or "",
-                alwayswide="minpagewidth=110pt" if pad else "",
-                header=header,
-                preamble=preamble,
-                source=source,
-            ),
-        )
-        work.close()
-
-    # Build compile script
-    script = (f"{pythontex_script_path} {targetid} || exit;\ncd {path}\n").format(image=f"{targetid}.png")
-
-    # Run the script in an async executor
-    return await ctx.run_in_shell(script)
 
 
 @module.init_task

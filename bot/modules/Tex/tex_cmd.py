@@ -156,20 +156,20 @@ async def cmd_tex(ctx: Context, flags: dict):
         # Create latex context for a given context, source, guild, user and other flags
         # then compile LaTeX using a texcompile shell script of user's choice
         # then keep the command alive until the context dies
-        case "lua" | "lualatex":
+        case "lua" | "luatex" | "lualatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.luatexmake()
             await lctx.lifetime()
 
-        case "pdf" | "pdflatex":
+        case "pdf" | "pdftex" | "pdflatex":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)
             await lctx.make()
             await lctx.lifetime()
 
         case "xetex" | "xelatex":
-            lctx = LatexContext(ctx, source, lguild, luser, **flags)
-            await lctx.xetexmake()
-            await lctx.lifetime()
+            return await ctx.error_reply(
+                "Xe(La)TeX support has been temporarily disabled.\nPlease use LuaLaTeX or pdfLaTeX instead.\n"
+            )
 
         case "plainlua":
             lctx = LatexContext(ctx, source, lguild, luser, **flags)

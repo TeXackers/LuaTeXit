@@ -2,19 +2,26 @@
 LuaTeXit is a Discord.py bot coded by `@leothelion_` for enhanced LaTeX experience on Discord.
 
 ## Features
-LuaTeXit is a fork of [Paradox/TeXit](https://gitlab.paradoxical.pw/team-paradox/paradox) (TeXit therein), with special attention towards TeX compilation commands.
-A key distinguishing feature is the compiler option. TeXit to date uses `pdflatex` as its default and sole compiler. 
-While this satisfies most use cases, it has brought on limitations pertaining to encoding, font selection, and ease of language support (especially non-ASCII, e.g., CJK). To address these limitations, LuaTeXit offers the following compilers:
+LuaTeXit started as a fork of Paradox/TeXit, but has since diverged significantly, with special attention towards TeX compilation commands and other quirks.
 
-| Compiler | Command | Under the hood |
-| --- | --- | --- |
-| pdfLaTeX | `pdftex` or `pdf` | `latexmk -pdf -file-line-error -halt-on-error %TEXFILE%` |
-| LuaLaTeX | `luatex` or `lua` | `latexmk -lualatex -file-line-error -halt-on-error %TEXFILE%` |
-| XeLaTeX | `xetex` | `latexmk -xelatex -file-line-error -halt-on-error %TEXFILE%` |
-| primitive LuaTeX | `plaintex` or `plain` | `luatex -file-line-error -halt-on-error %TEXFILE%` |
+- Multiple TeX compilers, rather than a single hardcoded one. This addresses limitations pertaining to encoding, font selection, and ease of language support (especially non-ASCII, e.g. CJK):
+  - `pdftex` / `pdf` — pdfLaTeX
+  - `luatex` / `lua` — LuaLaTeX (default)
+  - `plainlua` — plain LuaTeX
+  - `plainpdf` / `pdfplain` — plain pdfTeX
+  - `pytex` / `python` — LuaLaTeX + PythonTeX
+  - `xetex` / `xelatex` — XeLaTeX (currently disabled)
 
-# Support
-LuaTeXit has a support guild, which also doubles as a develpo hub and a community to chat with and make friends! You can join the support guild [here](https://discord.gg/FY9jH7M).
+- [Typst](https://typst.app)-related commands
+- Preamble management, so servers can submit, review and reuse shared preambles.
+- GitHub lookups on repositories and issues.
+- Assortment of utility/fun commands: run `help` in Discord for the full list.
 
-# Documentation
-General wiki can be found at the [wiki](https://github.com/ponte-vecchio/luatexit/wiki) of this repository. Otherwise you can use the `help` command to get a list of commands and their usage.
+## Getting started
+See [`config/README.md`](config/README.md) for instructions on how to configure and run your own instance.
+
+## Support
+LuaTeXit has a support guild, which also doubles as a development hub and a community to chat with and make friends! You can join the support guild [here](https://discord.gg/6xmCqddayY).
+
+## Documentation
+General wiki can be found at the [wiki](https://github.com/TeXackers/luatexit/wiki) of this repository. Otherwise you can use the `help` command to get a list of commands and their usage.

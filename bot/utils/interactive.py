@@ -1,11 +1,16 @@
 import asyncio
+from collections.abc import Iterable
 from contextlib import suppress
 
 import discord
 from cmdClient import Context
+from cmdClient.Interaction import PagerView
+from cmdClient.Layouts import Body, Header
 from cmdClient.lib import ResponseTimedOut, UserCancelled
+from constants import LuaTeXitCC
+from discord.ui import Container, Separator
 
-from .lib import paginate_list
+from .lib import paginate_list, split_text
 
 
 @Context.util
@@ -103,13 +108,13 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
     # Generate the selector pages
     footer = "Please type the number corresponding to your selection, or type `c` now to cancel."
     list_pages = paginate_list(select_from, block_length=max_len)
-    pages = ["\n".join([header, page, footer]) for page in list_pages]
+    pages = [f"{header}\n{page}\n{footer}" for page in list_pages]
 
     # Post the pages in a paged message
     out_msg = await ctx.pager(pages)
 
     # Listen for valid input
-    valid_input = [str(i + 1) for i in range(0, len(select_from))] + ["c", "C"]
+    valid_input = [str(i + 1) for i in range(len(select_from))] + ["c", "C"]
     try:
         result_msg = await ctx.listen_for(valid_input, timeout=timeout)
     except ResponseTimedOut:
@@ -179,13 +184,13 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
         "separated by commas, or type `c` now to cancel. (E.g. `2, 3, 5, 7, 11`)"
     )
     list_pages = paginate_list(select_from, block_length=max_len)
-    pages = ["\n".join([header, page, footer]) for page in list_pages]
+    pages = [f"{header}\n{page}\n{footer}" for page in list_pages]
 
     # Post the pages in a paged message
     out_msg = await ctx.pager(pages)
 
     # Listen for valid input
-    valid_num_strs: set = {str(i + 1) for i in range(0, len(select_from))}
+    valid_num_strs: set = {str(i + 1) for i in range(len(select_from))}
 
     def _check(message):
         if not ((message.channel == ctx.ch) and (message.author == ctx.author)):
@@ -215,12 +220,69 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
 
 
 @Context.util
+async def pager_v2(
+    ctx: Context,
+    content: str | Iterable,
+    title: str | None = None,
+    block_length: int = 1000,
+    code: bool = False,
+    colour: str | discord.Colour = LuaTeXitCC["yellow"],
+    **kwargs,
+):
+    """
+    Reply to `ctx` with `content` split into pages of at most `block_length` characters,
+    browsable with buttons via a `cmdClient.Interaction.PagerView`.
+
+    Parameters
+    ----------
+    ctx: Context
+        The context to reply to.
+    content: str
+        The long text content to browse.
+    title: str | None
+        Optional heading shown on every page.
+    block_length: int
+        Maximum number of characters per page.
+    code: bool
+        Whether to wrap each page in codeblocks.
+    colour: str | None
+        The colour of the LayoutView, if applicable.
+    Returns: discord.Message
+        The message the pager was sent in.
+    """
+    blocks = split_text(
+        content,
+        blocksize=block_length,
+        code=code,
+        **kwargs,
+    )
+    pages = [
+        Container(
+            *([Header(title)] if title else []),
+            Separator(),
+            Body(block),
+            accent_colour=colour if isinstance(colour, discord.Colour) else discord.Colour.from_str(colour),
+        )
+        for block in blocks
+    ]
+
+    # get emojis
+    left_emoji = await ctx.client.fetch_application_emoji(1522165411951546440)
+    right_emoji = await ctx.client.fetch_application_emoji(1522165413520081039)
+
+    view = PagerView(pages, locked=False, author=ctx.author, left_emoji=left_emoji, right_emoji=right_emoji)
+    message = await ctx.reply(view=view)
+    view.message = message
+    return message
+
+
+@Context.util
 async def pager(
     ctx: Context,
     pages: list[str | discord.Embed],
     locked: bool = True,
     blocking: bool = False,
-    destination: bool = None,
+    destination: discord.abc.Messageable | None = None,
     start_page=0,
     **kwargs,
 ):

@@ -83,8 +83,10 @@ async def cmd_github_lookup(ctx: Context, flags):
             )
 
     # return await ctx.reply(f"Given {org}/{reponame} \#{issue_num}, I would look up the issue and display its information here. This is a placeholder response for now.")
+    # load emoji
+    LOADING_EMOJI = await ctx.client.fetch_application_emoji(1522161416134721677)
 
-    out_msg = await ctx.reply("Querying Github, please wait... {}".format(ctx.client.conf.emojis.getemoji("loading")))
+    out_msg = await ctx.reply(f"{LOADING_EMOJI} Querying Github, please wait...")
     GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
     github_api: github.Github = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
     repo: Repository = github_api.get_repo(f"{org}/{reponame}")

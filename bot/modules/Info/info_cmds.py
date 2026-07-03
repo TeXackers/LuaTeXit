@@ -7,7 +7,7 @@ from cmdClient.Layouts import Body, Footer, Header, SectionWithThumbnail, TextEm
 from constants import LuaTeXitCC
 from discord.http import Route
 from discord.ui import Container, LayoutView, Separator
-from utils.lib import paginate_list, tabulate
+from utils.lib import tabulate
 from wards import in_guild
 
 from .module import info_module as module
@@ -50,7 +50,7 @@ async def get_user_avatar(ctx: Context, uid: int) -> str:
     if not res["avatar"]:
         return f"https://cdn.discordapp.com/embed/avatars/{int(res['discriminator']) % 5}.png"
 
-    filetype: str = "webp" if res["avatar"].startswith("a_") else "png"
+    filetype: str = "gif" if res["avatar"].startswith("a_") else "png"
 
     return f"https://cdn.discordapp.com/avatars/{uid}/{res['avatar']}.{filetype}?size=1024"
 
@@ -120,7 +120,8 @@ async def cmd_roleinfo(ctx: Context):
 
     # Handle not having arguments, list all the current roles
     if not ctx.args:
-        return await ctx.pager(paginate_list([role.name for role in reversed(guild_roles)], title="Guild roles"))
+        role_lines = [f"{i}. `{role.id:<19}` <@&{role.id}> " for i, role in enumerate(reversed(guild_roles), start=1)]
+        return await ctx.pager_v2("\n".join(role_lines), title="Guild roles")
 
     role = await ctx.find_role(ctx.args, create=False, interactive=True)
     if not role:
@@ -141,7 +142,7 @@ async def cmd_roleinfo(ctx: Context):
 
     # Build the property/value table
     desc_fields: dict[str, str | int] = {
-        "Unique ID": f"`{str(int(role.id))}`",
+        "Unique ID": f"`{int(role.id)!s}`",
         "Colours": ", ".join(role_colours) if len(role_colours) > 1 else role_colours[0],
         "Hoisted": hoisted,
         "Can @?": mentionable,
@@ -153,7 +154,7 @@ async def cmd_roleinfo(ctx: Context):
     # Build the hierarchy graph
     pos = role.position
     position = ""
-    for i in reversed(range(-7, 7)):
+    for i in reversed(range(-4, 4)):
         line_pos = pos + i
         if line_pos < 0:
             break
@@ -165,7 +166,7 @@ async def cmd_roleinfo(ctx: Context):
             "👈️" if guild_roles[line_pos] == role else "🔰" if guild_roles[line_pos] == ctx.author.top_role else "",
         )
 
-    desc_text += f"\n### Role hierarchy\n{position}\n-# 👈️: requested role; 🔰: your highest role"
+    desc_text += f"\n### Role positioning\n{position}\n-# 👈️: requested role; 🔰: your highest role"
 
     # Build the relative string
     diff_str = ""
@@ -205,11 +206,19 @@ async def cmd_rolemembers(ctx: Context) -> None:
     if not role:
         return None
 
-    members = role.members
+    members: list[discord.Member] = role.members
     if len(members) == 0:
         await ctx.reply("No members have this role.")
         return None
-    return await ctx.pager(paginate_list(members, title=f"Members in {role.name}"))
+
+    # enumerate the members' names
+    member_names: list[str] = [f"{i + 1}. {m.display_name}" for i, m in enumerate(members)]
+
+    return await ctx.pager_v2(
+        "\n".join(member_names),
+        title=f"Members with the {role.name} role",
+        maxheight=25,
+    )
 
 
 @module.cmd(
@@ -254,9 +263,9 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
 
     desc_text: str = tabulate(
         {
-            "Username": f"{str(user).split('#')[0]} {'🤖' if user.bot else '🫃'}",
+            "Username": f"{str(user).split('#')[0]} {'🤖' if user.bot else ''}",
             "Nickname": user.display_name,
-            "User ID": f"`{str(user.id)}`",
+            "User ID": f"`{user.id!s}`",
             "Top role": (roles[0] if len(roles[0]) < 26 else f"{roles[0][:23]}...") if roles else "N/A",
             "Seen in": f"{numshared} guild{'s' if numshared > 1 else ''}",
             "Joined at": discord.utils.format_dt(user.joined_at, "R") if user.joined_at else "N/A",
@@ -266,24 +275,27 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
 
     role_text = f"\n### Roles\n{('`' + '`, `'.join(roles) + '`') if roles else 'N/A'}"
 
-    # if user.joined_at:  # joined_at is Optional
-    #     assert ctx.guild is not None
-    #     joined = sorted(
-    #         (mem for mem in ctx.guild.members if mem.joined_at),
-    #         key=lambda mem: mem.joined_at,
-    #     )
-    #     pos = joined.index(user)
-    #     positions = []
-    #     for i in range(-3, 4):
-    #         line_pos = pos + i
-    #         if line_pos < 0:
-    #             continue
-    #         if line_pos >= len(joined):
-    #             break
-    #         positions.append(
-    #             "{:>4}.   {} {}".format(line_pos + 1, ">" if joined[line_pos] == user else " ", joined[line_pos])
-    #         )
-    #     join_seq = "```markdown\n{}\n```".format("\n".join(positions))
+    if user.joined_at and ctx.guild:  # joined_at is Optional
+        joined = sorted(
+            ctx.guild.members,
+            key=lambda mem: mem.joined_at or user.created_at,
+        )
+        pos = joined.index(user)
+        positions = []
+        for i in range(-7, 7):
+            line_pos = pos + i
+            if line_pos < 0:
+                continue
+            if line_pos >= len(joined):
+                break
+            positions.append(
+                "{}.   {} {}".format(
+                    line_pos + 1,
+                    joined[line_pos],
+                    "👈" if joined[line_pos] == user else "",
+                ),
+            )
+        join_seq = f"### Join order\n{'\n'.join(positions)}"
 
     container = Container(accent_colour=colour)
     if banner:
@@ -294,9 +306,11 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
         )
     container.add_item(Header(f"{user}"))
     container.add_item(SectionWithThumbnail(desc_text, av or user.display_avatar.url))
-    # add user's banner as Image if it exists
-
+    container.add_item(Separator())
     container.add_item(Body(role_text))
+    container.add_item(Separator())
+    container.add_item(Body(join_seq))
+    container.add_item(Separator())
     container.add_item(Footer(f"{discord.utils.format_dt(ctx.msg.created_at, 'f')} | Requested by: {ctx.author}"))
 
     v = LayoutView()
@@ -321,14 +335,15 @@ async def cmd_guildinfo(ctx: Context) -> None:
 
     desc_text = tabulate(
         {
-            "Owner": f"<@{ctx.server.owner_id}>",
+            "Owner": f"{ctx.server.owner.display_name}",
             "Created": f"{discord.utils.format_dt(ctx.server.created_at, 'f')} ({discord.utils.format_dt(ctx.server.created_at, 'R')})",
-            "Members": f"{humans} 🫃, {bots} 🤖 | {bots + humans} total",
+            "Members": f"{humans} 🫃, {bots} 🤖  |  {bots + humans} total",
             "Large?": "Yes" if ctx.server.large else "No",
             "Channels": f"{len(ctx.server.text_channels)} 📝, {len(ctx.server.voice_channels)} 🗣️ ({total} total)",
             "Premium": f"Level {ctx.server.premium_tier} | {ctx.server.premium_subscription_count} boost{'s' if ctx.server.premium_subscription_count != 1 else ''} total",
         },
     )
+    server_icon = await get_server_avatar(ctx, ctx.server.id, ctx.client.user.id) or str(ctx.server.icon)
 
     container = Container(
         accent_colour=ctx.server.owner.colour if ctx.server.owner.colour.value else discord.Colour.teal(),
@@ -340,7 +355,7 @@ async def cmd_guildinfo(ctx: Context) -> None:
             ),
         )
     container.add_item(Header(f"{ctx.server}"))
-    container.add_item(SectionWithThumbnail(desc_text, str(ctx.server.icon)))
+    container.add_item(SectionWithThumbnail(desc_text, server_icon))
     container.add_item(Footer(f"{discord.utils.format_dt(ctx.msg.created_at, 'f')} | Requested by: {ctx.author}"))
 
     v = LayoutView()

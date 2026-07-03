@@ -1,9 +1,11 @@
 import datetime
 import re
+from collections.abc import Iterable
 from contextlib import suppress
 
 import discord
 import iso8601
+from cmdClient.Format import enumerate as fmt_enumerate
 
 
 def tabulate(prop_list: dict) -> str:
@@ -53,6 +55,20 @@ def prop_tabulate(prop_list, value_list, indent=True):
     )
 
 
+def paginate(item_list: Iterable[str], block_length: int = 20) -> list[str]:
+    """Paginate a list of strings into numbered blocks, for use as the body text of a Discord LayoutView page (e.g. one page of a `cmdClient.Interaction.PagerView`).
+
+    Args:
+        item_list (Iterable[str]): List of strings to paginate.
+        block_length (int): Maximum number of items per page.
+
+    Returns:
+        list[str]: List of pages, each a newline-joined, numbered block of at most `block_length` of the provided strings. Numbering continues across pages rather than restarting at 1.
+    """
+    lines: list[str] = list(item_list)
+    return [fmt_enumerate(lines[i : i + block_length], start=i + 1) for i in range(0, len(lines), block_length)]
+
+
 def paginate_list(item_list, block_length=20, style="markdown", title=None):
     """
     Create pretty codeblock pages from a list of strings.
@@ -100,9 +116,9 @@ def utcnow():
     return discord.utils.utcnow()
 
 
-def split_text(text: str, blocksize=2000, code=True, syntax="", maxheight=50):
+def split_text(text: str | Iterable, blocksize=2000, code=True, syntax="", maxheight=50):
     """
-    Break the text into blocks of maximum length blocksize
+    Break the text into blocks of maximum length blocksize and maximum height maxheight.
     If possible, break across nearby newlines. Otherwise just break at blocksize chars
 
     Parameters
@@ -115,8 +131,8 @@ def split_text(text: str, blocksize=2000, code=True, syntax="", maxheight=50):
         Whether to wrap each block in codeblocks (these are counted in the blocksize).
     syntax: str
         The markdown formatting language to use for the codeblocks, if applicable.
-    maxheight: int
-        The maximum number of lines in each block
+    maxheight: int | None
+        The maximum number of lines in each block. Falsy (e.g. `None` or `0`) disables the check.
 
     Returns: List[str]
         List of blocks,
@@ -125,19 +141,31 @@ def split_text(text: str, blocksize=2000, code=True, syntax="", maxheight=50):
     """
     # Adjust blocksize to account for the codeblocks if required
     blocksize = blocksize - 8 - len(syntax) if code else blocksize
+    # if text is iterable, join it into a single string
+    if isinstance(text, Iterable) and not isinstance(text, str):
+        text = "\n".join(str(x) for x in text)
 
     # Build the blocks
     blocks = []
     while True:
-        # If the remaining text is already small enough, append it
-        if len(text) <= blocksize:
-            blocks.append(text)
+        # If the remaining text is already small enough, in both size and height, append it
+        fits_height = not maxheight or text.count("\n") + 1 <= maxheight
+        if len(text) <= blocksize and fits_height:
+            # Only keep a trailing empty block if it's the sole (i.e. original input was empty) block
+            if text or not blocks:
+                blocks.append(text)
             break
         text = text.strip("\n")
 
         # Find the last newline in the prototype block
         split_on = text[0:blocksize].rfind("\n")
         split_on = blocksize if split_on < blocksize // 5 else split_on
+
+        # Further limit the split point so the block has at most `maxheight` lines
+        if maxheight:
+            newline_indices = [i for i, char in enumerate(text[:split_on]) if char == "\n"]
+            if len(newline_indices) >= maxheight:
+                split_on = newline_indices[maxheight - 1]
 
         # Add the block and truncate the text
         blocks.append(text[0:split_on])

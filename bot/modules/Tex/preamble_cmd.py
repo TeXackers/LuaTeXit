@@ -4,11 +4,17 @@ from pathlib import Path
 import discord
 from cmdClient import Context, cmdClient  # noqa
 from cmdClient.lib import ResponseTimedOut
-from utils import interactive  # noqa
 from utils.lib import substitute_ranges
 
 from .core.LatexGuild import LatexGuild
-from .core.preamble_utils import confirm, preamblelog, resolve_pending_preamble, submit_preamble, view_preamble
+from .core.preamble_utils import (
+    confirm,
+    preamblelog,
+    resolve_pending_preamble,
+    submit_preamble,
+    view_preamble,
+    view_preamble_v2,
+)
 from .module import latex_module as module
 from .resources import default_preamble
 
@@ -59,28 +65,23 @@ async def cmd_preamble(ctx: Context, flags: dict):
     pending_preamble = pending_preamble_row[0] if pending_preamble_row else None
 
     # Get the effective preamble and the viewing header
-    preamble = None
-    header = None
     if current_preamble and current_preamble["preamble"]:
-        preamble = current_preamble["preamble"]
-        header = "Your personal custom preamble."
+        (preamble := current_preamble["preamble"])
+        (header := "custom")
     elif ctx.guild and LatexGuild.get(ctx.guild.id).preamble:
-        preamble = LatexGuild.get(ctx.guild.id).preamble
-        header = "No custom user preamble set, using the server preamble."
+        (preamble := LatexGuild.get(ctx.guild.id).preamble)
+        (header := "server")
     else:
-        preamble = default_preamble
-        header = "No custom user preamble set, using the default preamble."
-
+        (preamble := default_preamble)
+        (header := "default")
     # Get the preamble presets
     # presets = []
 
     # Get the whitelisted packages
     # in resources/whitelisted_packages.txt
-    whitelisted_packages = []
     whitelist_file_loc = Path(__location__) / "resources" / "whitelist.txt"
-    with Path.open(whitelist_file_loc) as f:
-        for line in f:
-            whitelisted_packages.append(line.strip())
+    with whitelist_file_loc.open() as f:
+        whitelisted_packages = [line.strip() for line in f]
 
     # Handle resetting the preamble
     if flags["reset"]:
@@ -446,14 +447,11 @@ async def cmd_preamble(ctx: Context, flags: dict):
 
     # If the user doesn't want to edit their preamble, they must just want to view it
 
-    title = f"Your current preamble. Use {await ctx.best_prefix()}texconfig to see the other LaTeX config options!"
-    return await ctx.offer_delete(
-        await view_preamble(
-            ctx,
-            preamble,
-            title,
-            header=header,
-            file_react=True,
-            file_message=f"Current Preamble for {ctx.author}",
-        ),
+    title = f"{ctx.author.display_name}'s current preamble for LuaTeXit ({header})"
+    return await view_preamble_v2(
+        ctx,
+        preamble,
+        title,
+        file_react=True,
+        file_message=f"Current Preamble for {ctx.author}",
     )

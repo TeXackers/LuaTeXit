@@ -255,6 +255,23 @@ async def view_preamble(
 
     return out_msg
 
+
+async def view_preamble_v2(
+    ctx: Context,
+    preamble: str,
+    title: str,
+    file_react=False,
+    file_message=None,
+):
+    out_msg = await ctx.pager_v2(
+        content=preamble, title=title, code=True, syntax="latex", block_length=1500, maxheight=30
+    )
+
+    if file_react and out_msg is not None:
+        # Add the sendfile reaction if required
+        task = asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
+        task.cancel()  # Don't wait for it to finish, just let it run in the background
+
     return out_msg
 
 

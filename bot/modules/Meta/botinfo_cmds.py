@@ -1,16 +1,22 @@
+import asyncio
 import platform
+import re
 import subprocess
 import sys
 from typing import TYPE_CHECKING
 
+from constants import LuaTeXitCC
+
 if TYPE_CHECKING:
     import datetime
+
+import datetime
 
 import discord
 import psutil
 from cmdClient import Context  # noqa
-from utils.ctx_addons import best_prefix  # noqa
-from utils.lib import prop_tabulate
+from cmdClient.Layouts import GenericFullEmbed
+from utils.lib import tabulate
 
 from .module import meta_module as module
 
@@ -30,79 +36,9 @@ Commands provided:
 """
 
 
-@module.cmd("stat", desc="Hardware Stats and Load.")
-async def cmd_curr_load(ctx: Context) -> None:
-    table_fields: list = []
-
-    # separate for MacOS vs linux
-    if platform.system() == "Darwin":
-        # OS Name
-        table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
-
-        # Architecture for MacOS
-        table_fields.append(("Arch", platform.mac_ver()[2].upper()))
-
-        # CPU Name
-        table_fields.append(
-            ("CPU", subprocess.check_output(["/usr/sbin/sysctl", "-n", "machdep.cpu.brand_string"]).strip().decode()),
-        )
-        # CPU
-        table_fields.append(
-            ("CPU Load", f"{psutil.cpu_count(logical=False)}C/{psutil.cpu_count()}T ({psutil.cpu_percent()}%)"),
-        )
-    else:
-        # OS Name
-        table_fields.append(("OS", platform.platform(terse=True).replace("-", " ")))
-        # Architecture for linux
-        table_fields.append(("Arch", platform.machine()))
-        # CPU Name
-        table_fields.append(("CPU", "Intel Core i5-8350U"))
-
-    # Memory
-    mem_total: int = psutil.virtual_memory().total >> 20
-    mem_used: int = psutil.virtual_memory().used >> 20
-    table_fields.append(("Memory", f"{mem_used}/{mem_total} MiB ({mem_used / mem_total * 100:.1f}%)"))
-
-    # Versions
-    py_version: str = platform.python_version()
-    py_build: str = platform.python_build()[1]
-    compiler: str = platform.python_compiler()
-    table_fields.append(("Py Version", f"{py_version} ({py_build})"))
-
-    # luatex version
-    table_fields.append(
-        (
-            "LuaTeX Version",
-            subprocess.check_output(["luatex", "--version"])
-            .decode()
-            .split("\n")[0]
-            .split(", ")[1]
-            .replace("Version ", ""),
-        ),
-    )
-    # XeTeX parsed differently
-    # Example output:
-    # XeTeX 3.141592653-2.6-0.999996 (TeX Live 2024/Arch Linux)
-    table_fields.append(
-        ("XeTeX Version", subprocess.check_output(["xetex", "--version"]).decode().split("\n")[0].split(" ")[1]),
-    )
-    # Typst version
-    table_fields.append(
-        ("Typst Version", subprocess.check_output(["typst", "--version"]).decode().split("\n")[0].split(" ")[1]),
-    )
-    # Compiler version
-    table_fields.append(("Compiler", compiler))
-
-    # Tabulate
-    fields, values = zip(*table_fields, strict=True)
-    table: str = prop_tabulate(fields, values)
-
-    # Build embed
-    desc = f"{table}"
-    embed = discord.Embed(title="Top", color=discord.Colour.red(), description=desc)
-
-    # Finally, send embed
-    await ctx.reply(embed=embed)
+async def check_output(*args: str) -> bytes:
+    """Run subprocess.check_output off the event loop thread."""
+    return await asyncio.to_thread(subprocess.check_output, args)
 
 
 @module.cmd("about", desc="Shard status and bot statistics.")
@@ -113,64 +49,111 @@ async def cmd_about(ctx: Context):
     Description:
         Sends an embed with basic statistics about the current shard, host, and bot process.
     """
-    table_fields = []
+    status: dict = {}
+    restrict_invite: bool = False
 
     # Current developers
     current_devs = ctx.client.app_info["dev_list"]
-    dev_str = ", ".join(str(ctx.client.get_user(devid) or devid) for devid in current_devs)
-    table_fields.append(("Developers", dev_str))
+    dev_str = ", ".join(str(ctx.client.get_user(dev_id) or dev_id) for dev_id in current_devs)
+    dev_field_name = "Developer" if len(current_devs) == 1 else "Developers"
+    status[dev_field_name] = dev_str
 
     # Shards, guilds, and members
+    member_count = len(list(ctx.client.get_all_members()))
+    if member_count > 10000:
+        restrict_invite = True
+
     if ctx.client.shard_count > 1:
         shard_str = f"{ctx.client.shard_id} of {ctx.client.shard_count}"
-        table_fields.append(("Shard", shard_str))
+        status["Shard"] = shard_str
 
-        guild_str = f"{len(ctx.client.guilds)} (~{ctx.client.shard_count * len(ctx.client.guilds)} total)"
-        table_fields.append(("Shard guilds", guild_str))
+        guild_str = f"{len(ctx.client.guilds)} (~{int(ctx.client.shard_count) * len(ctx.client.guilds)} total)"
+        status["Shard guilds"] = guild_str
 
-        member_str = f"{len(list(ctx.client.get_all_members()))} (~{ctx.client.shard_count * len(list(ctx.client.get_all_members()))} total)"
-        table_fields.append(("Shard members", member_str))
+        member_str = f"{member_count} (~{ctx.client.shard_count * member_count} total)"
+        status["Shard members"] = member_str
     else:
-        table_fields.append(("Guilds", len(ctx.client.guilds)))
-        table_fields.append(("Members", len(list(ctx.client.get_all_members()))))
+        status["Guilds"] = len(ctx.client.guilds)
+        status["Members"] = member_count
 
-    # Commands
-    table_fields.append(("Commands", f"{len(ctx.client.cmds)}, with {len(ctx.client.cmd_names)} command keywords"))
+    # Commands, adjusted for any commands disabled in this guild
+    disabled_here = ctx.client.objects["disabled_guild_commands"].get(ctx.guild.id, []) if ctx.guild else []
+    active_cmd_count = len(ctx.client.cmds) - len(disabled_here)
+    status["Commands"] = f"{active_cmd_count}, with {len(ctx.client.cmd_names)} command keywords"
 
-    # Memory
-    mem = psutil.virtual_memory()
-    mem_str = f"{mem.used / (1024**3):.1f} GiB used out of {mem.total / (1024**3):.1f} GiB ({mem.used / mem.total * 100:.1f}%)"
-    table_fields.append(("Memory", mem_str))
+    # Hardware uptime using `uptime` shell command
+    # Output looks like: 15:49:53  up 108 days,  8:12,  2 users,  load average: 0.50, 0.32, 0.30
+    # (or "up  8:12,  2 users, ..." / "up 5 min,  1 user, ..." for shorter uptimes)
+    uname = await check_output("uptime")
+    up_section = re.search(r"up\s+(.*?),\s*\d+\s+users?,", uname.decode())
+    uptime_str = up_section.group(1).strip() if up_section else ""
+
+    days_match = re.search(r"(\d+)\s+day", uptime_str)
+    days = int(days_match.group(1)) if days_match else 0
+
+    hm_match = re.search(r"(\d+):(\d+)", uptime_str)
+    hours = int(hm_match.group(1)) if hm_match else 0
+
+    status["Uptime"] = f"{days} day{'s' if days != 1 else ''} {hours} hour{'s' if hours != 1 else ''}"
 
     # CPU Usage
-    table_fields.append(("CPU Usage", f"{psutil.cpu_percent()}%"))
+    status["CPU Usage"] = f"{psutil.cpu_percent()}%"
+
+    # Memory
+    mem_total: int = psutil.virtual_memory().total >> 20
+    mem_used: int = psutil.virtual_memory().used >> 20
+    status["Memory"] = f"{mem_used}/{mem_total} MiB ({mem_used / mem_total * 100:.1f}%)"
+
     # Python version
-    table_fields.append(("Python", f"{sys.version.split('\n')[0].split('(')[0]} (discord.py: {discord.__version__})"))
+    status["Python"] = f"{sys.version.split('\n')[0].split('(')[0]} (discord.py: {discord.__version__})"
 
     # Platform
-    table_fields.append(("Platform", platform.platform(terse=True)))
+    status["Kernel"] = platform.platform(aliased=True)
 
-    # Tabulate
-    fields, values = zip(*table_fields, strict=True)
-    table = prop_tabulate(fields, values)
-
-    # Create info string for top of description
-    info = ctx.client.app_info["info_str"].format(prefix=await ctx.best_prefix())
-
-    # Create link string for bottom of description
-    links = "[Support server]({}), [Invite me]({}), [Contribute!]({})".format(
-        ctx.client.app_info["support_guild"],
-        ctx.client.app_info["invite_link"],
-        # ctx.client.app_info["donate_link"],
-        ctx.client.app_info["github"],
+    # LaTeX and other things we use
+    tlmgr_str = await check_output("tlmgr", "--version")
+    # example output:
+    # tlmgr revision 79491 (2026-06-27 19:40:15 +0200)
+    # tlmgr using installation: /usr/local/texlive/2026
+    # TeX Live (https://tug.org/texlive) version 2026
+    # we only need build number (79491) and date (2026-06-27)
+    tlmgr_lines = tlmgr_str.decode().split("\n")
+    tlmgr_build = tlmgr_lines[0].split(" ")[2]
+    tlmgr_date = tlmgr_lines[0].split(" ")[3].replace("(", "").replace(")", "")
+    status["TeXLive"] = (
+        f"{tlmgr_build} (tlmgr: {discord.utils.format_dt(datetime.datetime.strptime(tlmgr_date, '%Y-%m-%d'), 'R')})"  # noqa
     )
 
-    # Build embed
-    desc = f"{info}\n{table}\n{links}"
-    embed = discord.Embed(title="About Me", color=discord.Colour.red(), description=desc)
+    # LuaTeX version
+    status["LuaTeX Version"] = (
+        (await check_output("luatex", "--version")).decode().split("\n")[0].split(", ")[1].replace("Version ", "")
+    )
+
+    # Typst
+    status["Typst Version"] = (await check_output("typst", "--version")).decode().split("\n")[0].split(" ")[1]
+    # Tabulate
+    fields_text: str = tabulate(status)
+
+    # Create info string for top of description
+    desc_text: str = ctx.client.app_info["info_str"].format(prefix=await ctx.best_prefix())
+
+    # check if we have more than 10000 users using the bot, make a boolean
+
+    # Create link string for bottom of description
+    invite_text = f"[Invite me]({ctx.client.app_info['invite_link']}), " if not restrict_invite else ""
+    links = f"[Support server]({ctx.client.app_info['support_guild']}), {invite_text}[Contribute!]({ctx.client.app_info['github']})"
 
     # Finally, send embed
-    await ctx.reply(embed=embed)
+    return await ctx.reply(
+        view=GenericFullEmbed(
+            header="About LuaTeXit",
+            body=f"{desc_text}\n{fields_text}",
+            footer=links,
+            # use bot's avatar
+            thumbnail_url=ctx.client.user.display_avatar.url,
+            accent_colour=LuaTeXitCC["yellow"],
+        )
+    )
 
 
 @module.cmd("ping", desc="Check heartbeat and API latency.", aliases=["pong"])

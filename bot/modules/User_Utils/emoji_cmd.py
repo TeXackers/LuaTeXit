@@ -1,15 +1,21 @@
-import asyncio
+from __future__ import annotations
+
 import re
-from contextlib import suppress
+from typing import TYPE_CHECKING
 
 import discord
 from cmdClient import Context  # noqa
-from utils.lib import prop_tabulate
+from cmdClient.Layouts import GenericFullEmbed
+from constants import LuaTeXitCC
+from utils.lib import tabulate
 
 from .emojis import emoji_names_by_unicode, emojis_by_name
 from .module import utils_module as module
 
-default_emoji_url = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/{}.png"
+if TYPE_CHECKING:
+    from discord.emoji import Emoji
+
+default_emoji_url = "https://jdecked.github.io/twemoji/v/latest/72x72/{}.png"
 
 
 def get_custom_emoji(ctx: Context, emoji_str: str):
@@ -52,218 +58,142 @@ def unicode_char_rep(uni: str) -> str:
     return "-".join(f"{ord(c):X}".lower() for c in uni if ord(c) >= 128 and ord(c) != 65039)
 
 
+def search_emojis(emojis: list[Emoji], query: str) -> list[Emoji]:
+    exact = [e for e in emojis if query == e.name.lower() or query == str(e.id)]
+    if exact:
+        return exact
+    return [e for e in emojis if query in e.name.lower()]
+
+
+def unicode_key(uni: str) -> str:
+    # Matches the (unfiltered) hex-codepoint key format used by emoji_names_by_unicode,
+    # unlike unicode_char_rep which strips FE0F for Twemoji's URL scheme.
+    return "-".join(f"{ord(c):x}" for c in uni)
+
+
+def search_unicode_emojis(query: str) -> list[str]:
+    # Query may itself be a pasted unicode emoji; look up its name directly first
+    reverse_name = emoji_names_by_unicode.get(unicode_key(query))
+    if reverse_name:
+        return [reverse_name]
+
+    if query in emojis_by_name:
+        return [query]
+
+    return [name for name in emojis_by_name if query in name]
+
+
+def build_emoji_embed(emoji: Emoji, source: str) -> GenericFullEmbed:
+    return GenericFullEmbed(
+        header=emoji.name,
+        body=tabulate(
+            {
+                "ID": f"`{emoji.id}`",
+                "Animated": "Yes" if emoji.animated else "No",
+                "Managed": "Yes" if emoji.managed else "No",
+                "Source": source,
+            },
+        ),
+        footer=f"Usage: `{emoji}`",
+        thumbnail_url=emoji.url,
+        accent_colour=LuaTeXitCC["yellow"],
+    )
+
+
 @module.cmd(
     "emoji",
-    desc="Displays info about, searches for, and enlarges custom emojis",
-    aliases=["e", "ee", "ree", "sree", "emote"],
-    flags=["e", "to==", "up=="],
+    desc="Displays/searches info about the app's emojis",
+    aliases=["e"],
+    flags=["guild", "server", "g", "s"],
 )
 async def cmd_emoji(ctx: Context, flags: dict):
     """
     Usage``:
-        {prefix}emoji <emoji> [-e]
-        {prefix}ee <emoji>
-        {prefix}ree <emoji>  [--to msgid | --up count]
-        {prefix}sree <emoji>
+        {prefix}emoji [<query>] [-guild|-server|-g|-s]
     Description:
-        Displays some information about the provided custom emoji, and sends an enlarged version.
-        If the emoji isn't found, instead searches for the emoji amongst all the emojis I can see.
-        If used as ee or given with -e flag, only shows the enlarged image.
-        If used as ree, reacts with the emoji, and as sree, silently reacts.
-        Built in emoji support is coming soon!
+        Displays the application's custom emojis.
+        If a query is given, searches for it amongst the application's emojis,
+        this guild's emojis, and the known unicode emojis, by name or ID.
     Flags::
-        e: Only shows the enlarged emoji, with no other information.
-        to: Accepts a message id in the current channel to react to.
-        up: Accepts a number of messages above yours to react to (default is `1`).
+        guild|server|g|s: Restrict everything to this guild's own emojis.
     Examples``:
         {prefix}e catThink
+        {prefix}e -g catThink
     """
-    prefix = await ctx.best_prefix()
+    query = ctx.args.strip().lower() if ctx.args else ""
 
-    # Flags indicating what we want to do
-    react_only = ctx.alias in ["ree", "sree"]
-    enlarged_only = (ctx.alias == "ee") or (flags["e"] and not react_only)
-    info = (ctx.alias == "emoji") and not enlarged_only
-
-    # No arguments given and we aren't reacting
-    if not ctx.args and not react_only:
-        # List the current guild custom emojis
+    # -guild/-server/-g/-s restricts the whole command to this guild's own emojis
+    if flags["guild"] or flags["server"] or flags["g"] or flags["s"]:
         if not ctx.guild:
-            return await ctx.error_reply(f"Search for emojis using `{prefix}emoji <emojistring>`")
+            return await ctx.error_reply("This flag can only be used within a guild.")
 
-        emojis = ctx.guild.emojis
+        guild_emojis: list[Emoji] = list(ctx.guild.emojis)
 
-        if not emojis:
-            return await ctx.error_reply(
-                "No custom emojis found in this guild!\n"
-                "Use this command to search for custom emojis from my other guilds.",
-            )
+        if not query:
+            if not guild_emojis:
+                return await ctx.error_reply("This guild has no emojis.")
 
-        emojistrs = [f"{e!s}`{e.id}` {e.name}" for e in emojis]
-        blocks = ["\n".join(emojistrs[i : i + 10]) for i in range(0, len(emojistrs), 10)]
-        embeds = [
-            discord.Embed(
-                title="Custom emojis in this guild",
-                description=block,
-                colour=discord.Colour.light_grey(),
-                timestamp=discord.utils.utcnow(),
-            )
-            for block in blocks
-        ]
-        return await ctx.pager(embeds, locked=False)
+            lines = [f"{i}. {emoji} `{emoji.name}`" for i, emoji in enumerate(guild_emojis, start=1)]
+            return await ctx.pager_v2("\n".join(lines), title=f"Guild emojis ({len(guild_emojis)})")
 
-    # If there's no args now that means we're reacting, and default reaction is reeeeeee
-    em_str = ctx.args.strip(":") or "reeeeeeeeeee"
+        guild_matches = search_emojis(guild_emojis, query)
+        if not guild_matches:
+            return await ctx.error_reply(f"No guild emoji found matching `{ctx.args}`.")
 
-    # Time to find the emoji.
-    emoji = get_custom_emoji(ctx, em_str)
-    emoji_is_custom = False
-    # Make special chars into unicode representation by normal chars
-    unicode = unicode_char_rep(em_str) if em_str else None
-    # Find match in emojis if there were special chars
-    if unicode:
-        unicode = (
-            unicode
-            if unicode in emoji_names_by_unicode
-            else next((u for u in emoji_names_by_unicode if unicode in u), None)
+        if len(guild_matches) == 1:
+            return await ctx.reply(view=build_emoji_embed(guild_matches[0], "Guild"))
+
+        lines = [f"{i}. {emoji} `{emoji.name}`" for i, emoji in enumerate(guild_matches, start=1)]
+        return await ctx.pager_v2("\n".join(lines), title=f"Guild emoji search results for `{ctx.args}`")
+
+    # fetch app emojis
+    app_emojis: list[Emoji] = await ctx.client.fetch_application_emojis()
+
+    # no query = show all app emojis instead
+    if not query:
+        if not app_emojis:
+            return await ctx.error_reply("This app has no emojis.")
+
+        lines = [f"{i}. {emoji} `{emoji.name}`" for i, emoji in enumerate(app_emojis, start=1)]
+        return await ctx.pager_v2("\n".join(lines), title=f"Application emojis ({len(app_emojis)})")
+
+    # if query, try to find the emoji by name or id
+    # here, we look for application emojis, this guild's emojis, and unicode emojis
+    # see emojis.py for the unicode emoji database
+    guild_emojis = list(ctx.guild.emojis) if ctx.guild else []
+
+    app_matches = search_emojis(app_emojis, query)
+    guild_matches = search_emojis(guild_emojis, query)
+    unicode_matches = search_unicode_emojis(query)
+
+    if not app_matches and not guild_matches and not unicode_matches:
+        return await ctx.error_reply(f"No application, guild, or unicode emoji found matching `{ctx.args}`.")
+
+    # Single unambiguous match, show it in full
+    if len(app_matches) + len(guild_matches) + len(unicode_matches) == 1:
+        if app_matches or guild_matches:
+            emoji, source = (app_matches[0], "Application") if app_matches else (guild_matches[0], "Guild")
+            return await ctx.reply(view=build_emoji_embed(emoji, source))
+
+        name = unicode_matches[0]
+        char = emojis_by_name[name]
+        return await ctx.reply(
+            view=GenericFullEmbed(
+                header=name,
+                body=tabulate({"Character": char, "Source": "Unicode"}),
+                footer="Unicode emoji",
+                thumbnail_url=default_emoji_url.format(unicode_char_rep(char)),
+                accent_colour=LuaTeXitCC["yellow"],
+            ),
         )
-    # If there were no special chars, then there's a chance string the representation
-    # was passed as an argument, e.g. ~e 1f468
-    if not unicode:
-        unicode = (
-            em_str
-            if em_str in emoji_names_by_unicode
-            else next((u for u in emoji_names_by_unicode if em_str in u), None)
-        )
 
-    if emoji:
-        emoji_is_custom = True
-
-        # Emoji currently not usable
-        if not emoji.available:
-            return await ctx.error_reply("Emoji is currently unavailable!")
-    elif unicode:
-        emoji = {
-            "unicode": unicode,
-            "shortcode": emoji_names_by_unicode[unicode],
-            "emoji": emojis_by_name[emoji_names_by_unicode[unicode]],
-            "url": default_emoji_url.format(unicode),
-        }
-    else:
-        name = em_str if em_str in emojis_by_name else next((n for n in emojis_by_name if em_str in n), None)
-
-        if name:
-            unicode = unicode_char_rep(emojis_by_name[name])
-            emoji = {
-                "unicode": unicode,
-                "shortcode": name,
-                "emoji": emojis_by_name[name],
-                "url": default_emoji_url.format(unicode),
-            }
-
-    # Just in case we somehow came out with no emoji
-    if emoji is None:
-        return await ctx.error_reply("No matching emojis found!")
-
-    # At this point, we should have enough of the emoji to do what is requested.
-    # Start handling the different output cases.
-    if react_only:
-        react_message = None
-        if ctx.guild and not ctx.ch.permissions_for(ctx.author).add_reactions:
-            return await ctx.error_reply("You do not have permissions to add reactions here!")
-
-        if ctx.guild and not ctx.ch.permissions_for(ctx.guild.me).add_reactions:
-            return await ctx.error_reply("I do not have permissions to add reactions here!")
-
-        # If a messageid to react to was specified, get it. Otherwise get the previous message in the channel.
-        if flags["to"]:
-            if not flags["to"].isdigit():
-                return await ctx.error_reply("`to` argument must be a message id.")
-            react_message = await ctx.ch.fetch_message(int(flags["to"]))
-            if not react_message:
-                # Couldn't find the requested message to react to
-                return await ctx.error_reply("Couldn't find that message in this channel!")
-        else:
-            distance = int(flags["up"]) + 1 if flags["up"] and flags["up"].isdigit() and int(flags["up"]) < 20 else 2
-            # Grab logs
-            # TODO: Does this need permission checking?
-            logs = ctx.ch.history(limit=distance)
-            async for message in logs:
-                react_message = message
-
-            # If there wasn't a previous message, whinge
-            if react_message is None or react_message == ctx.msg:
-                return await ctx.reply("Couldn't find a message to react to!")
-
-        # React to the specified message.
-        # Wrap this in try/except in case the message was deleted in the meantime somehow.
-        try:
-            await ctx.client.http.add_reaction(
-                ctx.ch.id,
-                react_message.id,
-                f"{emoji.name}:{emoji.id}" if emoji_is_custom else emoji["emoji"],
-            )
-        except discord.NotFound:
-            pass
-        except discord.HTTPException:
-            await ctx.error_reply("I don't have this emoji, so I can't react with it!")
-
-        # If we need to delete the source message, do this now
-        if ctx.alias == "sree":
-            with suppress(discord.NotFound):
-                await ctx.msg.delete()
-
-        # Monitor the react message for reactions for a bit. If someone else reacts, remove our reaction.
-        with suppress(asyncio.TimeoutError):
-            reaction, _ = await ctx.client.wait_for(
-                "reaction_add",
-                check=lambda reaction, user: (
-                    user != ctx.client.user
-                    and reaction.message == react_message
-                    and (reaction.emoji.id == int(emoji.id) if emoji_is_custom else str(reaction) == emoji["emoji"])
-                ),
-                timeout=60,
-            )
-
-        # Remove our reaction (if possible)
-        with suppress(discord.NotFound, discord.Forbidden):
-            await react_message.remove_reaction(reaction, ctx.guild.me if ctx.guild else ctx.client.user)
-
-    elif enlarged_only:
-        # We just want to post an embed with the enlarged emoji as the image.
-        embed = discord.Embed(colour=discord.Colour.light_grey())
-        return await ctx.reply(embed=embed.set_image(url=emoji.url if emoji_is_custom else emoji["url"]))
-    elif info:
-        # We want to post the embed with the enlarged emoji, and as much info as we can get.
-        prop_list = []
-        value_list = []
-
-        if emoji_is_custom:
-            prop_list.append("Name")
-            value_list.append(emoji.name)
-            prop_list.append("ID")
-            value_list.append(f"{emoji.id}")
-            prop_list.append("Image link")
-            value_list.append(f"[Click here]({emoji.url})")
-            if emoji.user:
-                prop_list.append("Creator")
-                value_list.append("{username}#{discriminator}".format(**emoji.user))
-            prop_list.append("Guild")
-            value_list.append(emoji.guild)
-            prop_list.append("Created at")
-            value_list.append(ctx.ts(emoji.created_at))
-        else:
-            prop_list = ["Name", "Unicode", "String", "Image link"]
-            value_list = [emoji["shortcode"], emoji["unicode"], emoji["emoji"], "[Click here]({})".format(emoji["url"])]
-
-        desc = prop_tabulate(prop_list, value_list)
-        embed = discord.Embed(color=discord.Colour.light_grey(), description=desc, title="Emoji info!")
-        embed.set_image(url=emoji.url if emoji_is_custom else emoji["url"])
-        return await ctx.reply(embed=embed)
-    else:
-        # Final use case, just post the emoji
-        if emoji_is_custom:
-            return await ctx.reply("<{}:{}:{}>".format("a" if emoji.animated else "", emoji.name, emoji.id))
-        return await ctx.reply(emoji["emoji"])
-
-    return None
+    # Multiple matches
+    lines = [f"{i}. {emoji} `{emoji.name}` (Application)" for i, emoji in enumerate(app_matches, start=1)]
+    lines += [
+        f"{i}. {emoji} `{emoji.name}` (Guild)" for i, emoji in enumerate(guild_matches, start=len(app_matches) + 1)
+    ]
+    lines += [
+        f"{i}. {emojis_by_name[name]} `{name}` (Unicode)"
+        for i, name in enumerate(unicode_matches, start=len(app_matches) + len(guild_matches) + 1)
+    ]
+    return await ctx.pager_v2("\n".join(lines), title=f"Emoji search results for `{ctx.args}`")

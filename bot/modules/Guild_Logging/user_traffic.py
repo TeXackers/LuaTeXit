@@ -141,7 +141,7 @@ def attach_traffic_handlers(client):
 class guild_joinlog(ColumnData, Channel, GuildSetting):
     attr_name = "join_log"
     category = "Logging"
-    read_check: type[Check] = Check
+    read_check: Check | None = None
     write_check: Check = guild_manager
 
     name = "joinlog"
@@ -158,7 +158,7 @@ class guild_joinlog(ColumnData, Channel, GuildSetting):
 class guild_departurelog(ColumnData, Channel, GuildSetting):
     attr_name = "departure_log"
     category = "Logging"
-    read_check: type[Check] = Check
+    read_check: Check | None = None
     write_check: Check = guild_manager
 
     name = "departurelog"

@@ -29,19 +29,16 @@ info = {
     "help_file": "bot/resources/apps/luatexit/luatexit_thanks.png",
 }
 
-disabled_modules = ["Maths", "Starboard", "Social"]
+disabled_modules = [
+    "Guild_Admin",
+    "Guild_Logging",
+    "Guild_Moderation",
+    "Maths",
+    "Starboard",
+    "Social",
+]
 
-disabled_commands = {
-    # "colour",
-    "echo",
-    "emoji",
-    "invitebot",
-    "jumpto",
-    "names",
-    "piggybank",
-    "quote",
-    "secho",
-}
+disabled_commands = {}
 
 
 def load_into(client: cmdClient):

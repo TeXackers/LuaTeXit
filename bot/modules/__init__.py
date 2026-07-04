@@ -2,9 +2,10 @@ from .Bot_Admin import *
 from .Custom import *
 from .Fun import *
 from .Github import *
-from .Guild_Admin import *
-from .Guild_Logging import *
-from .Guild_Moderation import *
+
+# from .Guild_Admin import *
+# from .Guild_Logging import *
+# from .Guild_Moderation import *
 from .Info import *
 from .Mahjong import *
 from .Maths import *

@@ -108,10 +108,12 @@ class Boolean(SettingType):
         raise BadUserInput(f"Unknown boolean type `{userstr}`")
 
     @classmethod
-    def _format_data(cls, client: cmdClient, guildid: int, data: bool, **kwargs):
+    def _format_data(cls, client: cmdClient, guildid: int, data: bool | None, **kwargs):
         """
         Pass the provided value through the outputs map.
         """
+        if data is None:
+            return None
         return cls._outputs[data]
 
 

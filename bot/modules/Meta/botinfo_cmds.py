@@ -78,8 +78,7 @@ async def cmd_about(ctx: Context):
 
     # Commands, adjusted for any commands disabled in this guild
     disabled_here = ctx.client.objects["disabled_guild_commands"].get(ctx.guild.id, []) if ctx.guild else []
-    active_cmd_count = len(ctx.client.cmds) - len(disabled_here)
-    status["Commands"] = f"{active_cmd_count}, with {len(ctx.client.cmd_names)} command keywords"
+    status["Commands"] = f"{len(ctx.client.cmds) - len(disabled_here)}"
 
     # Hardware uptime using `uptime` shell command
     # Output looks like: 15:49:53  up 108 days,  8:12,  2 users,  load average: 0.50, 0.32, 0.30

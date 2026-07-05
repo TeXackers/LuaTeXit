@@ -5,32 +5,8 @@ Layout construction specific to the Github module.
 import re
 
 import discord
-from discord.ui import Container, LayoutView, MediaGallery, Section, Separator, TextDisplay, Thumbnail
-
-
-class Header(TextDisplay):
-    def __init__(self, text: str) -> None:
-        super().__init__(f"### {text}")
-
-
-class HeaderWithThumbnail(Section):
-    def __init__(self, text: str, thumbnail_url: str) -> None:
-        super().__init__(Header(text), accessory=Thumbnail(thumbnail_url))
-
-
-class Body(TextDisplay):
-    def __init__(self, text: str) -> None:
-        super().__init__(f"\n{text}\n")
-
-
-class Footer(TextDisplay):
-    def __init__(self, text: str) -> None:
-        super().__init__(f"\n-# {text}")
-
-
-class SectionWithThumbnail(Section):
-    def __init__(self, text: str, thumbnail_url: str) -> None:
-        super().__init__(Body(text), accessory=Thumbnail(thumbnail_url))
+from cmdClient.Layouts import Body, Footer, HeaderWithThumbnail
+from discord.ui import Container, LayoutView, MediaGallery, Separator
 
 
 class GithubEmbed(LayoutView):

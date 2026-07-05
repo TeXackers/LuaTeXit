@@ -1,5 +1,3 @@
-# from . import fun_cmds
-# from . import image_cmds
-from . import gay, module
+from . import eightball_cmd, module, roll_cmd
 
-__all__ = ["gay", "module"]
+__all__ = ["eightball_cmd", "module", "roll_cmd"]

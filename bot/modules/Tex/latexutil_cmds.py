@@ -502,8 +502,10 @@ async def cmd_findfont(ctx: Context, flags: dict):
     if flags["name"]:
         params_dict["query"] = clean_md(flags["name"])
         params_dict["type"] = "name"
-        fc_out = [f.title() for f in [f.lower() for f in fc_out_preprocessed] if clean_md(flags["name"]).lower() in f]
-        if not fc_out:
+        fc_out_preprocessed = [
+            f.title() for f in [f.lower() for f in fc_out_preprocessed] if clean_md(flags["name"]).lower() in f
+        ]
+        if not fc_out_preprocessed:
             await out_msg.delete()
             return await ctx.error_reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
 

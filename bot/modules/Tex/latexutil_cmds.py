@@ -10,8 +10,9 @@ from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from cmdClient import Context  # noqa
 from cmdClient.Format import bf, footnote
-from cmdClient.Layouts import GenericFullEmbed
+from cmdClient.Layouts import TextEmbed
 from iso639 import Language, LanguageNotFoundError
+from utils.cache import async_ttl_cache
 from utils.lib import tabulate
 
 from .module import latex_module as module
@@ -28,14 +29,31 @@ bend_url: str = "https://cdn.discordapp.com/attachments/1043075521476579398/1043
 thumbnails = [lion_url, bend_url]
 
 
+@async_ttl_cache(days=7)
+async def run_fc_list(*args: str) -> tuple[bytes, bytes]:
+    """Run `fc-list <args>`, caching the result since installed fonts rarely change."""
+    proc = await asyncio.create_subprocess_exec("fc-list", *args, stdout=PIPE, stderr=PIPE)
+    return await proc.communicate()
+
+
+@async_ttl_cache(days=7)
 async def soup_site(url: str) -> BeautifulSoup:
     async with ClientSession() as session, session.get(url, timeout=ClientTimeout(total=10)) as r:
         text = await r.text()
     return BeautifulSoup(text, "html.parser")
 
 
+@async_ttl_cache(days=7)
+async def texdoc_status(pkg_name: str) -> int:
+    """Check whether `pkg_name` has a texdoc.net page, caching the result since it rarely changes."""
+    addr = texdoc_url.format(urllib.parse.quote_plus(pkg_name))
+    async with ClientSession() as session, session.get(addr, timeout=ClientTimeout(total=10)) as page:
+        return page.status
+
+
 line_beginning_re = re.compile(r"^", re.MULTILINE)
 whitespace_re = re.compile(r"[\r\n\s\t ]+")
+whitespace_around_newline_re = re.compile(r"[ \t]*\n[ \t]*")
 
 
 def escape(text: str) -> str:
@@ -63,7 +81,12 @@ class MarkdownConverter:
 
     def convert(self, html: str) -> str:
         soup = BeautifulSoup(html, "html.parser")
-        return self.process_tag(soup)
+        return self.convert_node(soup)
+
+    def convert_node(self, node) -> str:
+        """Like process_tag, but also cleans up whitespace left around paragraph breaks."""
+        text = self.process_tag(node)
+        return whitespace_around_newline_re.sub("\n", text).strip()
 
     def process_tag(self, node) -> str:
         text = ""
@@ -161,7 +184,8 @@ class MarkdownConverter:
         return f"{bullet} {text or ''}\n"
 
     def convert_p(self, el, text: str) -> str:
-        return f"{text}" if text else ""
+        text = text.strip()
+        return f"{text}\n\n" if text else ""
 
     def convert_strong(self, el, text: str) -> str:
         prefix, suffix, text = chomp(text)
@@ -187,7 +211,7 @@ def search_n_parse(soup: BeautifulSoup) -> tuple[str, str, list[str], list[str]]
     title = title.text
     converter = MarkdownConverter()
     package_desc = soup.find("p")
-    emb_desc = converter.process_tag(package_desc)
+    emb_desc = converter.convert_node(package_desc)
 
     table = soup.find("table")
     prop_list = []
@@ -240,9 +264,7 @@ async def cmd_texdoc(ctx: Context):
         await out_msg.delete()
         return await ctx.error_reply("Please give me something to search for!")
     # ping to check if it exists
-    addr: str = texdoc_url.format(urllib.parse.quote_plus(ctx.args))
-    async with ClientSession() as session, session.get(addr, timeout=ClientTimeout(total=10)) as page:
-        status = page.status
+    status = await texdoc_status(ctx.args)
     if status == 404:
         await out_msg.delete()
         return await ctx.error_reply(f"I couldn't find `{ctx.args}` in the texdoc database!")
@@ -291,12 +313,12 @@ async def cmd_ctan(ctx: Context):
     loading_emoji = ctx.client.conf.emojis.getemoji("loading")
     out_msg = await ctx.reply(f"Searching the CTAN, please wait... {loading_emoji}")
 
-    soup: BeautifulSoup = soup_site(url)
+    soup: BeautifulSoup = await soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
 
     if ctx.alias.lower() == "ctans":
         result_url = search_url.format(urllib.parse.quote_plus(ctx.args))
-        soup = soup_site(result_url)
+        soup = await soup_site(result_url)
         desc = f"From {result_url}"
         if title:
             desc += f"\nDirect page found at [{ctx.args}]({url})"
@@ -329,32 +351,20 @@ async def cmd_ctan(ctx: Context):
 
     table = tabulate(dict(zip(prop_list, value_list, strict=True))) if prop_list else ""
     read_more = f"Read more at [CTAN page]({url}) of the package."
-    if len(desc) > 700:
-        desc = desc[:700]
-        r_newline = desc.rfind("\n")
-        r_space = desc.rfind(" ")
-        desc = desc[: max(r_newline, r_space)] + "..."
+    if len(desc) > 1000:
+        desc = desc[:1000]
     if len(table) > 900:
         table = table[:900]
         rightmost_newline = table.rfind("\n")
         table = table[: rightmost_newline + 1]
     emb_desc = desc + "\n" + table
 
-    v = GenericFullEmbed(
+    v = TextEmbed(
         header=title,
         body=emb_desc,
         footer=read_more,
-        thumbnail_url=random.choice(thumbnails),
         accent_colour=discord.Colour.from_rgb(66, 66, 133),
     )
-
-    # embed = discord.Embed(
-    #     title=title,
-    #     url=url,
-    #     description=emb_desc,
-    #     color=discord.Color.from_rgb(66, 66, 133),  # ctan's #424285 color
-    # )
-    # randomly choose url from thumbnail list
 
     return await out_msg.edit(content="", view=v)
 
@@ -478,10 +488,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
 
         fclist_lang: str = ":lang=" + str(requested_language.part1 or requested_language.part2t)
 
-    findfont_cmd = ["fc-list", f"{fclist_chars}{fclist_lang}", ":", "family"]
-
-    proc = await asyncio.create_subprocess_exec(*findfont_cmd, stdout=PIPE, stderr=PIPE)
-    fc_out, fc_err = await proc.communicate()
+    fc_out, fc_err = await run_fc_list(f"{fclist_chars}{fclist_lang}", ":", "family")
 
     # Error out early
     if fc_err:

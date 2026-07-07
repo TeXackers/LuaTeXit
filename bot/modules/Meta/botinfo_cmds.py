@@ -6,6 +6,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from constants import LuaTeXitCC
+from utils.cache import async_ttl_cache
 
 if TYPE_CHECKING:
     import datetime
@@ -39,6 +40,10 @@ Commands provided:
 async def check_output(*args: str) -> bytes:
     """Run subprocess.check_output off the event loop thread."""
     return await asyncio.to_thread(subprocess.check_output, args)
+
+
+# for caching tlmgr/luatex and so on
+cached_check_output = async_ttl_cache(days=14)(check_output)
 
 
 @module.cmd("about", desc="Shard status and bot statistics.")
@@ -110,7 +115,7 @@ async def cmd_about(ctx: Context):
     status["Kernel"] = platform.platform(aliased=True)
 
     # LaTeX and other things we use
-    tlmgr_str = await check_output("tlmgr", "--version")
+    tlmgr_str = await cached_check_output("tlmgr", "--version")
     # example output:
     # tlmgr revision 79491 (2026-06-27 19:40:15 +0200)
     # tlmgr using installation: /usr/local/texlive/2026
@@ -125,11 +130,15 @@ async def cmd_about(ctx: Context):
 
     # LuaTeX version
     status["LuaTeX Version"] = (
-        (await check_output("luatex", "--version")).decode().split("\n")[0].split(", ")[1].replace("Version ", "")
+        (await cached_check_output("luatex", "--version"))
+        .decode()
+        .split("\n")[0]
+        .split(", ")[1]
+        .replace("Version ", "")
     )
 
     # Typst
-    status["Typst Version"] = (await check_output("typst", "--version")).decode().split("\n")[0].split(" ")[1]
+    status["Typst Version"] = (await cached_check_output("typst", "--version")).decode().split("\n")[0].split(" ")[1]
     # Tabulate
     fields_text: str = tabulate(status)
 

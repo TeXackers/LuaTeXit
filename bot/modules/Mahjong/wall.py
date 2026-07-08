@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import random
 
-from .tiles import FLOWER_ORDER, HAND_TILE_NAMES
+from .tiles import HAND_TILE_NAMES
 
 
 class WallEmptyError(RuntimeError):
@@ -14,13 +14,11 @@ class WallEmptyError(RuntimeError):
 
 
 def _full_set() -> list[str]:
-    tiles = [tile for tile in HAND_TILE_NAMES for _ in range(4)]
-    tiles += list(FLOWER_ORDER)
-    return tiles
+    return [tile for tile in HAND_TILE_NAMES for _ in range(4)]
 
 
 class Wall:
-    """A shuffled 144-tile wall (34 kinds x4 + 8 unique flowers), drawn one at a time."""
+    """A shuffled 136-tile wall (34 kinds x4), drawn one at a time."""
 
     def __init__(self, rng: random.Random | None = None):
         self._rng = rng or random.Random()

@@ -20,20 +20,14 @@ from .display import render_note
 from .display import tile_str as _tile_str
 from .module import mahjong_module as module
 from .scoring import ScoringError, compute_score
-from .tiles import HAND_TILE_NAMES, HONOR_ORDER, SUITS, is_flower, number_of, suit_of
+from .tiles import HAND_TILE_NAMES
+from .tiles import tile_sort_key as _tile_sort_key
 from .wall import Wall
 
 if TYPE_CHECKING:
     from discord import Emoji
 
 HAND_SIZE = 14
-
-
-def _tile_sort_key(tile: str) -> tuple[int, int]:
-    suit = suit_of(tile)
-    if suit is not None:
-        return (SUITS.index(suit), number_of(tile))
-    return (len(SUITS), HONOR_ORDER.index(tile))
 
 
 def _score_lines_text(result, emojis_by_name: dict) -> str:
@@ -50,8 +44,7 @@ class MahjongDrawerView(LayoutView):
         self.author = author
         self.emojis_by_name = emojis_by_name
         self.wall = Wall()
-        self.flowers: list[str] = []
-        self.hand: list[str] = sorted((self._draw_non_flower() for _ in range(HAND_SIZE)), key=_tile_sort_key)
+        self.hand: list[str] = sorted((self.wall.draw() for _ in range(HAND_SIZE)), key=_tile_sort_key)
         self.discards: list[str] = []
         self.message: discord.Message | None = None
         self.ended: bool = False
@@ -68,21 +61,8 @@ class MahjongDrawerView(LayoutView):
         self._record("Dealt")
         self._render()
 
-    def _draw_non_flower(self) -> str:
-        while True:
-            tile = self.wall.draw()
-            if is_flower(tile):
-                self.flowers.append(tile)
-            else:
-                return tile
-
     def _hand_text(self) -> str:
         return "".join(_tile_str(self.emojis_by_name, t) for t in self.hand)
-
-    def _flowers_text(self) -> str:
-        if not self.flowers:
-            return "(none)"
-        return " ".join(_tile_str(self.emojis_by_name, t) for t in self.flowers)
 
     def _best_tenpai(self) -> tuple[str, list[tuple[str, int]]] | None:
         """
@@ -95,7 +75,7 @@ class MahjongDrawerView(LayoutView):
             candidate13 = self.hand[:i] + self.hand[i + 1 :]
             waits: list[tuple[str, int]] = []
             for wait_tile in HAND_TILE_NAMES:
-                text = ",".join([*candidate13, wait_tile, *self.flowers])
+                text = ",".join([*candidate13, wait_tile])
                 try:
                     result = compute_score(text, concealed=True, tsumo=True)
                 except ScoringError:
@@ -107,7 +87,7 @@ class MahjongDrawerView(LayoutView):
 
     def _compute_status(self) -> tuple[str, int, str]:
         """Return (kind, score, text): kind is one of 'win'/'tenpai'/'none'."""
-        text = ",".join(self.hand + self.flowers)
+        text = ",".join(self.hand)
         try:
             result = compute_score(text, concealed=True, tsumo=True)
         except ScoringError:
@@ -169,7 +149,6 @@ class MahjongDrawerView(LayoutView):
 
         body = (
             f"**Hand**\n# {self._hand_text()}\n"
-            f"**Flowers**\n{("# " + self._flowers_text()) or "n/a"}\n"
             f"Discards: {len(self.discards)} | Remaining: {self.wall.remaining} | "
             f"Best so far: {self.best_score} points\n\n"
             f"**Recent turns**\n{recent_history}\n\n"
@@ -213,7 +192,7 @@ class MahjongDrawerView(LayoutView):
         if self.wall.remaining == 0:
             self.ended = True
         else:
-            self.hand.append(self._draw_non_flower())
+            self.hand.append(self.wall.draw())
             self.hand.sort(key=_tile_sort_key)
 
         self._record(f"- {_tile_str(self.emojis_by_name, tile)}")
@@ -245,10 +224,9 @@ async def cmd_mahjongdraw(ctx: Context):
         {prefix}mahjongdraw
     Description:
         Deals you 14 tiles from a shuffled solo wall. Pick a tile to discard
-        from the dropdown and you'll draw a replacement (flowers are set aside
-        automatically, same as at a real table), with a live score preview
-        each time. Hit the "End simulation" whenever you want to see your final
-        hand and score (or continue discarding).
+        from the dropdown and you'll draw a replacement, with a live score
+        preview each time. Hit the "End simulation" whenever you want to see
+        your final hand and score (or continue discarding).
     """
     emojis = await ctx.client.fetch_application_emojis()
     emojis_by_name = {e.name: e for e in emojis}

@@ -1,39 +1,30 @@
 """
-Mahjong scoring engine using 홍콩족보.md i.e. everything derivable from the 14 tiles themselves (+ seat/round wind, concealed-or-open, and tsumo-or-ron), with no dependency on turn order, wall state, or declared-kong history.
+Mahjong scoring engine using 홍콩족보.md i.e. everything derivable from the 14 tiles themselves (+ seat/round wind, concealed-or-open, and tsumo-or-ron)
+
+WIP.
 """
 
 from __future__ import annotations
 
 import itertools
-from collections import Counter, namedtuple
+from collections import Counter
 from dataclasses import dataclass
 
-from .hand import decompose_hand, is_seven_pairs, is_thirteen_orphans
-from .tiles import (
-    DRAGONS,
-    FLOWER_SEAT,
-    FLOWERS_PLANT,
-    FLOWERS_SEASON,
+from modules.Mahjong.hand import decompose_hand, is_seven_pairs, is_thirteen_orphans
+from modules.Mahjong.tiles import (
     SUITS,
     WINDS,
-    MahjongParseError,
     is_dragon,
     is_honor,
     is_simple,
     is_terminal,
     is_wind,
     number_of,
-    parse_hand,
-    split_flowers,
     suit_of,
 )
-from .waits import is_shanpon, is_tanki
 
-ScoreLine = namedtuple("ScoreLine", "name points note")
-
-
-class ScoringError(ValueError):
-    """Raised when the given tiles don't form a valid, scoreable winning hand."""
+from .base import Ruleset, ScoreLine, ScoringError
+from .context import build_context
 
 
 @dataclass
@@ -54,38 +45,12 @@ class ScoreFlags:
 class ScoreResult:
     shape: str
     hand_tiles: list[str]
-    flower_tiles: list[str]
     winning_tile: str
     lines: list[ScoreLine]
     total: int
 
 
-def _score_flowers(flower_tiles: list[str], flags: ScoreFlags) -> list[ScoreLine]:
-    lines: list[ScoreLine] = []
-    if not flower_tiles:
-        lines.append(ScoreLine("無花", 1, "no flowers held"))
-        return lines
-
-    seat_idx = WINDS.index(flags.seat_wind)
-    for f in flower_tiles:
-        if FLOWER_SEAT[f] == seat_idx:
-            lines.append(ScoreLine("正花", 2, f"{f} matches your seat wind"))
-        else:
-            lines.append(ScoreLine("偏花", 1, f"{f} doesn't match your seat wind"))
-
-    plant_held = [f for f in flower_tiles if f in FLOWERS_PLANT]
-    season_held = [f for f in flower_tiles if f in FLOWERS_SEASON]
-    if len(flower_tiles) == 8:
-        lines.append(ScoreLine("화패 8개", 40, "collected all eight flowers"))
-    else:
-        if len(plant_held) == 4:
-            lines.append(ScoreLine("화패 한 종류 (식물)", 10, "collected all four plant flowers"))
-        if len(season_held) == 4:
-            lines.append(ScoreLine("화패 한 종류 (계절)", 10, "collected all four season flowers"))
-    return lines
-
-
-def _score_generic(hand_tiles: list[str], flags: ScoreFlags) -> tuple[list[ScoreLine], bool, bool]:
+def _score_generic(hand_tiles: list[str], flags: ScoreFlags) -> tuple[list[ScoreLine], bool]:
     """Rules derivable from the raw tile multiset, independent of how it's grouped."""
     lines: list[ScoreLine] = []
 
@@ -117,11 +82,9 @@ def _score_generic(hand_tiles: list[str], flags: ScoreFlags) -> tuple[list[Score
     return lines, no_honors
 
 
-def _score_no_honor_family(no_honors: bool, no_flowers: bool, is_pinfu_shape: bool) -> list[ScoreLine]:
-    if no_honors and no_flowers and is_pinfu_shape:
-        return [ScoreLine("無字花平和", 15, "no honours, no flowers, all-sequence 平糊 shape")]
-    if no_honors and no_flowers:
-        return [ScoreLine("無字花", 5, "no honours and no flowers")]
+def _score_no_honor_family(no_honors: bool, is_pinfu_shape: bool) -> list[ScoreLine]:
+    if no_honors and is_pinfu_shape:
+        return [ScoreLine("無字平和", 15, "no honours, all-sequence 平糊 shape")]
     if no_honors:
         return [ScoreLine("無字", 1, "no honour tiles")]
     return []
@@ -138,17 +101,7 @@ def _score_concealed_tsumo(flags: ScoreFlags) -> list[ScoreLine]:
 
 
 def _chicken_duck(lines: list[ScoreLine], flags: ScoreFlags) -> list[ScoreLine]:
-    excluded = {
-        "無花",
-        "偏花",
-        "正花",
-        "화패 8개",
-        "화패 한 종류 (식물)",
-        "화패 한 종류 (계절)",
-        "門前清",
-        "自摸",
-        "門前清自摸",
-    }
+    excluded = {"門前清", "自摸", "門前清自摸"}
     subtotal = sum(line.points for line in lines if line.name not in excluded)
     if subtotal > 0:
         return []
@@ -162,20 +115,19 @@ def _score_standard(
     flags: ScoreFlags,
     winning_tile: str,
     no_honors: bool,
-    no_flowers: bool,
 ):
     lines: list[ScoreLine] = []
     groups = decomp["groups"]
     pair = decomp["pair"]
-    triplets = [g for g in groups if g[0] == "triplet"]
-    sequences = [g for g in groups if g[0] == "sequence"]
+    triplets = [g for g in groups if g.kind in ("triplet", "kan")]
+    sequences = [g for g in groups if g.kind == "sequence"]
 
     is_pinfu_shape = not triplets and not is_honor(pair)
-    lines += _score_no_honor_family(no_honors, no_flowers, is_pinfu_shape)
+    lines += _score_no_honor_family(no_honors, is_pinfu_shape)
 
     # 4/5: winds
     for g in triplets:
-        tile = g[1]
+        tile = g.tile
         if is_wind(tile):
             match_seat = tile == flags.seat_wind
             match_round = tile == flags.round_wind
@@ -186,16 +138,16 @@ def _score_standard(
                 lines.append(ScoreLine("碰", 1, f"{tile} triplet (off-wind)"))
 
     # 6: dragons
-    dragon_triplets = [g for g in triplets if is_dragon(g[1])]
+    dragon_triplets = [g for g in triplets if is_dragon(g.tile)]
     for g in dragon_triplets:
-        lines.append(ScoreLine("三元牌", 2, f"{g[1]} triplet"))
+        lines.append(ScoreLine("三元牌", 2, f"{g.tile} triplet"))
     if len(dragon_triplets) == 2 and is_dragon(pair):
         lines.append(ScoreLine("小三元", 20, "two 元 triplets + 元 pair"))
     elif len(dragon_triplets) == 3:
         lines.append(ScoreLine("大三元", 40, "three 元 triplets"))
 
     # 46/47: winds as a family
-    wind_triplets = [g for g in triplets if is_wind(g[1])]
+    wind_triplets = [g for g in triplets if is_wind(g.tile)]
     if len(wind_triplets) == 4:
         lines.append(ScoreLine("大四喜", 80, "all four 風 as triplets"))
     elif len(wind_triplets) == 3:
@@ -209,15 +161,6 @@ def _score_standard(
     # 14: 장안
     if number_of(pair) in (2, 5, 8):
         lines.append(ScoreLine("將眼", 1, f"pair is {pair}"))
-
-    # 11: 대퐁 (shanpon wait, ron only)
-    # if not flags.tsumo and is_shanpon(decomp, winning_tile):
-    #     lines.append(ScoreLine("大碰", 1, "shanpon wait, won by ron"))
-
-    # # 44: 전구인 (all-open + tanki wait)
-    # if not flags.concealed and is_tanki(decomp, winning_tile):
-    #     pts = 8 if flags.tsumo else 15
-    #     lines.append(ScoreLine("全求人", pts, "fully open, tanki wait"))
 
     # 23: concealed-triplet count (안커)
     if flags.concealed:
@@ -234,19 +177,19 @@ def _score_standard(
         lines.append(ScoreLine("對對糊", 30, "all four groups are triplets"))
 
     # 26: 이페커/삼페커/사페커
-    seq_counts = Counter(sequences)
-    for key, c in seq_counts.items():
+    seq_counts = Counter((g.suit, g.start) for g in sequences)
+    for (suit, start), c in seq_counts.items():
         if c == 2:
-            lines.append(ScoreLine("兩盃口", 3, f"duplicate {key[1]}-{key[2]} sequence"))
+            lines.append(ScoreLine("兩盃口", 3, f"duplicate {suit}-{start} sequence"))
         elif c == 3:
-            lines.append(ScoreLine("三盃口", 15, f"tripled {key[1]}-{key[2]} sequence"))
+            lines.append(ScoreLine("三盃口", 15, f"tripled {suit}-{start} sequence"))
         elif c == 4:
-            lines.append(ScoreLine("四盃口", 30, f"quadrupled {key[1]}-{key[2]} sequence"))
+            lines.append(ScoreLine("四盃口", 30, f"quadrupled {suit}-{start} sequence"))
 
     # 24: 이색동순/삼색동순 (same-start sequence shared across suits)
     starts: dict[int, set[str]] = {}
-    for _, suit, start in sequences:
-        starts.setdefault(start, set()).add(suit)
+    for g in sequences:
+        starts.setdefault(g.start, set()).add(g.suit)
     for start, suits_here in starts.items():
         if len(suits_here) == 3:
             lines.append(ScoreLine("三色同順", 10, f"all three 順 run {start}-{start + 2}"))
@@ -255,10 +198,10 @@ def _score_standard(
 
     # 27: 이색동커/소삼동커/대삼동커 (same-number triplets across suits)
     trip_by_number: dict[int, set[str]] = {}
-    for _, tile in triplets:
-        s = suit_of(tile)
+    for g in triplets:
+        s = suit_of(g.tile)
         if s:
-            trip_by_number.setdefault(number_of(tile), set()).add(s)
+            trip_by_number.setdefault(number_of(g.tile), set()).add(s)
     claimed_numbers: set[int] = set()
     if suit_of(pair):
         pair_num = number_of(pair)
@@ -276,10 +219,10 @@ def _score_standard(
 
     # 28-30: 연커 family (consecutive same-suit triplets, additive pair-extension bonus)
     trip_nums_by_suit: dict[str, list[int]] = {}
-    for _, tile in triplets:
-        s = suit_of(tile)
+    for g in triplets:
+        s = suit_of(g.tile)
         if s:
-            trip_nums_by_suit.setdefault(s, []).append(number_of(tile))
+            trip_nums_by_suit.setdefault(s, []).append(number_of(g.tile))
 
     run_scores = {2: 3, 3: 15, 4: 30}
     ext_scores = {3: 8, 4: 20, 5: 40}
@@ -316,34 +259,36 @@ def _score_standard(
     # 31: 삼색삼절고 (three consecutive numbers, one triplet per suit, all three suits)
     for n in range(1, 8):
         for perm in itertools.permutations(SUITS):
-            if all(("triplet", f"{n + i}{perm[i]}") in groups for i in range(3)):
+            if all(any(g.matches("triplet", tile=f"{n + i}{perm[i]}") for g in triplets) for i in range(3)):
                 lines.append(ScoreLine("三色三節高", 10, f"{n}-{n + 2} triplets split across all three suits"))
                 break
 
     # 32: 노소커
     for suit in SUITS:
-        if ("triplet", f"1{suit}") in groups and ("triplet", f"9{suit}") in groups:
+        if any(g.matches("triplet", tile=f"1{suit}") for g in triplets) and any(
+            g.matches("triplet", tile=f"9{suit}") for g in triplets
+        ):
             lines.append(ScoreLine("老少刻", 3, f"{suit} 1s and 9s both tripled"))
 
     # 36/37: 일기통관/삼색통관
     for suit in SUITS:
-        if all(("sequence", suit, s) in groups for s in (1, 4, 7)):
+        if all(any(g.matches("sequence", suit=suit, start=s) for g in sequences) for s in (1, 4, 7)):
             pts = 20 if flags.concealed else 10
             lines.append(ScoreLine("一條龍", pts, f"{suit} runs 1-9 in one suit"))
     for perm in itertools.permutations(SUITS):
-        if all(("sequence", perm[i], 1 + 3 * i) in groups for i in range(3)):
+        if all(any(g.matches("sequence", suit=perm[i], start=1 + 3 * i) for g in sequences) for i in range(3)):
             pts = 15 if flags.concealed else 8
             lines.append(ScoreLine("三條龍", pts, "runs 1-9 split across all three suits"))
             break
 
     # 53: 찬타/준찬타 (every group + the pair touches a terminal or honor)
     def _touches_terminal_or_honor(group) -> bool:
-        if group[0] == "triplet":
-            return is_terminal(group[1]) or is_honor(group[1])
-        return group[2] in (1, 7)  # sequence starting at 1 or 7 includes a 1 or a 9
+        if group.kind in ("triplet", "kan"):
+            return is_terminal(group.tile) or is_honor(group.tile)
+        return group.start in (1, 7)  # sequence starting at 1 or 7 includes a 1 or a 9
 
     if all(_touches_terminal_or_honor(g) for g in groups) and (is_terminal(pair) or is_honor(pair)):
-        if any(is_honor(g[1]) for g in triplets) or is_honor(pair):
+        if any(is_honor(g.tile) for g in triplets) or is_honor(pair):
             lines.append(ScoreLine("全帶", 15, "every group touches a terminal or honour"))
         else:
             lines.append(ScoreLine("純全帶", 30, "every group touches a terminal, no honours"))
@@ -351,70 +296,63 @@ def _score_standard(
     return lines
 
 
-def compute_score(
-    text: str,
-    seat_wind: str = "east",
-    round_wind: str = "east",
-    concealed: bool = True,
-    tsumo: bool = False,
-) -> ScoreResult:
-    flags = ScoreFlags(seat_wind=seat_wind, round_wind=round_wind, concealed=concealed, tsumo=tsumo)
+class HongKongRuleset(Ruleset):
+    name = "hongkong"
 
-    tiles = parse_hand(text)
-    hand_tiles, flower_tiles = split_flowers(tiles)
+    def compute(
+        self,
+        text: str,
+        seat_wind: str = "east",
+        round_wind: str = "east",
+        concealed: bool = True,
+        tsumo: bool = False,
+    ) -> ScoreResult:
+        flags = ScoreFlags(seat_wind=seat_wind, round_wind=round_wind, concealed=concealed, tsumo=tsumo)
 
-    if len(hand_tiles) != 14:
-        raise ScoringError(
-            f"Found {len(hand_tiles)} hand tiles (excluding flowers), but a complete hand needs exactly 14.",
-        )
+        ctx = build_context(text)
+        hand_tiles = ctx.all_tiles
+        winning_tile = ctx.winning_tile
 
-    winning_tile = hand_tiles[-1]
-    no_flowers = not flower_tiles
+        generic_lines, no_honors = _score_generic(hand_tiles, flags)
+        concealed_tsumo_lines = _score_concealed_tsumo(flags)
 
-    generic_lines, no_honors = _score_generic(hand_tiles, flags)
-    flower_lines = _score_flowers(flower_tiles, flags)
-    concealed_tsumo_lines = _score_concealed_tsumo(flags)
+        shape_candidates: list[tuple[str, list[ScoreLine]]] = []
 
-    shape_candidates: list[tuple[str, list[ScoreLine]]] = []
+        if not ctx.melds and is_seven_pairs(hand_tiles):
+            extra = _score_no_honor_family(no_honors, is_pinfu_shape=False)
+            shape_candidates.append(("seven_pairs", extra))
 
-    if is_seven_pairs(hand_tiles):
-        extra = _score_no_honor_family(no_honors, no_flowers, is_pinfu_shape=False)
-        shape_candidates.append(("seven_pairs", extra))
+        if not ctx.melds and is_thirteen_orphans(hand_tiles):
+            extra = _score_no_honor_family(no_honors, is_pinfu_shape=False)
+            shape_candidates.append(("thirteen_orphans", extra))
 
-    if is_thirteen_orphans(hand_tiles):
-        extra = _score_no_honor_family(no_honors, no_flowers, is_pinfu_shape=False)
-        shape_candidates.append(("thirteen_orphans", extra))
+        for decomp in decompose_hand(ctx.concealed_tiles, num_groups=4 - len(ctx.melds)):
+            full_decomp = {"pair": decomp["pair"], "groups": [*decomp["groups"], *ctx.melds]}
+            extra = _score_standard(full_decomp, flags, winning_tile, no_honors)
+            shape_candidates.append(("standard", extra))
 
-    for decomp in decompose_hand(hand_tiles):
-        extra = _score_standard(decomp, flags, winning_tile, no_honors, no_flowers)
-        shape_candidates.append(("standard", extra))
+        if not shape_candidates:
+            raise ScoringError(
+                "Not a valid complete hand: doesn't break down into four sets + a pair, "
+                "isn't seven pairs and isn't thirteen orphans.",
+            )
 
-    if not shape_candidates:
-        raise ScoringError(
-            "Not a valid complete hand: doesn't break down into four sets + a pair, "
-            "isn't seven pairs and isn't thirteen orphans.",
-        )
+        best_shape, best_extra, best_total = None, None, None
+        for shape, extra in shape_candidates:
+            lines = generic_lines + concealed_tsumo_lines + extra
+            lines = lines + _chicken_duck(lines, flags)
+            total = sum(line.points for line in lines)
+            if best_total is None or total > best_total:
+                best_shape, best_extra, best_total = shape, extra, total
 
-    best_shape, best_extra, best_total = None, None, None
-    for shape, extra in shape_candidates:
-        lines = generic_lines + flower_lines + concealed_tsumo_lines + extra
+        lines = generic_lines + concealed_tsumo_lines + best_extra
         lines = lines + _chicken_duck(lines, flags)
         total = sum(line.points for line in lines)
-        if best_total is None or total > best_total:
-            best_shape, best_extra, best_total = shape, extra, total
 
-    lines = generic_lines + flower_lines + concealed_tsumo_lines + best_extra
-    lines = lines + _chicken_duck(lines, flags)
-    total = sum(line.points for line in lines)
-
-    return ScoreResult(
-        shape=best_shape,
-        hand_tiles=hand_tiles,
-        flower_tiles=flower_tiles,
-        winning_tile=winning_tile,
-        lines=lines,
-        total=total,
-    )
-
-
-__all__ = ["MahjongParseError", "ScoreFlags", "ScoreLine", "ScoreResult", "ScoringError", "compute_score"]
+        return ScoreResult(
+            shape=best_shape,
+            hand_tiles=hand_tiles,
+            winning_tile=winning_tile,
+            lines=lines,
+            total=total,
+        )

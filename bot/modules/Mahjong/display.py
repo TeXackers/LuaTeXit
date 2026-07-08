@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import re
 
-from .tiles import ALL_TILE_NAMES
+from .tiles import HAND_TILE_NAMES
 
 _TILE_NAME_RE = re.compile(
-    r"\b(" + "|".join(re.escape(name) for name in sorted(ALL_TILE_NAMES, key=len, reverse=True)) + r")\b",
+    r"\b(" + "|".join(re.escape(name) for name in sorted(HAND_TILE_NAMES, key=len, reverse=True)) + r")\b",
 )
 
 

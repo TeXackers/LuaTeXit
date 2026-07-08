@@ -7,7 +7,7 @@ from cmdClient.Layouts import TextEmbed
 from .display import render_note, tile_str
 from .module import mahjong_module as module
 from .scoring import MahjongParseError, ScoringError, compute_score
-from .tiles import WINDS
+from .tiles import WINDS, tile_sort_key
 
 
 @module.cmd(
@@ -22,14 +22,11 @@ async def cmd_score(ctx: Context, flags: dict):
     Description:
         Scores a complete 14-tile Hong Kong mahjong hand against the structural
         subset of the house rules (no riichi/kan/wall-state rules; those need
-        live game context this command doesn't have).
-        Tiles are written in compact notation, delimited by `,`, `;`, or newlines:
-            `m`/`p`/`s` suffix: a run of digits for that suit, e.g. `123m` = 1maan 2maan 3maan.
-            `z` suffix: winds then dragons, 1-7 = east,south,west,north,white,faat,middle.
-            `f` suffix: flowers, 1-8 = zuk,mai,laan,guk,spring,summer,autumn,winter.
+        live game context this command doesn't have). Tiles are written in
+        compact notation (`m`/`p`/`s`/`z` suffixes), delimited by `,`, `;`,
+        or newlines, see `;help riichi` for the full tile/meld notation.
         Bare tile names (`east`, `5tong`, ...) also work directly.
         The last tile listed is treated as your winning tile.
-        Flower tiles don't count toward the 14 so list them in addition.
     Flags::
         seat=<wind>: Your seat wind (east/south/west/north). Default east.
         round=<wind>: The round wind. Default east.
@@ -62,8 +59,7 @@ async def cmd_score(ctx: Context, flags: dict):
     emojis = await ctx.client.fetch_application_emojis()
     emojis_by_name = {e.name: e for e in emojis}
 
-    hand_display = "".join(tile_str(emojis_by_name, t) for t in result.hand_tiles)
-    flowers_display = "".join(tile_str(emojis_by_name, t) for t in result.flower_tiles) if result.flower_tiles else ""
+    hand_display = "".join(tile_str(emojis_by_name, t) for t in sorted(result.hand_tiles, key=tile_sort_key))
 
     lines = [f"- {line.name}: {render_note(emojis_by_name, line.note)} ({line.points} pt)" for line in result.lines]
     score_lines = "\n".join(lines) if lines else "No 役 matched."
@@ -76,7 +72,7 @@ async def cmd_score(ctx: Context, flags: dict):
 
     return await ctx.reply(
         view=TextEmbed(
-            header=f"{hand_display}{flowers_display}",
+            header=hand_display,
             body=body,
             footer=footer,
             accent_colour=discord.Colour.from_str("#2D6A1B"),

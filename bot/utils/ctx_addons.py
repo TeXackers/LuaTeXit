@@ -189,7 +189,12 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
 
     # Build the reaction check function
     if ctx.guild:
-        modrole = ctx.get_guild_setting.modrole.value if ctx.guild else None
+        try:
+            modrole = ctx.get_guild_setting.modrole.value
+        except KeyError:
+            # The `modrole` setting is only registered by Guild_Moderation, which isn't
+            # loaded in every deployment -- treat "not registered" as "not configured".
+            modrole = None
 
         def check(reaction, user):
             if not (reaction.message.id == react_msg.id and reaction.emoji == emoji):

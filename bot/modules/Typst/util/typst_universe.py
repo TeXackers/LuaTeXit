@@ -81,9 +81,7 @@ async def get_typst_universe_package_info(soup: BeautifulSoup) -> tuple[str, str
     readme = soup.find("section", id="readme")
     all_images = readme.find_all("img") if readme else []
     all_images = [img for img in all_images if not img.get("alt")]
-    image_urls = [
-        img.attrs["src"] for img in all_images if not img.attrs["src"].split("?")[0].lower().endswith(".svg")
-    ]
+    image_urls = [img.attrs["src"] for img in all_images if not img.attrs["src"].split("?")[0].lower().endswith(".svg")]
 
     raw_fields = {
         "Author": typst_universe_package_author,

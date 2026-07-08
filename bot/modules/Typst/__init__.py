@@ -1,3 +1,3 @@
-from . import core, util
+from . import util
 
-__all__ = ["core", "util"]
+__all__ = ["util"]

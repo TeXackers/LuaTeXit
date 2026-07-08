@@ -5,6 +5,11 @@ logs
 scripts/**
 **/__pycache__
 
+# Test
+tests
+requirements-dev.txt
+pytest.ini
+
 # Conf files
 *.conf
 

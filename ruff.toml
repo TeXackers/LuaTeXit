@@ -7,6 +7,7 @@ exclude = [
     "bot/modules/Tex/__init__.py", # order-sensitive
     "bot/modules/Tex/core/__init__.py", # order-sensitive
     "bot/settings/__init__.py", # order-sensitive
+    "tests/conftest.py", # order-sensitive
     # low-priority
     "bot/modules/Guild_Moderation/**",
     "bot/modules/Guild_Utils/**",

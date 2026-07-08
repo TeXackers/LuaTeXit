@@ -1,10 +1,9 @@
-import asyncio
 from typing import TYPE_CHECKING
 
 import discord
 from cmdClient import Context  # noqa
 from constants import sorted_cats
-from utils.lib import prop_tabulate
+from utils.lib import prop_tabulate, tabulate
 from wards import is_manager
 
 if TYPE_CHECKING:
@@ -30,8 +29,6 @@ async def cmd_help(ctx: Context):
         {prefix}help [command name]
     Description:
         Shows detailed usage information for the requested command or sends you the general help message.
-
-        Using the `man` alias will automatically show the full help embed.
     Related:
         list
     Example``:
@@ -93,103 +90,44 @@ async def cmd_help(ctx: Context):
                 # Handle codeline help fields
                 help_fields[pos] = (name.strip("`"), "`{}`".format("`\n`".join(help_fields[pos][1].splitlines())))
             elif name.endswith(":"):
-                # Handle property/value help fields
-                lines = help_fields[pos][1].splitlines()
-
-                names = []
-                values = []
-                for line in lines:
-                    split = line.split(":", 1)
-                    names.append(split[0] if len(split) > 1 else "")
-                    values.append(split[-1])
-
-                help_fields[pos] = (name.strip(":"), prop_tabulate(names, values))
+                # Handle property/value help fields; a line with no colon is a wrapped
+                # continuation of the previous property's value (e.g. guildpreamble_cmd.py).
+                props: dict[str, str] = {}
+                last_prop = None
+                for line in help_fields[pos][1].splitlines():
+                    prop, sep, value = line.partition(":")
+                    if sep:
+                        last_prop = prop
+                        props[last_prop] = value.strip()
+                    elif last_prop is not None:
+                        props[last_prop] += f" {line.strip()}"
+                help_fields[pos] = (name.strip(":"), tabulate(props))
             elif name == "Related":
                 # Handle the related field
-                names = [cmd_name.strip() for cmd_name in help_fields[pos][1].split(",")]
-                names.sort(key=len)
-                values = [getattr(ctx.client.cmd_names.get(cmd_name, None), "desc", "") for cmd_name in names]
-                help_fields[pos] = (name, prop_tabulate(names, values))
+                names = sorted((cmd_name.strip() for cmd_name in help_fields[pos][1].split(",")), key=len)
+                props = {n: getattr(ctx.client.cmd_names.get(n, None), "desc", "") for n in names}
+                help_fields[pos] = (name, tabulate(props))
 
         # Create command alias string for title
         aliases = getattr(command, "aliases", [])
         alias_str = "(Alias{} `{}`.)".format("es" if len(aliases) > 1 else "", "`, `".join(aliases)) if aliases else ""
+        title = f"`{command.name}` command documentation. {alias_str}"
 
-        # Build the help embed
-        embed = discord.Embed(
-            title=f"`{command.name}` command documentation. {alias_str}",
-            colour=discord.Colour(0x9B59B6),
+        # Build the help body: one markdown section per field, paged via components
+        # instead of a classic embed, since e.g. a `Flags:` field with enough flags
+        # (prop_tabulate-formatted) can easily exceed discord.Embed's 1024-char field limit.
+        sections = [
+            f"### {fieldname}\n{fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)}"
+            for fieldname, fieldvalue in help_fields
+        ]
+        sections.append(
+            "### Have more questions?\n"
+            f"Visit our support server [here]({ctx.client.app_info['support_guild']}) "
+            "to speak to our friendly support team!",
         )
-        out_msg = None
+        sections.append("-# [optional] and <required> denote optional and required arguments, respectively.")
 
-        if (
-            ctx.alias.lower() != "man"
-            and len(help_fields) > 2
-            and sum(len(field[1].splitlines()) for field in help_fields) > 15
-            and (
-                not ctx.guild
-                or (
-                    ctx.ch.permissions_for(ctx.guild.me).add_reactions
-                    and ctx.ch.permissions_for(ctx.guild.me).use_external_emojis
-                )
-            )
-        ):
-            # Show a "short" version of the help with a `MORE` reaction.
-            more_emoji = ctx.client.conf.emojis.getemoji("more")
-            embed.description = f"{command.desc}"
-
-            for fieldname, fieldvalue in help_fields:
-                if fieldname == "Usage":
-                    # Format the field
-                    fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
-                    fieldvalue += f"\n\nClick {more_emoji} to show more information."
-
-                    embed.add_field(name=fieldname, value=fieldvalue, inline=False)
-            out_msg = await ctx.reply(embed=embed)
-            task = asyncio.ensure_future(ctx.offer_delete(out_msg))
-            task.add_done_callback(lambda t: t.exception())
-            await out_msg.add_reaction(more_emoji)
-            try:
-                await ctx.client.wait_for(
-                    "reaction_add",
-                    check=lambda r, u: r.emoji == more_emoji and r.message == out_msg and u != ctx.client.user,
-                    timeout=300,
-                )
-            except asyncio.TimeoutError:
-                return None
-            finally:
-                # Clean up
-                try:
-                    if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
-                        await out_msg.clear_reaction(more_emoji)
-                    else:
-                        await out_msg.remove_reaction(more_emoji, ctx.client.user)
-                except discord.NotFound:
-                    pass
-                except discord.Forbidden:
-                    pass
-            embed.description = None
-            embed.remove_field(0)
-
-        for fieldname, fieldvalue in help_fields:
-            # Format the field
-            fieldvalue = fieldvalue.format(ctx=ctx, prefix=ctx.client.prefix)
-
-            embed.add_field(name=fieldname, value=fieldvalue, inline=False)
-
-        # Add the support guild invite
-        embed.add_field(
-            name="Have more questions?",
-            value=f"Visit our support server [here]({ctx.client.app_info['support_guild']}) to speak to our friendly support team!",
-        )
-
-        embed.set_footer(text="[optional] and <required> denote optional and required arguments, respectively.")
-
-        # Post the embed
-        if out_msg:
-            return await out_msg.edit(embed=embed)
-        return await ctx.offer_delete(await ctx.reply(embed=embed))
-        # await ctx.offer_delete(await ctx.reply(embed=embed))
+        return await ctx.pager_v2("\n\n".join(sections), title=title, colour=discord.Colour(0x9B59B6))
     return None
 
 

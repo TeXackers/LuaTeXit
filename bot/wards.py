@@ -38,7 +38,12 @@ async def guild_moderator(ctx: Context, *args, **kwargs):
     has_mod = ctx.author.guild_permissions.administrator
     has_mod = has_mod or ctx.author.guild_permissions.manage_guild
 
-    modrole = ctx.get_guild_setting.modrole.value
+    try:
+        modrole = ctx.get_guild_setting.modrole.value
+    except KeyError:
+        # The `modrole` setting is only registered by Guild_Moderation, which isn't
+        # loaded in every deployment -- treat "not registered" as "not configured".
+        modrole = None
     return has_mod or (modrole and modrole in ctx.author.roles)
 
 

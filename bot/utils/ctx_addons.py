@@ -126,6 +126,8 @@ async def best_prefix(ctx: Context) -> str:
     This will be the server prefix if it is defined,
     otherwise the default client prefix.
     """
+    if ctx.guild is None:
+        return ctx.client.prefix
     return ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
 
 

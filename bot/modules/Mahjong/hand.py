@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import ClassVar
 
 from .tiles import DRAGONS, SUITS, WINDS, number_of, suit_of
 
@@ -25,10 +24,10 @@ Decomposition = dict
 
 @dataclass(frozen=True)
 class Group:
-    kind: str
-    tile: ClassVar[str | None] = None
-    suit: ClassVar[str | None] = None
-    start: ClassVar[int | None] = None
+    kind: str  # "sequence" | "triplet" | "kan"
+    tile: str | None = None  # for triplet/kan
+    suit: str | None = None  # for sequence
+    start: int | None = None  # for sequence
     concealed: bool = True
 
     def matches(self, kind: str, **attrs) -> bool:
@@ -60,6 +59,7 @@ ORPHAN_KINDS: set[str] = {f"1{suit}" for suit in SUITS} | {f"9{suit}" for suit i
 
 
 def is_thirteen_orphans(hand_tiles: list[str]) -> bool:
+    """Useful for calculating 十三么 [HK]/国士無双 [Riichi]"""
     counts = Counter(hand_tiles)
     if set(counts) != ORPHAN_KINDS:
         return False

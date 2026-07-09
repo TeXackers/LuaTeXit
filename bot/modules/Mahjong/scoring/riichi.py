@@ -52,6 +52,13 @@ _YAKUMAN_MULTIPLIER_NAMES: dict[int, str] = {
     6: "六倍役満",
 }
 
+YAKU_HELP_URL = "https://mahjongcalculators.com/yaku/{}"
+
+
+def yaku_link(yaku_name: str) -> str:
+    """Return a URL to the yaku's page on mahjongcalculators.com"""
+    return YAKU_HELP_URL.format(yaku_name.replace(" ", "-").replace("'", "").lower())
+
 
 @dataclass
 class RiichiFlags:
@@ -185,7 +192,7 @@ def _points_for(han: int, fu: int) -> tuple[str | None, tuple[int, int, int, int
     return None, (base * 4, base * 1, base * 2, base * 6, base * 2)
 
 
-def _describe_yakuman(multiplier: int) -> str:
+def describe_yakuman(multiplier: int) -> str:
     return _YAKUMAN_MULTIPLIER_NAMES.get(multiplier, f"{multiplier}倍役満")
 
 
@@ -274,19 +281,19 @@ def _validate_situational(hctx: HandContext, flags: RiichiFlags) -> None:
     if (flags.riichi or flags.double_riichi or flags.ippatsu) and not hctx.concealed:
         raise ScoringError("Riichi/ippatsu require a fully concealed hand.")
     if flags.ippatsu and not (flags.riichi or flags.double_riichi):
-        raise ScoringError("Ippatsu requires riichi (or double riichi) to also be set.")
+        raise ScoringError("Ippatsu requires `--riichi` (or `--double` for double riichi) to also be set.")
     if (flags.haitei or flags.rinshan) and not flags.tsumo:
-        raise ScoringError("Haitei/rinshan are self-draw (tsumo) wins - pass -drawn too.")
+        raise ScoringError("Haitei/rinshan are self-draw (tsumo) wins, thus require `--tsumo` to be also set.")
     if (flags.houtei or flags.chankan) and flags.tsumo:
-        raise ScoringError("Houtei/chankan are ron wins, not self-draw.")
+        raise ScoringError("Houtei/chankan are ron wins, not tsumo.")
     if flags.tenhou and not (flags.tsumo and flags.is_dealer):
-        raise ScoringError("Tenhou requires being the dealer and winning by self-draw.")
+        raise ScoringError("Tenhou requires being the dealer (親) and winning by tsumo.")
     if flags.chiihou and not (flags.tsumo and not flags.is_dealer):
-        raise ScoringError("Chiihou requires being a non-dealer and winning by self-draw.")
+        raise ScoringError("Chiihou requires being a non-dealer (子) and winning by tsumo.")
 
 
 def _score_chiitoitsu(hctx: HandContext, flags: RiichiFlags) -> tuple[list[ScoreLine], list[ScoreLine]]:
-    lines = [ScoreLine("七対子", 2, "seven distinct pairs")]
+    lines = [ScoreLine(f"[七対子]({yaku_link('chiitoitsu')})", 2, "seven distinct pairs")]
     yakuman_lines: list[ScoreLine] = []
 
     all_tiles = hctx.all_tiles
@@ -295,26 +302,28 @@ def _score_chiitoitsu(hctx: HandContext, flags: RiichiFlags) -> tuple[list[Score
     single_suit = next(iter(suits_present)) if len(suits_present) == 1 else None
 
     if all(is_honor(t) for t in all_tiles):
-        yakuman_lines.append(ScoreLine("字一色", 1, "every tile is an honour (chiitoitsu shape)"))
+        yakuman_lines.append(
+            ScoreLine(f"[字一色]({yaku_link('tsuiisou')})", 1, "every tile is an honour tile (chiitoitsu shape)")
+        )
 
     if flags.double_riichi:
-        lines.append(ScoreLine("ダブル立直", 2, "riichi declared on your first discard, no calls before it"))
+        lines.append(ScoreLine(f"[ダブル立直]({yaku_link('double riichi')})", 2, "double riichi"))
     elif flags.riichi:
-        lines.append(ScoreLine("立直", 1, "riichi declared"))
+        lines.append(ScoreLine(f"[立直]({yaku_link('riichi')})", 1, "riichi"))
     if flags.tsumo:
-        lines.append(ScoreLine("門前清自摸和", 1, "concealed self-draw"))
+        lines.append(ScoreLine(f"[門前清自摸和]({yaku_link('tsumo')})", 1, "tsumo"))
     if all(is_simple(t) for t in all_tiles):
-        lines.append(ScoreLine("断幺", 1, "all simples"))
+        lines.append(ScoreLine(f"[断幺九]({yaku_link('tanyao')})", 1, "tankou; all simples"))
     if single_suit and not no_honors:
-        lines.append(ScoreLine("混一色", 3, "one suit + honours"))
+        lines.append(ScoreLine(f"[混一色]({yaku_link('honitsu')})", 3, "one suit + honours"))
     elif single_suit and no_honors:
-        lines.append(ScoreLine("清一色", 6, "pure one suit"))
+        lines.append(ScoreLine(f"[清一色]({yaku_link('chinitsu')})", 6, "pure one suit"))
     if all(is_terminal(t) or is_honor(t) for t in all_tiles) and not no_honors:
-        lines.append(ScoreLine("混老頭", 2, "every tile is a terminal or honour"))
+        lines.append(ScoreLine(f"混老頭", 2, "every tile is 1/9 or honour"))
     if flags.haitei:
-        lines.append(ScoreLine("海底摸月", 1, "drew the last tile in the wall"))
+        lines.append(ScoreLine(f"[海底摸月]({yaku_link('haitei')})", 1, "drew the last tile in the wall"))
     if flags.houtei:
-        lines.append(ScoreLine("河底撈魚", 1, "ronned the last discard"))
+        lines.append(ScoreLine(f"[河底撈魚]({yaku_link('houtei')})", 1, "ronned the last discard"))
     if flags.tenhou:
         yakuman_lines.append(ScoreLine("天和", 1, "dealer's starting hand was already complete"))
     if flags.chiihou:
@@ -327,9 +336,9 @@ def _score_kokushi(hctx: HandContext, flags: RiichiFlags) -> tuple[list[ScoreLin
     hand_minus_winning = list(hctx.all_tiles)
     hand_minus_winning.remove(hctx.winning_tile)
     if is_kokushi_13_wait(hand_minus_winning, ORPHAN_KINDS):
-        yakuman_lines = [ScoreLine("国士無双十三面", 2, "thirteen-sided wait kokushi musou")]
+        yakuman_lines = [ScoreLine(f"[国士無双十三面]({yaku_link('kokushi')})", 2, "thirteen-sided wait kokushi musou")]
     else:
-        yakuman_lines = [ScoreLine("国士無双", 1, "thirteen orphans")]
+        yakuman_lines = [ScoreLine(f"[国士無双]({yaku_link('kokushi')})", 1, "thirteen orphans")]
     if flags.tenhou:
         yakuman_lines.append(ScoreLine("天和", 1, "dealer's starting hand was already complete"))
     if flags.chiihou:
@@ -363,31 +372,39 @@ def _score_standard(
 
     # --- yakuman shapes ---
     if len(dragon_triplets) == 3:
-        yakuman_lines.append(ScoreLine("大三元", 1, "three dragon triplets"))
+        yakuman_lines.append(ScoreLine(f"[大三元]({yaku_link('daisangen')})", 1, "three dragon triplets"))
     if len(wind_triplets) == 4:
-        yakuman_lines.append(ScoreLine("大四喜", 2, "all four winds as triplets"))
+        yakuman_lines.append(ScoreLine(f"[大四喜]({yaku_link('daisuushii')})", 2, "all four winds as triplets"))
     elif len(wind_triplets) == 3 and is_wind(pair):
-        yakuman_lines.append(ScoreLine("小四喜", 1, "three wind triplets + the fourth wind as pair"))
+        yakuman_lines.append(
+            ScoreLine(f"[小四喜]({yaku_link('shousuushii')})", 1, "three wind triplets + the fourth wind as pair")
+        )
     if all(is_terminal(t) for t in all_tiles):
-        yakuman_lines.append(ScoreLine("清老頭", 1, "every tile is a terminal, no honours"))
+        yakuman_lines.append(
+            ScoreLine(f"[清老頭]({yaku_link('chinroutou')})", 1, "every tile is a terminal, no honours")
+        )
     if all(is_honor(t) for t in all_tiles):
-        yakuman_lines.append(ScoreLine("字一色", 1, "every tile is an honour"))
+        yakuman_lines.append(ScoreLine(f"[字一色]({yaku_link('tsuiisou')})", 1, "every tile is an honour"))
     if all(t in _GREEN_TILES for t in all_tiles):
-        yakuman_lines.append(ScoreLine("緑一色", 1, "green tiles only"))
+        yakuman_lines.append(ScoreLine(f"[緑一色]({yaku_link('ryuuiisou')})", 1, "green tiles only"))
     if len(kans) == 4:
-        yakuman_lines.append(ScoreLine("四槓子", 1, "four kans"))
+        yakuman_lines.append(ScoreLine("四槓子", 1, "four kans/quadruplets"))
     if len(concealed_triplets) == 4:
         if wait == "tanki":
-            yakuman_lines.append(ScoreLine("四暗刻単騎", 2, "four concealed triplets, tanki wait"))
+            yakuman_lines.append(
+                ScoreLine(f"[四暗刻単騎]({yaku_link('suuankou')})", 2, "four concealed triplets, tanki wait")
+            )
         else:
-            yakuman_lines.append(ScoreLine("四暗刻", 1, "four concealed triplets"))
+            yakuman_lines.append(ScoreLine(f"[四暗刻]({yaku_link('suuankou')})", 1, "four concealed triplets"))
     if single_suit and no_honors and is_chuuren(all_tiles, single_suit):
         hand_minus_winning = list(all_tiles)
         hand_minus_winning.remove(hctx.winning_tile)
         if is_chuuren_9_wait(hand_minus_winning, single_suit):
-            yakuman_lines.append(ScoreLine("純正九蓮宝燈", 2, "nine-sided wait chuuren poutou"))
+            yakuman_lines.append(
+                ScoreLine(f"[純正九蓮宝燈]({yaku_link('chuuren-poutou')})", 2, "nine-sided wait pure nine gates")
+            )
         else:
-            yakuman_lines.append(ScoreLine("九蓮宝燈", 1, "chuuren poutou"))
+            yakuman_lines.append(ScoreLine(f"[九蓮宝燈]({yaku_link('chuuren-poutou')})", 1, "pure nine gates"))
     if flags.tenhou:
         yakuman_lines.append(ScoreLine("天和", 1, "dealer's starting hand was already complete"))
     if flags.chiihou:
@@ -395,11 +412,11 @@ def _score_standard(
 
     # --- 1-han ---
     if flags.double_riichi:
-        lines.append(ScoreLine("ダブル立直", 2, "riichi declared on your first discard, no calls before it"))
+        lines.append(ScoreLine(f"[ダブル立直]({yaku_link('double riichi')})", 2, "double riichi"))
     elif flags.riichi:
-        lines.append(ScoreLine("立直", 1, "riichi declared"))
+        lines.append(ScoreLine(f"[立直]({yaku_link('riichi')})", 1, "riichi"))
     if hctx.concealed and flags.tsumo:
-        lines.append(ScoreLine("門前清自摸和", 1, "concealed self-draw"))
+        lines.append(ScoreLine(f"[門前清自摸和]({yaku_link('tsumo')})", 1, "tsumo"))
     for g in triplets:
         if is_dragon(g.tile):
             lines.append(ScoreLine("役牌", 1, f"{g.tile} triplet"))
@@ -411,7 +428,7 @@ def _score_standard(
             elif match_seat or match_round:
                 lines.append(ScoreLine("自風", 1, f"{g.tile} triplet matches wind"))
     if all(is_simple(t) for t in all_tiles):
-        lines.append(ScoreLine("断幺九", 1, "all simples"))
+        lines.append(ScoreLine(f"[断幺九]({yaku_link('tanyao')})", 1, "all simples"))
 
     is_pinfu = (
         hctx.concealed
@@ -422,27 +439,29 @@ def _score_standard(
         and wait == "ryanmen"
     )
     if is_pinfu:
-        lines.append(ScoreLine("平和", 1, "all sequences, non-yakuhai pair, two-sided wait"))
+        lines.append(
+            ScoreLine(f"[平和]({yaku_link('pinfu')})", 1, "pinfu; all sequences, non-yakuhai pair, two-sided wait")
+        )
 
     seq_key_counts = Counter((g.suit, g.start) for g in sequences)
     dup_pairs = sum(c // 2 for c in seq_key_counts.values())
     if hctx.concealed and dup_pairs >= 2:
-        lines.append(ScoreLine("二盃口", 3, "two pairs of identical sequences"))
+        lines.append(ScoreLine(f"[二盃口]({yaku_link('ryanpeikou')})", 3, "two pairs of identical sequences"))
     elif hctx.concealed and dup_pairs == 1:
-        lines.append(ScoreLine("一盃口", 1, "a duplicated sequence"))
+        lines.append(ScoreLine(f"[一盃口]({yaku_link('iipeikou')})", 1, "one pair of identical sequences"))
 
     if flags.haitei:
-        lines.append(ScoreLine("海底摸月", 1, "drew the last tile in the wall"))
+        lines.append(ScoreLine(f"[海底摸月]({yaku_link('haitei')})", 1, "drew the last tile in the wall"))
     if flags.houtei:
-        lines.append(ScoreLine("河底撈魚", 1, "ronned the last discard"))
+        lines.append(ScoreLine(f"[河底撈魚]({yaku_link('houtei')})", 1, "ronned the last discard"))
     if flags.rinshan:
-        lines.append(ScoreLine("嶺上開花", 1, "drew off a kan replacement tile"))
+        lines.append(ScoreLine(f"[嶺上開花]({yaku_link('rinshan')})", 1, "drew off a kan replacement tile"))
     if flags.chankan:
-        lines.append(ScoreLine("槍槓", 1, "robbed another player's added kan"))
+        lines.append(ScoreLine(f"[槍槓]({yaku_link('chankan')})", 1, "robbed another player's added kan"))
 
     # --- 2-han ---
     lines.extend(
-        ScoreLine("一気通貫", 2 if hctx.concealed else 1, f"{suit} runs 1-9")
+        ScoreLine(f"[一気通貫]({yaku_link('ittsu')})", 2 if hctx.concealed else 1, f"{suit} runs 1-9")
         for suit in SUITS
         if all(any(g.matches("sequence", suit=suit, start=s) for g in sequences) for s in (1, 4, 7))
     )
@@ -451,30 +470,40 @@ def _score_standard(
     for g in sequences:
         starts.setdefault(g.start, set()).add(g.suit)
     if any(len(s) == 3 for s in starts.values()):
-        lines.append(ScoreLine("三色同順", 2 if hctx.concealed else 1, "same-numbered run in all three suits"))
+        lines.append(
+            ScoreLine(
+                f"[三色同順]({yaku_link('sanshoku doukou')})",
+                2 if hctx.concealed else 1,
+                "same-numbered run in all three suits",
+            )
+        )
 
     touches = all(_touches_terminal_or_honor(g) for g in eff_groups) and (is_terminal(pair) or is_honor(pair))
     if touches:
         if no_honors:
             lines.append(
-                ScoreLine("純全帯幺九", 3 if hctx.concealed else 2, "every group + pair touches a terminal, no honours")
+                ScoreLine(
+                    f"[純全帯幺九]({yaku_link('junchan')})",
+                    3 if hctx.concealed else 2,
+                    "every group + pair touches a terminal, no honours",
+                )
             )
         else:
             lines.append(
-                ScoreLine("混全帯幺九", 2 if hctx.concealed else 1, "every group + pair touches a terminal or honour")
+                ScoreLine(f"混全帯幺九", 2 if hctx.concealed else 1, "every group + pair touches a terminal or honour")
             )
 
     if all(is_terminal(t) or is_honor(t) for t in all_tiles) and not no_honors:
-        lines.append(ScoreLine("混老頭", 2, "every tile is a terminal or honour"))
+        lines.append(ScoreLine(f"混老頭", 2, "every tile is a terminal or honour"))
 
     if len(dragon_triplets) == 2 and is_dragon(pair):
-        lines.append(ScoreLine("小三元", 2, "two dragon triplets + dragon pair"))
+        lines.append(ScoreLine(f"[小三元]({yaku_link('shosangen')})", 2, "two dragon triplets + dragon pair"))
 
     if len(triplets) == 4:
-        lines.append(ScoreLine("対々和", 2, "all four groups are triplets"))
+        lines.append(ScoreLine(f"[対々和]({yaku_link('toitoi')})", 2, "all four groups are triplets"))
 
     if len(concealed_triplets) == 3:
-        lines.append(ScoreLine("三暗刻", 2, "three concealed triplets"))
+        lines.append(ScoreLine(f"[三暗刻]({yaku_link('sanankou')})", 2, "three concealed triplets"))
 
     if len(kans) == 3:
         lines.append(ScoreLine("三槓子", 2, "three kans"))
@@ -485,13 +514,15 @@ def _score_standard(
         if s:
             trip_by_number.setdefault(number_of(g.tile), set()).add(s)
     if any(len(s) == 3 for s in trip_by_number.values()):
-        lines.append(ScoreLine("三色同刻", 2, "same-numbered triplet in all three suits"))
+        lines.append(
+            ScoreLine(f"[三色同刻]({yaku_link('sanshoku doukou')})", 2, "same-numbered triplet in all three suits")
+        )
 
     # --- 3/6-han ---
     if single_suit and not no_honors:
-        lines.append(ScoreLine("混一色", 3 if hctx.concealed else 2, "one suit + honours"))
+        lines.append(ScoreLine(f"[混一色]({yaku_link('honitsu')})", 3 if hctx.concealed else 2, "one suit + honours"))
     elif single_suit and no_honors:
-        lines.append(ScoreLine("清一色", 6 if hctx.concealed else 5, "pure one suit"))
+        lines.append(ScoreLine(f"[清一色]({yaku_link('chinitsu')})", 6 if hctx.concealed else 5, "pure one suit"))
 
     fu = _compute_fu(eff_groups, pair, flags, wait, is_pinfu, hctx.concealed)
     return lines, yakuman_lines, fu
@@ -563,7 +594,7 @@ class RiichiRuleset(Ruleset):
         if yakuman_lines:
             multiplier = sum(line.points for line in yakuman_lines)
             values = tuple(v * multiplier for v in _LIMIT_BASE["数え役満"])
-            limit_name = _describe_yakuman(multiplier)
+            limit_name = describe_yakuman(multiplier)
             payments = _build_payments(flags.is_dealer, flags.tsumo, values, flags.honba)
             return RiichiScoreResult(
                 shape=shape,
@@ -600,16 +631,16 @@ class RiichiRuleset(Ruleset):
 
     def _compute_renhou(self, text: str, flags: RiichiFlags) -> RiichiScoreResult:
         if flags.tsumo:
-            raise ScoringError("Renhou (人和) is a ron-only yaku (won directly off a discard before your first draw).")
+            raise ScoringError("Renhou (人和) is a ron-only yaku, not a self-draw (tsumo) yaku.")
         if flags.is_dealer:
-            raise ScoringError("Renhou (人和) requires being a non-dealer.")
+            raise ScoringError("Renhou (人和) requires being a non-dealer (子).")
 
         hctx = build_context(text)
         lines = [
             ScoreLine(
                 "人和",
                 0,
-                "non-dealer, already tenpai at deal, won by ron before your first draw, first go-around",
+                "non-dealer (子), already tenpai at deal, won by ron before your first draw, first go-around",
             ),
         ]
         payments = _build_payments(False, False, _LIMIT_BASE["満貫"], flags.honba)

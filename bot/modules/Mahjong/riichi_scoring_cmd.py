@@ -6,7 +6,7 @@ from cmdClient.Layouts import TextEmbed
 
 from .display import render_note, tile_str
 from .module import mahjong_module as module
-from .scoring import MahjongParseError, RiichiRuleset, RiichiScoreResult, ScoringError
+from .scoring import MahjongParseError, RiichiRuleset, RiichiScoreResult, ScoringError, describe_yakuman
 from .tiles import WINDS, parse_hand, tile_sort_key
 
 _riichi = RiichiRuleset()
@@ -124,7 +124,15 @@ async def cmd_riichi(ctx: Context, flags: dict):
 
     hand_display = "".join(tile_str(emojis_by_name, t) for t in sorted(result.hand_tiles, key=tile_sort_key))
 
-    breakdown = [f"- {line.name}: {render_note(emojis_by_name, line.note)} ({line.points}飜)" for line in result.lines]
+    if result.is_yakuman:
+        breakdown = [
+            f"- {line.name}: {render_note(emojis_by_name, line.note)} ({describe_yakuman(line.points)})"
+            for line in result.lines
+        ]
+    else:
+        breakdown = [
+            f"- {line.name}: {render_note(emojis_by_name, line.note)} ({line.points}飜)" for line in result.lines
+        ]
     yaku_text = "\n".join(breakdown) if breakdown else "No yaku matched."
     if result.is_yakuman:
         summary = f"### {result.limit_name}"

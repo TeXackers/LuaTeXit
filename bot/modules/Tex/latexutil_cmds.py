@@ -450,7 +450,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
     out_msg = await ctx.reply(f"Searching for fonts, please wait... {ctx.client.conf.emojis.getemoji('loading')}")
 
     if flags["char"]:
-        requested_chars = glyph_or_unicode(clean_md(flags["char"]))
+        cleaned_chars = ",".join(clean_md(part) for part in flags["char"].split(","))
+        requested_chars = glyph_or_unicode(cleaned_chars)
         if not requested_chars:
             await out_msg.delete()
             return await ctx.error_reply("Invalid unicode or glyph(s).")
@@ -465,7 +466,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
             ctx.log(f"Requested characters: {requested_chars}", context="findfont")
             return await ctx.error_reply("Something went wrong while processing the characters.")
 
-        params_dict["query"] = clean_md(flags["char"])
+        params_dict["query"] = cleaned_chars
         params_dict["type"] = "character" if len(requested_chars) == 1 else "characters"
 
     if flags["lang"]:

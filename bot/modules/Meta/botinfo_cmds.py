@@ -75,11 +75,11 @@ async def cmd_about(ctx: Context):
 
     status["Owner"] = str(ctx.client.get_user(owner_id) or owner_id)
 
-    if admin_ids:
+    if admin_ids and admin_ids != {owner_id}:
         admin_field_name = "Admin" if len(admin_ids) == 1 else "Admins"
         status[admin_field_name] = ", ".join(str(ctx.client.get_user(uid) or uid) for uid in admin_ids)
 
-    if dev_ids:
+    if dev_ids and dev_ids != {owner_id}:
         dev_field_name = "Developer" if len(dev_ids) == 1 else "Developers"
         status[dev_field_name] = ", ".join(str(ctx.client.get_user(uid) or uid) for uid in dev_ids)
 

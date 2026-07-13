@@ -47,6 +47,15 @@ async def check_output(*args: str) -> bytes:
 cached_check_output = async_ttl_cache(days=14)(check_output)
 
 
+async def get_member_count(client: discord.Client) -> int:
+    """Count members visible to the client."""
+    return len(list(client.get_all_members()))
+
+
+# member iteration is expensive on large bots, so cache it briefly
+cached_member_count = async_ttl_cache(days=1)(get_member_count)
+
+
 @module.cmd("about", desc="Shard status and bot statistics.")
 async def cmd_about(ctx: Context):
     """
@@ -203,7 +212,14 @@ async def cmd_invite(ctx: Context):
     Description:
          Replies with a link to invite me to your server.
     """
-    await ctx.reply(
+    member_count = await cached_member_count(ctx.client)
+    if member_count >= 10000:
+        return await ctx.error_reply(
+            "I'm currently used by too many members to accept new server invites "
+            "without Discord's message content verification. Please check back later!",
+        )
+
+    return await ctx.reply(
         "Visit [here](https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot) to invite me!",
     )
 

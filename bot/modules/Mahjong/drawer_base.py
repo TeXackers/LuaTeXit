@@ -1,25 +1,22 @@
 """
-A single-player interactive hand-building practice tool: deal 14, discard one
-and draw a replacement (with a live score preview) as many times as you like,
-or end the simulation to see how your hand would have scored.
+Shared boilerplate for the ruleset-specific mahjong practice views: deal 14,
+discard one and draw a replacement (with a live score preview) as many times
+as you like, or end the simulation to see how your hand would have scored.
+
+Ruleset-specific scoring lives in `hk_drawer_cmd.py`/`riichi_drawer_cmd.py`;
+each supplies `BaseDrawerView._evaluate`, everything else here is generic.
 """
 
-from __future__ import annotations
-
 from contextlib import suppress
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import discord
-from cmdClient import Context  # noqa
-from cmdClient.Layouts import Body, Footer, Header
+from cmdClient.Layouts import Body, Footer
 from discord import SelectOption
-from discord.ui import ActionRow, Button, Container, LayoutView, Select, Separator
-from wards import is_master
+from discord.ui import ActionRow, Button, Container, LayoutView, Select
 
-from .display import render_note
 from .display import tile_str as _tile_str
-from .module import mahjong_module as module
-from .scoring import ScoringError, compute_score
 from .tiles import HAND_TILE_NAMES
 from .tiles import tile_sort_key as _tile_sort_key
 from .wall import Wall
@@ -30,15 +27,16 @@ if TYPE_CHECKING:
 HAND_SIZE = 14
 
 
-def _score_lines_text(result, emojis_by_name: dict) -> str:
-    if not result.lines:
-        return "No yaku matched."
-    return "\n".join(
-        f"- {line.name}: {render_note(emojis_by_name, line.note)} ({line.points} pt)" for line in result.lines
-    )
+@dataclass
+class EvalResult:
+    """The scoring outcome of one complete (14-tile) hand, ruleset-agnostic."""
+
+    sort_value: int  # for ranking waits/best-of-session -- scale is ruleset-specific
+    short_label: str  # e.g. "7番", "3飜", "役満" -- shown inline next to a wait tile
+    detail_text: str  # full yaku breakdown, shown once the hand is actually won
 
 
-class MahjongDrawerView(LayoutView):
+class BaseDrawerView(LayoutView):
     def __init__(self, author: discord.User | discord.Member, emojis_by_name: dict[str, Emoji]):
         super().__init__(timeout=600)
         self.author = author
@@ -51,7 +49,8 @@ class MahjongDrawerView(LayoutView):
 
         self.history: list[str] = []
         self.best_score: int = 0
-        self._last_status: tuple[str, int, str] = ("none", 0, "")
+        self.best_label: str = "—"
+        self._last_status: tuple[str, str] = ("none", "Not 聽牌 yet")
 
         self._select: Select = Select(placeholder="Choose a tile to discard...")
         self._select.callback = self._on_discard
@@ -61,88 +60,77 @@ class MahjongDrawerView(LayoutView):
         self._record("Dealt")
         self._render()
 
+    def _evaluate(self, tiles: list[str]) -> EvalResult | None:
+        """Score a complete 14-tile hand, or return None if it doesn't win."""
+        raise NotImplementedError
+
     def _hand_text(self) -> str:
         return "".join(_tile_str(self.emojis_by_name, t) for t in self.hand)
 
-    def _best_tenpai(self) -> tuple[str, list[tuple[str, int]]] | None:
+    def _best_tenpai(self) -> tuple[str, list[tuple[str, EvalResult]]] | None:
         """
         Check every possible discard from the current 14-tile hand; return
-        (discard_tile, [(wait_tile, score), ...]) for whichever discard leaves
+        (discard_tile, [(wait_tile, EvalResult), ...]) for whichever discard leaves
         the most winning tiles to wait on, or None if no discard reaches tenpai (聽牌).
         """
-        best: tuple[str, list[tuple[str, int]]] | None = None
+        best: tuple[str, list[tuple[str, EvalResult]]] | None = None
         for i, discard in enumerate(self.hand):
             candidate13 = self.hand[:i] + self.hand[i + 1 :]
-            waits: list[tuple[str, int]] = []
+            waits: list[tuple[str, EvalResult]] = []
             for wait_tile in HAND_TILE_NAMES:
-                text = ",".join([*candidate13, wait_tile])
-                try:
-                    result = compute_score(text, concealed=True, tsumo=True)
-                except ScoringError:
-                    continue
-                waits.append((wait_tile, result.total))
+                result = self._evaluate([*candidate13, wait_tile])
+                if result is not None:
+                    waits.append((wait_tile, result))
             if waits and (best is None or len(waits) > len(best[1])):
                 best = (discard, waits)
         return best
 
-    def _compute_status(self) -> tuple[str, int, str]:
-        """Return (kind, score, text): kind is one of 'win'/'tenpai'/'none'."""
-        text = ",".join(self.hand)
-        try:
-            result = compute_score(text, concealed=True, tsumo=True)
-        except ScoringError:
-            pass
-        else:
-            return (
-                "win",
-                result.total,
-                f"**You already have a winning hand!** {result.total} points\n"
-                f"{_score_lines_text(result, self.emojis_by_name)}",
-            )
+    def _compute_status(self) -> tuple[str, int, str, str]:
+        """Return (kind, sort_value, label, text): kind is one of 'win'/'tenpai'/'none'."""
+        won = self._evaluate(self.hand)
+        if won is not None:
+            return ("win", won.sort_value, won.short_label, f"**You already have a winning hand!** {won.detail_text}")
 
         tenpai = self._best_tenpai()
         if tenpai is None:
-            return (
-                "none",
-                0,
-                "Not 聽牌 yet",
-            )
+            return ("none", 0, "", "Not 聽牌 yet")
 
         discard, waits = tenpai
-        best_wait_score = max(pts for _, pts in waits)
+        best = max(waits, key=lambda w: w[1].sort_value)[1]
         waits_text = ", ".join(
-            f"{_tile_str(self.emojis_by_name, t)} ({pts}pt)" for t, pts in sorted(waits, key=lambda w: -w[1])
+            f"{_tile_str(self.emojis_by_name, t)} ({r.short_label})"
+            for t, r in sorted(waits, key=lambda w: -w[1].sort_value)
         )
         text = f"Discard {_tile_str(self.emojis_by_name, discard)} to reach 聽牌 [tenpai/ting paai], waiting on: {waits_text}"
-        return ("tenpai", best_wait_score, text)
+        return ("tenpai", best.sort_value, best.short_label, text)
 
-    def _status_short(self, kind: str, score: int) -> str:
+    def _status_short(self, kind: str, label: str) -> str:
         if kind == "win":
-            return f": won! ({score}pt)"
+            return f": won! ({label})"
         if kind == "tenpai":
-            return f": 聽牌 ({score}pt)"
+            return f": 聽牌 ({label})"
         return ""
 
     def _record(self, action: str) -> None:
         """Recompute the current status, log a one-line history entry, and track the session best."""
-        status = self._compute_status()
-        self._last_status = status
-        kind, score, _ = status
-        if score > self.best_score:
-            self.best_score = score
-        self.history.append(f"{len(self.history)}. ({action}){self._status_short(kind, score)}")
+        kind, sort_value, label, text = self._compute_status()
+        self._last_status = (kind, text)
+        if sort_value > self.best_score:
+            self.best_score = sort_value
+            self.best_label = label
+        self.history.append(f"{len(self.history)}. ({action}){self._status_short(kind, label)}")
 
     def _render(self) -> None:
         self.clear_items()
 
-        kind, _, status_text = self._last_status
+        kind, status_text = self._last_status
         if self.ended:
             if kind == "win":
                 status_text = f"## You won!\n{status_text}"
             else:
                 status_text = (
                     "## Simulation ended without completing a hand.\n"
-                    f"**Best potential this session:** {self.best_score} points"
+                    f"**Best potential this session:** {self.best_label}"
                 )
 
         recent_history = "\n".join(f"{line}" for line in self.history[-6:])
@@ -150,13 +138,11 @@ class MahjongDrawerView(LayoutView):
         body = (
             f"**Hand**\n# {self._hand_text()}\n"
             f"Discards: {len(self.discards)} | Remaining: {self.wall.remaining} | "
-            f"Best so far: {self.best_score} points\n\n"
+            f"Best so far: {self.best_label}\n\n"
             f"**Recent turns**\n{recent_history}\n\n"
             f"{status_text}"
         )
         container = Container(
-            # Header("Mahjong practice"),
-            # Separator(),
             Body(body),
             Footer(f"{self.author.display_name} | {discord.utils.format_dt(discord.utils.utcnow(), 'F')}"),
             accent_color=discord.Color.from_str("#2D6A1B"),
@@ -211,26 +197,3 @@ class MahjongDrawerView(LayoutView):
         if self.message is not None:
             with suppress(discord.HTTPException):
                 await self.message.edit(view=self)
-
-
-@module.cmd(
-    "mahjongdraw",
-    desc="Practise building a mahjong hand: draw, discard, and see your score live.",
-    aliases=["mj"],
-)
-async def cmd_mahjongdraw(ctx: Context):
-    """
-    Usage``:
-        {prefix}mahjongdraw
-    Description:
-        Deals you 14 tiles from a shuffled solo wall. Pick a tile to discard
-        from the dropdown and you'll draw a replacement, with a live score
-        preview each time. Hit the "End simulation" whenever you want to see
-        your final hand and score (or continue discarding).
-    """
-    emojis = await ctx.client.fetch_application_emojis()
-    emojis_by_name = {e.name: e for e in emojis}
-
-    view = MahjongDrawerView(ctx.author, emojis_by_name)
-    message = await ctx.reply(view=view)
-    view.message = message

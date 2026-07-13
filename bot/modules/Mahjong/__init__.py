@@ -1,12 +1,28 @@
-from . import display, drawer_cmd, hand, hk_scoring_cmd, melds, module, riichi_scoring_cmd, scoring, tiles, waits, wall
+from . import (
+    display,
+    drawer_base,
+    hand,
+    hk_drawer_cmd,
+    hk_scoring_cmd,
+    melds,
+    module,
+    riichi_drawer_cmd,
+    riichi_scoring_cmd,
+    scoring,
+    tiles,
+    waits,
+    wall,
+)
 
 __all__ = [
     "display",
-    "drawer_cmd",
+    "drawer_base",
     "hand",
+    "hk_drawer_cmd",
     "hk_scoring_cmd",
     "melds",
     "module",
+    "riichi_drawer_cmd",
     "riichi_scoring_cmd",
     "scoring",
     "tiles",

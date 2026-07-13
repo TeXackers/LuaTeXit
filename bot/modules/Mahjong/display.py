@@ -1,6 +1,7 @@
 """
 Shared helpers for rendering tiles as application emojis, used by both the
-static scorer (scorer_cmd.py) and the interactive drawer (drawer_cmd.py).
+static scorers (hk_scoring_cmd.py/riichi_scoring_cmd.py) and the interactive
+drawers (hk_drawer_cmd.py/riichi_drawer_cmd.py).
 
 Falls back to `` `tilename` `` text when a tile has no matching application
 emoji (e.g. the emojis haven't been uploaded to the bot application yet).

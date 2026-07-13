@@ -1,17 +1,11 @@
 """
-Hong Kong mahjong scoring engine, per 홍콩족보.md (mahjongcalculators.com/faan and
-Wikipedia's "Hong Kong mahjong scoring rules", reconciled).
+Hong Kong mahjong scoring engine.
 
 Everything derivable from the 14 tiles themselves (concealed-or-open read straight
 off the `[...]`/`(...)` meld notation, same as riichi.py -- no separate flag) +
 seat/round wind, tsumo-or-ron, and a handful of situational winning-condition
 flags mirroring riichi.py's haitei/houtei/rinshan/chankan/tenhou/chiihou.
-
-Flower/bonus-tile faan, actual payment splitting (who pays whom) and false-win
-penalties are out of scope -- see section 4 of 홍콩족보.md.
 """
-
-from __future__ import annotations
 
 from dataclasses import dataclass
 

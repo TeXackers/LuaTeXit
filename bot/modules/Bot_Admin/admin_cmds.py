@@ -4,7 +4,8 @@ import aiohttp
 import discord
 from cmdClient import Context  # noqa
 from utils.lib import split_text
-from wards import is_manager, is_master
+from wards import is_admin, is_dev, is_owner
+
 
 from .module import bot_admin_module as module
 
@@ -43,7 +44,7 @@ activity_dict = {
 
 
 @module.cmd("shutdown", desc="Shut down the client.", aliases=["restart"])
-@is_manager()
+@is_admin()
 async def cmd_shutdown(ctx: Context):
     """
     Usage``:
@@ -63,7 +64,7 @@ async def cmd_shutdown(ctx: Context):
     aliases=["status", "setgame", "setstatus"],
     flags=["type=", "desc==", "url==", "avatar==", "status="],
 )
-@is_manager()
+@is_admin()
 async def cmd_setgame(ctx: Context, flags):
     """
     Usage``:
@@ -108,7 +109,7 @@ async def cmd_setgame(ctx: Context, flags):
 
 
 @module.cmd("dm", desc="Sends a direct message to a user, if possible.")
-@is_master()
+@is_owner()
 async def cmd_dm(ctx: Context):
     """
     Usage``:
@@ -147,7 +148,7 @@ async def cmd_dm(ctx: Context):
 
 
 @module.cmd("logs", desc="Read and return the bot logs.")
-@is_master()
+@is_owner()
 async def cmd_logs(ctx: Context):
     """
     Usage``:
@@ -179,7 +180,7 @@ async def cmd_logs(ctx: Context):
 
 
 @module.cmd("showcmd", desc="Shows the source of a command.")
-@is_master()
+@is_dev()
 async def cmd_showcmd(ctx: Context) -> None:
     """
     Usage:

@@ -3,13 +3,13 @@ import traceback
 from io import StringIO
 
 from registry import Column, ColumnType, tableInterface, tableSchema
-from wards import is_master
+from wards import is_owner
 
 from .module import bot_admin_module as module
 
 
 @module.cmd("snippet", desc="View, run, or create a code snippet.", aliases=["snippets"], flags=["create", "delete"])
-@is_master()
+@is_owner()
 async def snippet_cmd(ctx, flags) -> None:
     """
     Usage``:

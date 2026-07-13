@@ -4,7 +4,7 @@ import traceback
 from io import StringIO
 
 from cmdClient import Context  # noqa
-from wards import is_master
+from wards import is_dev, is_owner
 
 from .module import bot_admin_module as module
 
@@ -25,7 +25,7 @@ Commands provided:
 
 
 @module.cmd("async", desc="Executes async code and displays the output.")
-@is_master()
+@is_dev()
 async def cmd_async(ctx: Context) -> None:
     """
     Usage``:
@@ -33,7 +33,7 @@ async def cmd_async(ctx: Context) -> None:
     Description:
         Runs `<code>` as an asynchronous coroutine and prints the output or error.
 
-        *Requires you to be an owner of the bot.*
+        *Requires you to be a developer of the bot.*
     """
     if not ctx.arg_str:
         return await ctx.error_reply("You must give me something to run!")
@@ -48,7 +48,7 @@ async def cmd_async(ctx: Context) -> None:
 
 
 @module.cmd("exec", desc="Executes python code using exec and displays the output.")
-@is_master()
+@is_owner()
 async def cmd_exec(ctx: Context) -> None:
     """
     Usage``:
@@ -71,7 +71,7 @@ async def cmd_exec(ctx: Context) -> None:
 
 
 @module.cmd("eval", desc="Executes python code using eval and displays the output.", flags=["s"])
-@is_master()
+@is_owner()
 async def cmd_eval(ctx: Context, flags) -> None:
     """
     Usage``:
@@ -98,7 +98,7 @@ async def cmd_eval(ctx: Context, flags) -> None:
 
 
 @module.cmd("shell", desc="Runs a command in the operating environment.")
-@is_master()
+@is_owner()
 async def cmd_shell(ctx: Context) -> None:
     """
     Usage``:
@@ -110,11 +110,18 @@ async def cmd_shell(ctx: Context) -> None:
         return await ctx.error_reply("You must give me something to run!")
 
     output = await ctx.run_in_shell(ctx.arg_str)
+    if output:
+        return await ctx.reply(
+            f"**Command:**\
+                        \n```sh\n$ {ctx.arg_str}\n```\
+                        \n**Output:** \
+                        \n```ascii\n{output}\n```",
+        )
     return await ctx.reply(
         f"**Command:**\
-                    \n```sh\n{ctx.arg_str}\n```\
-                    \n**Output:** \
-                    \n```\n{output}\n```",
+                        \n```sh\n$ {ctx.arg_str}\n```\
+                        \n**Output:** \
+                        \n```\nNo output.\n```",
     )
 
 

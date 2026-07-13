@@ -4,13 +4,13 @@ import logging
 from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from utils.lib import paginate_list
-from wards import is_master
+from wards import is_owner
 
 from .module import bot_admin_module as module
 
 
 @module.cmd("blacklist", desc="Add or remove a user from the blacklist.", flags=["add", "remove"])
-@is_master()
+@is_owner()
 async def blacklist_cmd(ctx, flags):
     """
     Usage``:

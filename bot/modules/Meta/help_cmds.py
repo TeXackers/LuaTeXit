@@ -4,7 +4,7 @@ import discord
 from cmdClient import Context  # noqa
 from constants import sorted_cats
 from utils.lib import prop_tabulate, tabulate
-from wards import is_manager
+from wards import is_admin
 
 if TYPE_CHECKING:
     from bot.modules import Module
@@ -146,7 +146,7 @@ async def cmd_list(ctx: Context) -> None:
         help
     """
     # Flag for whether we display hidden modules in the list or not
-    show_hidden: bool = await is_manager.run(ctx)
+    show_hidden: bool = await is_admin.run(ctx)
     modules: list[type[Module]] = [
         module for module in ctx.client.modules if module.enabled and (show_hidden or not module.hidden)
     ]

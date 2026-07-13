@@ -18,6 +18,7 @@ import psutil
 from cmdClient import Context  # noqa
 from cmdClient.Layouts import GenericFullEmbed
 from utils.lib import tabulate
+from wards import get_team_info
 
 from .module import meta_module as module
 
@@ -57,11 +58,22 @@ async def cmd_about(ctx: Context):
     status: dict = {}
     restrict_invite: bool = False
 
-    # Current developers
-    current_devs = ctx.client.app_info["dev_list"]
-    dev_str = ", ".join(str(ctx.client.get_user(dev_id) or dev_id) for dev_id in current_devs)
-    dev_field_name = "Developer" if len(current_devs) == 1 else "Developers"
-    status[dev_field_name] = dev_str
+    # Current owner/admins/developers, from the bot's Discord team
+    owner_id, _ = await get_team_info(ctx.client, "owner")
+    _, admin_ids = await get_team_info(ctx.client, "admin")
+    _, team_ids = await get_team_info(ctx.client, "team")
+    dev_ids = team_ids - admin_ids
+
+    status["Owner"] = str(ctx.client.get_user(owner_id) or owner_id)
+
+    if admin_ids:
+        admin_field_name = "Admin" if len(admin_ids) == 1 else "Admins"
+        status[admin_field_name] = ", ".join(str(ctx.client.get_user(uid) or uid) for uid in admin_ids)
+
+    if dev_ids:
+        dev_field_name = "Developer" if len(dev_ids) == 1 else "Developers"
+        status[dev_field_name] = ", ".join(str(ctx.client.get_user(uid) or uid) for uid in dev_ids)
+
 
     # Shards, guilds, and members
     member_count = len(list(ctx.client.get_all_members()))

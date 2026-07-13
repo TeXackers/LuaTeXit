@@ -5,7 +5,7 @@ from datetime import datetime
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, UserCancelled
-from wards import is_manager, is_reviewer
+from wards import is_admin, is_reviewer
 
 from .core.LatexGuild import LatexGuild
 from .core.preamble_utils import (
@@ -146,7 +146,7 @@ async def user_admin(ctx: Context, userid: int):
             # Set the preamble. Takes file input as well as message input.
             # Also asks for confirmation before setting.
 
-            if not await is_manager.run(ctx):
+            if not await is_admin.run(ctx):
                 return await ctx.error_reply("This can only be used by bot managers.")
 
             # Prompt for new preamble
@@ -213,7 +213,7 @@ async def user_admin(ctx: Context, userid: int):
         case 2:
             # Reset the current preamble to the default
 
-            if not await is_manager.run(ctx):
+            if not await is_admin.run(ctx):
                 return await ctx.error_reply("This can only be used by bot managers.")
 
             preamble_data.insert(
@@ -276,7 +276,7 @@ async def guild_admin(ctx: Context, guildid: int):
         2. Set preamble
         3. Reset preamble
     """
-    if not await is_manager.run(ctx):
+    if not await is_admin.run(ctx):
         return await ctx.error_reply("This can only be used by bot managers.")
     # Get the data interfaces, for faster access
     preamble_data = ctx.client.data.guild_latex_preambles

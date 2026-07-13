@@ -1,27 +1,95 @@
 import asyncio
+import logging
 from contextlib import suppress
+from datetime import datetime, timedelta, timezone
+from typing import NamedTuple
 
 import discord
 from cmdClient import Context  # noqa
-
-# from datetime import datetime
 from cmdClient.lib import ResponseTimedOut, UserCancelled
 from wards import guild_moderator
 
 from .module import guild_moderation_module as module
 
 
+BULK_DELETE_MAX_AGE = timedelta(days=14)
+SINGLE_DELETE_DELAY = 1.0
+BULK_DELETE_DELAY = 1.0
+PROGRESS_WARN_TIMEOUT = 300
+_active_purges: set[int] = set()
+
+
+class PruneTarget(NamedTuple):
+    """
+    A lightweight stand-in for a Message, holding just enough to delete it
+    later without keeping the full Message (embeds, attachments, etc.) alive
+    in memory for the (potentially long) confirmation wait and delete pass.
+    """
+
+    id: int
+    created_at: datetime
+
+
+def _log_purge_result(ctx, channel, count, task):
+    """
+    Done-callback for a backgrounded purge task: log the outcome instead of
+    trying to keep live-updating a progress message no one may still be
+    watching.
+    """
+    label = f"#{channel.name} ({channel.id})"
+    try:
+        task.result()
+    except discord.Forbidden:
+        ctx.client.log(
+            f"Purge of {count} messages in {label} failed: insufficient permissions.",
+            context=f"PRUNE mid:{ctx.msg.id}",
+            level=logging.ERROR,
+        )
+    except discord.HTTPException as e:
+        ctx.client.log(
+            f"Purge of {count} messages in {label} failed: {e}",
+            context=f"PRUNE mid:{ctx.msg.id}",
+            level=logging.ERROR,
+        )
+    else:
+        ctx.client.log(f"Purge of {count} messages in {label} completed.", context=f"PRUNE mid:{ctx.msg.id}")
+
+
+async def _paced_purge(channel, targets, *, reason=None):
+    """
+    Delete the given messages (by id), bulk-deleting recent ones in batches
+    of 100 and individually deleting older ones at a deliberate pace, so
+    that a large purge completes reliably instead of hammering the rate
+    limit. Messages older than 14 days can't be bulk-deleted at all, so
+    those are only ever queried by id and deleted one at a time.
+    """
+    cutoff = datetime.now(timezone.utc) - BULK_DELETE_MAX_AGE
+    bulk_targets = [t for t in targets if t.created_at > cutoff]
+    single_targets = [t for t in targets if t.created_at <= cutoff]
+
+    for i in range(0, len(bulk_targets), 100):
+        chunk = bulk_targets[i : i + 100]
+        await channel.delete_messages(chunk, reason=reason)
+        if i + 100 < len(bulk_targets):
+            await asyncio.sleep(BULK_DELETE_DELAY)
+
+    for target in single_targets:
+        with suppress(discord.NotFound):
+            await channel.get_partial_message(target.id).delete()
+        await asyncio.sleep(SINGLE_DELETE_DELAY)
+
+
 @module.cmd(
     "prune",
     desc="Purges messages matching selected criteria from the current channel.",
     aliases=["purge"],
-    flags=["r==", "bot", "bots", "user", "embed", "file", "me", "from==", "after==", "force"],
+    flags=["r==", "bot", "bots", "user", "embed", "file", "me", "from==", "after==", "before==", "ch==", "force"],
 )
 @guild_moderator()
 async def cmd_prune(ctx: Context, flags: dict):
     """
     Usage``:
-        {prefix}prune [number] [flags] [--after <msgid>] [--from <user>] [-r <reason>]
+        {prefix}prune [number] [flags] [--after <msgid>] [--before <YYYY-MM-DD>] [--from <user>] [--ch <channel>] [-r <reason>]
     Description:
         Deletes your command message and messages from the given number of messages before that.
         If neither the number nor `after` is given, deletes from the last 100 messages.
@@ -45,21 +113,40 @@ async def cmd_prune(ctx: Context, flags: dict):
         me: Only messages from me ({ctx.client.user.mention}).
         from: Only messages from the given user (interactive lookup).
         after: Only messages after (not including) the given message id (must be in the last `1000` messages).
+        before: Only messages sent before the given date, in `YYYY-MM-DD` format (UTC).
+        ch: Purge the given channel instead of the current one (interactive lookup).
     Examples``:
         {prefix}prune 100 --file
         {prefix}prune --after {ctx.msg.id}
         {prefix}prune 10 --me --embed
         {prefix}prune 10 --from {ctx.author.name} --image --force
+        {prefix}prune 500 --before 2026-06-01
+        {prefix}prune 100 --ch general
     """
-    # TODO: --before
     # TODO: --role? Maybe?
     # TODO: find_user won't work for users not in the server. Construct a collection based on message list.
 
-    # First check that we have the permissions we need in the channel.
-    perms = ctx.ch.permissions_for(ctx.guild.me)
+    # Get the target channel from the flag, if provided; otherwise use the current channel
+    target_channel = ctx.ch
+    if flags["ch"]:
+        if flags["ch"] is True:
+            return await ctx.error_reply(f"**Usage:** {await ctx.best_prefix()}purge ... --ch <channel> ...")
+        found_channel = await ctx.find_channel(flags["ch"], interactive=True, chan_type=discord.ChannelType.text)
+        if found_channel is None:
+            return None
+        target_channel = found_channel
+
+    # First check that we have the permissions we need in the channel
+    perms = target_channel.permissions_for(ctx.guild.me)
     if not perms.manage_messages or not perms.read_message_history:
         return await ctx.error_reply(
-            "I lack the `MANAGE MESSAGES` and `READ MESSAGE HISTORY` permissions I require to purge.",
+            f"I lack the `MANAGE MESSAGES` and `READ MESSAGE HISTORY` permissions I require to purge {target_channel.mention}.",
+        )
+
+    if target_channel.id in _active_purges:
+        return await ctx.error_reply(
+            f"A purge is already in progress in {target_channel.mention}. "
+            "Please wait for it to finish before starting another.",
         )
 
     # Get the after message id from the flag, if provided
@@ -69,6 +156,18 @@ async def cmd_prune(ctx: Context, flags: dict):
             return await ctx.error_reply(f"**Usage:** {await ctx.best_prefix()}purge ... --after <msgid> ...")
 
         after_msg_id = int(flags["after"])
+
+    # Get the before date from the flag, if provided
+    before_dt = None
+    if flags["before"]:
+        if flags["before"] is True:
+            return await ctx.error_reply(f"**Usage:** {await ctx.best_prefix()}purge ... --before <YYYY-MM-DD> ...")
+        try:
+            before_dt = datetime.strptime(flags["before"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return await ctx.error_reply(
+                f"Couldn't parse `{flags['before']}` as a date. Please use `YYYY-MM-DD` format.",
+            )
 
     # Get the maximum number of messages to search
     if not ctx.args:
@@ -108,10 +207,10 @@ async def cmd_prune(ctx: Context, flags: dict):
         await ctx.msg.delete()
     except discord.NotFound:
         pass
-    except discord.Forbidden:
-        return await ctx.error_reply(
-            "I do not have permissions to delete messages here.\n"
-            "If this is in error, please give me the `MANAGE MESSAGES` permission.",
+    except discord.Forbidden as e:
+        return await ctx.traceback(
+            f"I do not have permissions to delete messages here.\n"
+            "If this is in error, please give me the `MANAGE MESSAGES` permission.", f"{e}"
         )
 
     # Start going through the channel history, counting messages
@@ -119,7 +218,7 @@ async def cmd_prune(ctx: Context, flags: dict):
     message_list = []
     msg_found = False
 
-    async for message in ctx.ch.history(limit=number):
+    async for message in target_channel.history(limit=number, before=before_dt):
         if message.id == after_msg_id:
             msg_found = True
             break
@@ -134,7 +233,7 @@ async def cmd_prune(ctx: Context, flags: dict):
         to_delete = to_delete and (not flags["me"] or message.author == ctx.client.user)
 
         if to_delete:
-            message_list.append(message)
+            message_list.append(PruneTarget(message.id, message.created_at))
             listing = count_dict["bots" if message.author.bot else "users"]
             if message.author.id not in listing:
                 listing[message.author.id] = {"count": 0, "name": f"{message.author}"}
@@ -164,7 +263,7 @@ async def cmd_prune(ctx: Context, flags: dict):
     abort = False
     if not flags["force"]:
         out_msg = await ctx.reply(
-            f"Purging **{len(message_list)}** messages. Message Breakdown:\n"
+            f"Purging **{len(message_list)}** messages in {target_channel.mention}. Message Breakdown:\n"
             f"{counts}\n--------------------\n"
             "Please type `confirm` to delete the above messages or `abort` to abort now.",
         )
@@ -182,32 +281,41 @@ async def cmd_prune(ctx: Context, flags: dict):
                 await out_msg.delete()
 
     if not abort:
-        try:
-            if not flags["force"]:
-                await out_msg.delete()
+        loading_emoji = ctx.client.conf.emojis.getemoji("loading")
+        progress_msg = await ctx.reply(
+            f"Purging **{len(message_list)}** messages in {target_channel.mention}, please wait... {loading_emoji}\n\n-# Initiated: {discord.utils.format_dt(discord.utils.utcnow(), 'R')}",
+        )
+        _active_purges.add(target_channel.id)
+        purge_task = asyncio.ensure_future(_paced_purge(target_channel, message_list, reason=reason))
+        purge_task.add_done_callback(lambda task: _active_purges.discard(target_channel.id))
+        done, _pending = await asyncio.wait({purge_task}, timeout=PROGRESS_WARN_TIMEOUT)
 
-            if len(message_list) == 1:
-                await message_list[0].delete()
-            else:
-                msgids = [msg.id for msg in message_list]
-                await ctx.ch.purge(limit=number, check=lambda msg: msg.id in msgids)
+        if purge_task not in done:
+            # Taking a while; stop blocking on it here and let it finish in the background, logging the outcome instead
+            await progress_msg.edit(
+                content=f"Purge of **{len(message_list)}** messages in {target_channel.mention} is taking longer "
+                "than 5 minutes, see logs for completion.",
+            )
+            purge_task.add_done_callback(
+                lambda task: _log_purge_result(ctx, target_channel, len(message_list), task),
+            )
+            return None
+
+        try:
+            purge_task.result()
         except discord.Forbidden:
-            await ctx.error_reply("I have insufficient permissions to delete these messages.")
+            await progress_msg.edit(content="I have insufficient permissions to delete these messages.")
             abort = True
         except discord.HTTPException:
-            try:
-                for msg in message_list:
-                    with suppress(discord.NotFound):
-                        await msg.delete()
-            except discord.Forbidden:
-                await ctx.reply("I have insufficient permissions to delete these messages.")
-                abort = True
+            await progress_msg.edit(content="An error occurred while purging messages; the purge may be incomplete.")
+            abort = True
+        else:
+            await progress_msg.edit(content="Purge complete.")
     if abort:
         return None
 
-    success = await ctx.reply("Purge complete.")
     try:
         await asyncio.sleep(3)
-        await success.delete()
+        await progress_msg.delete()
     except Exception:
         pass

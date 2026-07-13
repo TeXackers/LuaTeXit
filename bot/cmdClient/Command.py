@@ -63,7 +63,7 @@ class Command:
             await ctx.error_reply("Operation timed out.")
         except asyncio.CancelledError:
             log(
-                "Command was cancelled, probably due to a message edit.",
+                "Cancelled.",
                 context=f"mid:{ctx.msg.id}",
                 level=logging.DEBUG,
             )
@@ -77,12 +77,12 @@ class Command:
                 level=logging.ERROR,
             )
 
-            await ctx.reply(
-                "An unexpected internal error occurred while running your command! "
-                f"Please report the following error to the developer:\n`{only_error}`",
+            await ctx.traceback(
+                "An unexpected internal error occurred while running your command",
+                only_error,
             )
         else:
-            log("Command completed execution without error.", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)
+            log("Success.", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)
 
     async def exec_wrapper(self, ctx: Context) -> None:
         """

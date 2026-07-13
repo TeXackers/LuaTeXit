@@ -9,7 +9,6 @@ with Path.open(HELP_FILE) as help_file:
 
 def load_into(client):
     info = {
-        "dev_list": [220148284168077312],
         "info_str": (
             "I am a multi-purpose server automation bot written in discord.py.\n"
             "Use `{prefix}help` for information on how to use me, "
@@ -17,7 +16,7 @@ def load_into(client):
         ),
         "invite_link": "https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot",
         "donate_link": "https://www.patreon.com/texit",
-        "github": "https://github.com/ponte-vecchio/LuaTeXit",
+        "github": "https://github.com/texackers/LuaTeXit",
         "support_guild": "https://discord.gg/FY9jH7M",
         "brief": False,
         "app": "",

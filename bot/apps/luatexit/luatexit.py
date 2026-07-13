@@ -12,7 +12,6 @@ with Path.open(HELP_FILE) as help_file:
 
 
 info = {
-    "dev_list": [220148284168077312],
     "info_str": (
         "I am primarily a LaTeX rendering bot coded in discord.py.\n"
         "Use `{prefix}help` for information on how to use me, "
@@ -32,7 +31,7 @@ info = {
 disabled_modules = [
     "Guild_Admin",
     "Guild_Logging",
-    "Guild_Moderation",
+    # "Guild_Moderation",
     "Maths",
     "Starboard",
     "Social",

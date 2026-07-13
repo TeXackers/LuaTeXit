@@ -162,7 +162,7 @@ async def cmd_about(ctx: Context):
     )
 
     # LuaTeX version
-    status["LuaTeX Version"] = (
+    status["LuaTeX"] = (
         (await cached_check_output("luatex", "--version"))
         .decode()
         .split("\n")[0]
@@ -171,7 +171,7 @@ async def cmd_about(ctx: Context):
     )
 
     # Typst
-    status["Typst Version"] = (await cached_check_output("typst", "--version")).decode().split("\n")[0].split(" ")[1]
+    status["Typst"] = (await cached_check_output("typst", "--version")).decode().split("\n")[0].split(" ")[1]
     # Tabulate
     fields_text: str = tabulate(status)
 

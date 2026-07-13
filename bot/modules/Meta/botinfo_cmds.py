@@ -83,9 +83,17 @@ async def cmd_about(ctx: Context):
         dev_field_name = "Developer" if len(dev_ids) == 1 else "Developers"
         status[dev_field_name] = ", ".join(str(ctx.client.get_user(uid) or uid) for uid in dev_ids)
 
+    # Bot version using current git tag (or latest tag, if not currently on one)
+    try:
+        git_version = (
+            (await cached_check_output("git", "describe", "--tags", "--always")).decode().strip().split("-")[0]
+        )
+    except subprocess.CalledProcessError:
+        git_version = "unknown"
+    status["Version"] = git_version
 
     # Shards, guilds, and members
-    member_count = len(list(ctx.client.get_all_members()))
+    member_count = await cached_member_count(ctx.client)
     if member_count > 10000:
         restrict_invite = True
 
@@ -132,7 +140,11 @@ async def cmd_about(ctx: Context):
     # Python version
     status["Python"] = f"{sys.version.split('\n')[0].split('(')[0]} (discord.py: {discord.__version__})"
 
-    # Platform
+    # Platforms
+    ## OS from /etc/os-release, fields NAME and VERSION_ID
+    version_id: str = await cached_check_output("/bin/grep", "VERSION_ID", "/etc/os-release")
+    version_id = version_id.decode().strip().split("=")[1].replace('"', "")
+    status["OS"] = f"openSUSE Tumbleweed {version_id}"
     status["Kernel"] = platform.platform(aliased=True)
 
     # LaTeX and other things we use

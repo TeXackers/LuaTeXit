@@ -2,10 +2,13 @@ import inspect
 
 import aiohttp
 import discord
+import github
 from cmdClient import Context  # noqa
+from github import Auth, Github
 from utils.lib import split_text
 from wards import is_admin, is_dev, is_owner
 
+from modules.Github.GithubColours import GithubColour
 
 from .module import bot_admin_module as module
 
@@ -24,7 +27,11 @@ Commands provided:
         Attempts to send the logfile or last n lines of the log.
     showcmd:
         View the source of the specified command.
+    issue:
+        Files a new issue on the LuaTeXit GitHub repository.
 """
+
+LUATEXIT_REPO = "texackers/LuaTeXit"
 
 status_dict = {
     "online": discord.Status.online,
@@ -201,3 +208,69 @@ async def cmd_showcmd(ctx: Context) -> None:
     source = source.replace("```", "[codeblock]")
 
     return await ctx.pager_v2(source, title=f"Showing source for {ctx.arg_str}", code=True, syntax="python")
+
+
+@module.cmd("issue", desc="File an issue on the LuaTeXit GitHub repository.", flags=["body=="])
+@is_owner()
+async def cmd_issue(ctx: Context, flags):
+    """
+    Usage``:
+        {prefix}issue <title> --body <body>
+    Description:
+        Opens a new issue on `texackers/LuaTeXit` on GitHub, after a confirmation prompt.
+
+        *Requires you to be an owner of the bot.*
+    Flags::
+        body: The body/description of the issue. If omitted, you will be prompted for it.
+    """
+    title = ctx.args.strip()
+    if not title:
+        return await ctx.error_reply(
+            "Please provide a title for the issue. "
+            "For example, `issue Broken font search --body The search times out on long queries.`",
+        )
+
+    body = flags["body"]
+    if not body:
+        body = await ctx.on_input("What should the body of the issue be? (`c` to cancel)", timeout=240)
+        if body.lower() == "c":
+            return await ctx.error_reply("Cancelled issue creation.")
+        if not body.strip():
+            return await ctx.error_reply("The issue body cannot be empty.")
+
+    # Build a preview and confirm with the user before touching GitHub
+    embed = discord.Embed(
+        title=title,
+        description=body,
+        colour=GithubColour.github_green,
+    )
+    embed.set_author(name=f"{ctx.author} ({ctx.author.id})", icon_url=ctx.author.display_avatar.url)
+    embed.set_footer(text=f"This will be filed against {LUATEXIT_REPO}")
+
+    preview = await ctx.reply(embed=embed)
+    confirmed = await ctx.ask(f"Are you sure you want to open this issue on `{LUATEXIT_REPO}`?", use_msg=preview)
+    await preview.edit(content="")
+    if not confirmed:
+        return await ctx.error_reply("Cancelled issue creation.")
+
+    GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]
+    github_api = Github(auth=Auth.Token(GITHUB_TOKEN), lazy=True)
+    repo = github_api.get_repo(LUATEXIT_REPO)
+
+    try:
+        issue = repo.create_issue(title=title, body=body)
+    except github.GithubException as e:
+        match e.status:
+            case 403:
+                (reason := "I don't have permission to create issues on this repository [403].")
+            case 404:
+                (reason := f"`{LUATEXIT_REPO}` could not be found [404].")
+            case 410:
+                (reason := "issue creation has been disabled for this repository [410].")
+            case 422:
+                (reason := "validation failed -- check the title/body aren't empty [422].")
+            case _:
+                (reason := f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}].")
+        return await ctx.error_reply(f"Could not create the issue, because {reason}")
+
+    return await ctx.reply(f"Issue created: {issue.html_url}")

@@ -253,10 +253,10 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
     # prioritise guild banner/avatar
     if flags["global"]:
         banner = await get_user_banner(ctx, user.id)
-        av = await get_server_avatar(ctx, ctx.guild.id, user.id)
+        av = user.display_avatar.url
     else:
         banner = user.guild_banner.url if user.guild_banner else await get_user_banner(ctx, user.id)
-        av = user.guild_avatar.url if user.guild_avatar else await get_user_banner(ctx, user.id)
+        av = user.guild_avatar.url if user.guild_avatar else user.display_avatar.url
 
     numshared = sum(g.get_member(user.id) is not None for g in ctx.client.guilds)
     roles = [r.name for r in reversed(user.roles) if r.name != "@everyone"]
@@ -282,7 +282,7 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
         )
         pos = joined.index(user)
         positions = []
-        for i in range(-7, 7):
+        for i in range(-4, 5):
             line_pos = pos + i
             if line_pos < 0:
                 continue
@@ -453,39 +453,66 @@ async def cmd_avatar(ctx: Context, flags) -> None:
     """
     if not ctx.args:
         user = ctx.author
-        colour = LuaTeXitCC["purple"]
+        colour = LuaTeXitCC["purple"] if user.colour.value == "#000000" else user.accent_colour
     else:
         user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
             ctx.error_reply("User not found.")
-        colour = LuaTeXitCC["yellow"] if user.colour.value == "#000000" else user.colour
+        colour = LuaTeXitCC["yellow"] if user.colour.value == "#000000" else user.accent_colour
 
+    # avatar
     if flags["global"]:
-        avatar_url = await get_user_avatar(ctx, user.id)
-        using = "global avatar"
-    elif ctx.guild and user.guild_avatar:
-        avatar_url = await get_server_avatar(ctx, ctx.guild.id, user.id)
+        avatar_url = user.display_avatar.url
+        using = "display avatar"
+    elif ctx.guild and user.guild_avatar is not None:
+        avatar_url = user.guild_avatar.url
         using = "server avatar"
     else:
         avatar_url = user.display_avatar.url
         using = "display avatar (in lieu)"
 
-    avatar_url = (
-        user.display_avatar.url
-        if (flags["global"] and user.display_avatar)
-        else user.guild_avatar.url
-        if (ctx.guild and user.guild_avatar)
-        else user.display_avatar.url
-    )
+    # banner
+    if flags["global"]:
+        banner_url = await get_user_banner(ctx, user.id)
+        b_using = "display banner"
+    elif ctx.guild and user.guild_banner is not None:
+        banner_url = user.guild_banner.url
+        b_using = "server banner"
+    else:
+        banner_url = user.display_banner.url if user.display_banner else await get_user_banner(ctx, user.id)
+        b_using = "display banner (in lieu)"
 
     container = Container(accent_colour=colour)
-    container.add_item(Body(f"**{user}**'s {using}"))
-    container.add_item(
-        discord.ui.MediaGallery(
-            discord.MediaGalleryItem(avatar_url, description=f"Avatar for {user.display_name}"),
-        ),
-    )
-    container.add_item(Footer(f"Requested by: {ctx.author}"))
+    match avatar_url, banner_url:
+        case None, None:
+            container.add_item(Body("No avatar or banner found."))
+        case _, None:
+            container.add_item(Body(f"**{user}**'s {using}"))
+            container.add_item(
+                discord.ui.MediaGallery(
+                    discord.MediaGalleryItem(avatar_url, description=f"Avatar for {user.display_name}"),
+                ),
+            )
+        case None, _:
+            container.add_item(Body(f"**{user}**'s {b_using}"))
+            container.add_item(
+                discord.ui.MediaGallery(
+                    discord.MediaGalleryItem(banner_url, description=f"Banner for {user.display_name}"),
+                ),
+            )
+        case _, _:
+            container.add_item(Body(f"### {user}'s {using} & {b_using}"))
+            container.add_item(
+                discord.ui.MediaGallery(
+                    discord.MediaGalleryItem(avatar_url, description=f"Avatar for {user.display_name}"),
+                ),
+            )
+            container.add_item(
+                discord.ui.MediaGallery(
+                    discord.MediaGalleryItem(banner_url, description=f"Banner for {user.display_name}"),
+                ),
+            )
+    container.add_item(Footer(f"{discord.utils.format_dt(ctx.msg.created_at, 's')} | Requested by: {ctx.author}"))
 
     v = LayoutView()
     v.add_item(container)

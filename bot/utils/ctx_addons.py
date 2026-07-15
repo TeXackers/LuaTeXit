@@ -221,7 +221,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
         # Wait for the user to press the reaction
         try:
             await ctx.client.wait_for("reaction_add", check=check, timeout=timeout)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except asyncio.TimeoutError, asyncio.CancelledError:
             # Timed out or cancelled waiting for the reaction, attempt to remove the delete reaction
             with suppress(Exception, discord.Forbidden, discord.NotFound, discord.HTTPException):
                 await react_msg.remove_reaction(emoji, ctx.client.user)

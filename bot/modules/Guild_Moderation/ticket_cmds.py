@@ -93,7 +93,7 @@ async def _offer_cancel(ctx, msg, *tasks, timeout=300):
 
         # Remove the reaction
         await msg.clear_reaction(emoji)
-    except (asyncio.TimeoutError, asyncio.CancelledError):
+    except asyncio.TimeoutError, asyncio.CancelledError:
         # Timed out or cancelled waiting for the reaction, attempt to remove the reaction
         with suppress(Exception):
             await msg.remove_reaction(emoji, ctx.client.user)

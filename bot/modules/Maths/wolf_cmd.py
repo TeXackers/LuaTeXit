@@ -12,7 +12,7 @@ from cmdClient import Context  # noqa
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from utils.lib import emb_add_fields
 
-from . import wolf_data  # noqa
+from . import wolf_data
 from .module import maths_module as module
 from .resources import font_path
 
@@ -219,7 +219,7 @@ async def pods_to_filedata(pod_data):
 
 async def pods_to_textdata(pod_data):
     flat_pods = await flatten_pods(pod_data, text=True)
-    tabchar = "​"
+    tabchar = "\u200b"
     tab = tabchar * 2
 
     fields = []
@@ -242,7 +242,7 @@ def triage_pods(pod_list):
     if "primary" in pod_list[0] and pod_list[0]["primary"]:
         return ([pod_list[0]], pod_list[1:])
     important = [pod_list[0]]
-    important.extend([pod for pod in pod_list if ("primary" in pod and pod["primary"])])
+    important.extend([pod for pod in pod_list if (pod.get("primary"))])
     if len(important) == 1 and len(pod_list) > 1:
         important.append(pod_list[1])
     extra = [pod for pod in pod_list[1:] if pod not in important]

@@ -28,7 +28,8 @@ class RiichiDrawerView(BaseDrawerView):
             short_label = result.limit_name
         else:
             breakdown = "\n".join(
-                f"- {line.name}: {render_note(self.emojis_by_name, line.note)} ({line.points}飜)" for line in result.lines
+                f"- {line.name}: {render_note(self.emojis_by_name, line.note)} ({line.points}飜)"
+                for line in result.lines
             )
             summary = f"{result.han}飜 ({result.limit_name})" if result.limit_name else f"{result.han}飜 {result.fu}符"
             short_label = f"{result.han}飜"

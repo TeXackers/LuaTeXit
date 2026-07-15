@@ -366,7 +366,7 @@ async def _pager(ctx, out_msg, pages, locked, start_page=0):
         # Wait for a valid reaction, break if we time out
         try:
             reaction, user = await ctx.client.wait_for("reaction_add", check=check, timeout=300)
-        except (asyncio.TimeoutError, asyncio.CancelledError):
+        except asyncio.TimeoutError, asyncio.CancelledError:
             break
 
         # Attempt to remove the user's reaction, silently ignore errors

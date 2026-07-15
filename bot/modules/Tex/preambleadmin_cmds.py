@@ -15,6 +15,7 @@ from .core.preamble_utils import (
     judgement_reactions,
     preamblelog,
     resolve_pending_preamble,
+    set_user_preamble,
     view_preamble,
     view_preamble_diff,
 )
@@ -195,9 +196,9 @@ async def user_admin(ctx: Context, userid: int):
                 raise UserCancelled("Modification cancelled.")
 
             # Finally, set the preamble
-            preamble_data.insert(
-                allow_replace=True,
-                userid=userid,
+            set_user_preamble(
+                ctx.client,
+                userid,
                 preamble=preamble,
                 previous_preamble=current_preamble["preamble"] if current_preamble else None,
             )
@@ -216,9 +217,9 @@ async def user_admin(ctx: Context, userid: int):
             if not await is_admin.run(ctx):
                 return await ctx.error_reply("This can only be used by bot managers.")
 
-            preamble_data.insert(
-                allow_replace=True,
-                userid=userid,
+            set_user_preamble(
+                ctx.client,
+                userid,
                 preamble=None,
                 previous_preamble=current_preamble["preamble"] if current_preamble else None,
             )

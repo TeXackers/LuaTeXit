@@ -16,6 +16,7 @@ from utils.lib import mail, split_text
 from wards import is_reviewer
 
 from modules.Tex.resources import default_preamble, failed_image_path
+from .LatexUser import LatexUser
 
 __location__ = str((Path.cwd() / Path(__file__).parent).resolve())
 
@@ -381,6 +382,20 @@ async def resolve_pending_preamble(ctx, userid, info, colour=None):
     #         await ctx.bot.edit_message(msg, embed=msg_embed)
 
 
+def set_user_preamble(client, userid, preamble, previous_preamble=None):
+    """
+    Write a user's live preamble, then refresh their cached `LatexUser` (if one exists) so it doesn't keep serving the stale preamble.
+    """
+    client.data.user_latex_preambles.insert(
+        allow_replace=True,
+        userid=userid,
+        preamble=preamble,
+        previous_preamble=previous_preamble,
+    )
+    if userid in LatexUser.cached_users:
+        LatexUser.cached_users[userid].load()
+
+
 async def submit_preamble(ctx: Context, user, submission, info):
     """
     Make a new preamble submission
@@ -561,9 +576,9 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
 
     current_info = ctx.client.data.user_latex_preambles.select_where(userid=userid)
     previous_preamble = current_info[0]["preamble"] if current_info else default_preamble
-    ctx.client.data.user_latex_preambles.insert(
-        allow_replace=True,
-        userid=userid,
+    set_user_preamble(
+        ctx.client,
+        userid,
         preamble=pending_info[0]["pending_preamble"],
         previous_preamble=previous_preamble,
     )

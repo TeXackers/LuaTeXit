@@ -45,11 +45,17 @@ class LatexUserSetting(SettingType):
     @classmethod
     def save(cls, client, userid, data):
         """
-        Uses the appropriate tableInterface to save the data.
+        Uses the appropriate tableInterface to save the data, then refreshes the cached `LatexUser` so as to not serve stale settings.
         """
         params = {"userid": userid, cls._data_column: data}
 
         client.data.user_latex_config.upsert(constraint=cls._upsert_constraint, **params)
+
+        # Imported lazily to avoid a circular import: `LatexUser` imports this module.
+        from .LatexUser import LatexUser  # noqa
+
+        if userid in LatexUser.cached_users:
+            LatexUser.cached_users[userid].load()
 
     @classmethod
     def response(cls, ctx, new_data):

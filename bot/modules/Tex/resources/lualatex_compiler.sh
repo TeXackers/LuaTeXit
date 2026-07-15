@@ -43,7 +43,7 @@ then
             -cnf-line 'opening_any=p' -cnf-line 'openout_any=p' \
             failed.tex >> /dev/null
     timeout 5 \
-        gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pngalpha -r1800 -dDownScaleFactor=3 \
+        gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pngalpha -r600 -dDownScaleFactor=1 \
             -sOutputFile=$1.png failed.pdf >> /dev/null
     if [ ! -f $1.png ]; then
         cp "../../failed/1x2.png" $1.png
@@ -54,7 +54,7 @@ fi
 
 # convert_start=$(date +%s.%N)
 
-timeout 10 gs -q -r1800 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
+timeout 10 gs -q -r600 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=1 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 # convert_end=$(date +%s.%N)
 # convert_time=$(echo "$convert_end - $convert_start" | bc)

@@ -1,7 +1,9 @@
+import functools
 import logging
 import shutil
 from pathlib import Path
 
+import anyio.to_thread
 from anyio import Path as AsyncPath
 from cmdClient import Context
 from logger import log
@@ -171,12 +173,12 @@ async def _run_tex_compile(
     path = f"tex/staging/{targetid}"
 
     # Remove the staging directory, if it exists
-    shutil.rmtree(path, ignore_errors=True)
+    await anyio.to_thread.run_sync(functools.partial(shutil.rmtree, path, ignore_errors=True))
 
     # Recreate staging directory
     await AsyncPath(path).mkdir(parents=True, exist_ok=True)
 
-    fn: Path = Path(f"{path}/{targetid}.tex")
+    fn = AsyncPath(f"{path}/{targetid}.tex")
 
     if plaintex:
         content = to_compile_plaintex.format(source=source)
@@ -189,8 +191,7 @@ async def _run_tex_compile(
             source=source,
         )
 
-    with Path.open(fn, "w") as work:
-        work.write(content)
+    await fn.write_text(content)
 
     # Build compile script
     script = f"{script_path} {targetid} || exit;\ncd {path}\n"

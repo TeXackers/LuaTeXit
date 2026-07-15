@@ -11,6 +11,7 @@ from .core.preamble_utils import (
     confirm,
     preamblelog,
     resolve_pending_preamble,
+    set_user_preamble,
     submit_preamble,
     view_preamble,
     view_preamble_v2,
@@ -100,9 +101,9 @@ async def cmd_preamble(ctx: Context, flags: dict):
             return await ctx.error_reply("Cancelling preamble reset, your preamble was not modified.")
 
         # Now reset the preamble
-        preamble_data.insert(
-            allow_replace=True,
-            userid=ctx.author.id,
+        set_user_preamble(
+            ctx.client,
+            ctx.author.id,
             preamble=None,
             previous_preamble=current_preamble["preamble"],
         )
@@ -150,9 +151,9 @@ async def cmd_preamble(ctx: Context, flags: dict):
             return await ctx.error_reply("Cancelling preamble revert, your preamble was not modified.")
 
         # Revert the preamble
-        preamble_data.insert(
-            allow_replace=True,
-            userid=ctx.author.id,
+        set_user_preamble(
+            ctx.client,
+            ctx.author.id,
             preamble=current_preamble["previous_preamble"],
             previous_preamble=current_preamble["preamble"],
         )
@@ -276,9 +277,9 @@ async def cmd_preamble(ctx: Context, flags: dict):
 
         # Finally save the new preamble
         if new_preamble is not None:
-            preamble_data.insert(
-                allow_replace=True,
-                userid=ctx.author.id,
+            set_user_preamble(
+                ctx.client,
+                ctx.author.id,
                 preamble=new_preamble,
                 previous_preamble=preamble,
             )

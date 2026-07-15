@@ -24,6 +24,9 @@ class LatexUser:
 
     __slots__ = (*settings.keys(), "id", "preamble")
 
+    # Cache of all users the client requests
+    cached_users: ClassVar[dict] = {}
+
     # Stored client for accessing data interfaces
     _client: ClassVar[None | cmdClient] = None
 
@@ -77,7 +80,9 @@ class LatexUser:
 
     @classmethod
     def get(cls, uid):
-        return cls(uid)
+        if uid not in cls.cached_users:
+            cls.cached_users[uid] = cls(uid)
+        return cls.cached_users[uid]
 
 
 @module.data_init_task

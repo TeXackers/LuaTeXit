@@ -33,7 +33,7 @@ fi
 # -quality <value>: JPEG/MIFF/PNG compression level
 # -repage <geometry>: size and location of an image canvas
 # -trim: trim image edges
-timeout 10 gs -q -r1800 -sDEVICE=png16m -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
+timeout 10 gs -q -r600 -sDEVICE=png16m -dBATCH -dNOPAUSE -dDownScaleFactor=1 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 if [ $? -eq 124 ];
 then

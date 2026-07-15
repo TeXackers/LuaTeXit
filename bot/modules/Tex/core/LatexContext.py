@@ -267,14 +267,16 @@ class LatexContext:
         make_fn = getattr(self.ctx, self._engine_compilers[engine])
         return await make_fn(self.source, self.luser.id, self.preamble, self.luser.colour, pad=not self.wide)
 
-    async def _make(self, engine: str):
+    async def _make(self, engine: str) -> discord.Message | None:
         """
         Make the latex message, handling ratelimits, compilation using the given engine, and output.
         """
         ctx = self.ctx
         luser = self.luser
 
-        await ctx.ch.typing()
+        # typing
+        typing_indicator = asyncio.ensure_future(ctx.ch.typing())
+        typing_indicator.add_done_callback(lambda fut: fut.exception())
 
         # Retrieve and request the user's bucket, creating if required
         if luser.id not in self.user_buckets:

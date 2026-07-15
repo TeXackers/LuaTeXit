@@ -46,7 +46,7 @@ fi
 # -gamma <value>: gamma value
 # -fuzz <value>%: colors within <value>% are considered equal
 # -trim: trim image edges
-timeout 20 gs -q -r1800 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=3 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
+timeout 20 gs -q -r600 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=1 -sOutputFile="$1.png" "$1.pdf" >> /dev/null;
 
 # convert_end=$(date +%s.%N)
 # convert_time=$(echo "$convert_end - $convert_start" | bc)

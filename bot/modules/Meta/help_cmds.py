@@ -7,7 +7,7 @@ from utils.lib import prop_tabulate, tabulate
 from wards import is_admin
 
 if TYPE_CHECKING:
-    from bot.modules import Module
+    from modules import Module
 
 from .module import meta_module as module
 
@@ -147,28 +147,28 @@ async def cmd_list(ctx: Context) -> None:
     """
     # Flag for whether we display hidden modules in the list or not
     show_hidden: bool = await is_admin.run(ctx)
-    modules: list[type[Module]] = [
+    modules: list[Module] = [
         module for module in ctx.client.modules if module.enabled and (show_hidden or not module.hidden)
     ]
 
-    if ctx.alias.lower() == "ls":
-        # Make the cats (category/module command lists)
-        cats = {cat.name.lower(): sorted(cat.cmds, key=lambda cmd: cmd.name) for cat in modules}
+    cat_order = {name: i for i, name in enumerate(sorted_cats)}
+    ordered_modules = sorted(modules, key=lambda m: (cat_order.get(m.name, len(sorted_cats)), m.name))
 
+    if ctx.alias.lower() == "ls":
         # Build brief listing embed
         embed = discord.Embed(title="My commands!", color=discord.Colour.green())
-        # Construct embed fields from the cats in the order of sorted_cats
-        for cat in sorted_cats:
-            if cat.lower() in cats:
-                embed.add_field(
-                    name=cat,
-                    value=", ".join(
-                        f"~~`{cmd.name}`~~" if cmd.disabled else f"`{cmd.name}`"
-                        for cmd in cats[cat.lower()]
-                        if (show_hidden or not cmd.hidden)
-                    ),
-                    inline=False,
-                )
+        for cat in ordered_modules:
+            visible_cmds = sorted(
+                (cmd for cmd in cat.cmds if (show_hidden or not cmd.hidden)),
+                key=lambda cmd: cmd.name,
+            )
+            if not visible_cmds:
+                continue
+            embed.add_field(
+                name=cat.name,
+                value=", ".join(f"~~`{cmd.name}`~~" if cmd.disabled else f"`{cmd.name}`" for cmd in visible_cmds),
+                inline=False,
+            )
         embed.set_footer(
             text="Use '{0}help' or '{0}help cmd' for detailed help, or get support with {0}support.".format(
                 await ctx.best_prefix(),
@@ -187,43 +187,30 @@ async def cmd_list(ctx: Context) -> None:
             "If you still have questions, talk to our friendly support team [here]({1})."
         ).format(await ctx.best_prefix(), ctx.client.app_info["support_guild"])
 
-        # Build the command groups
-        groups = {
-            cat.name: (
-                cat,
-                [
-                    (cmd.name, getattr(cmd, "desc", f"See `{await ctx.best_prefix()}help {cmd.name}`."), cmd)
-                    for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
-                    if (show_hidden or not cmd.hidden)
-                ],
-            )
-            for cat in modules
-            if (not ctx.args or (ctx.args.lower() in cat.name.lower()))
-        }
+        # Build the command groups, restricted to modules matching the requested filter (if any)
+        filtered_modules = [cat for cat in ordered_modules if (not ctx.args or (ctx.args.lower() in cat.name.lower()))]
 
-        if not groups:
+        if not filtered_modules:
             return await ctx.error_reply(
                 f"No matching modules! See `{await ctx.best_prefix()}ls` for a list of modules and their commands.",
             )
 
-        # Sort the command groups based on sorted_cats and extract the required data
-        # stringy_groups = [(groups[catname][0], prop_tabulate(*zip(*groups[catname][1][:2])))
-        #                   for catname in sorted_cats if catname in groups]
-        # Quick hack to handle disabled commands
+        # Build the stringy command tables, skipping modules with no visible commands
         stringy_groups = []
-        for catname in sorted_cats:
-            if catname in groups:
-                cat = groups[catname][0]
-                try:
-                    props, values, commands = zip(*groups[catname][1], strict=True)
-                    table = prop_tabulate(props, values)
-                    table = "\n".join(
-                        ("~~{}~~" if commands[i].disabled else "{}").format(line)
-                        for i, line in enumerate(table.splitlines())
-                    )
-                    stringy_groups.append((cat, table))
-                except ValueError:
-                    continue
+        for cat in filtered_modules:
+            cmd_rows = [
+                (cmd.name, getattr(cmd, "desc", f"See `{await ctx.best_prefix()}help {cmd.name}`."), cmd)
+                for cmd in sorted(cat.cmds, key=lambda cmd: len(cmd.name))
+                if (show_hidden or not cmd.hidden)
+            ]
+            if not cmd_rows:
+                continue
+            props, values, commands = zip(*cmd_rows, strict=True)
+            table = prop_tabulate(props, values)
+            table = "\n".join(
+                ("~~{}~~" if commands[i].disabled else "{}").format(line) for i, line in enumerate(table.splitlines())
+            )
+            stringy_groups.append((cat, table))
 
         # Now put everything into embeds
         help_embeds = []  # List of embed pages to respond with

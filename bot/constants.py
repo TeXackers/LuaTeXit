@@ -31,6 +31,7 @@ sorted_cats: list[str] = [
     "Info",
     "Utility",
     "Fun",
+    "Mahjong",
     "Social",
     "Moderation",
     "Maths",

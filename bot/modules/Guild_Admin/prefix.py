@@ -1,3 +1,5 @@
+import logging
+
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import ColumnData, GuildSetting, String
 from wards import guild_manager
@@ -47,7 +49,7 @@ class guild_prefix(ColumnData, String, GuildSetting):
         rows = client.data.guild_prefixes.select_where()
         client.objects["guild_prefix_cache"] = {row["guildid"]: row["prefix"] for row in rows}
 
-        client.log(f"r     |--custom prefixes: {len(rows)}", context="Guild Admin")
+        client.log(f"  |-- custom prefixes: {len(rows)}", context="Guild Admin", level=logging.DEBUG)
 
 
 # Define data schema

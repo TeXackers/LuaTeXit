@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -35,7 +36,7 @@ class Module:
 
         cmdClient.modules.append(self)
 
-        log("     module", context=self.name)
+        log("     module", context=self.name, level=logging.DEBUG)
 
     def cmd(self, name, cmdClass: type[Command] | None = None, **kwargs) -> Callable[[Callable], Command]:
         """
@@ -44,7 +45,7 @@ class Module:
         Adds the command to the module command list and updates the client cache.
         Transparently passes the rest of the arguments to the `Command` constructor.
         """
-        log(f"+     |-/{name}", context=self.name)
+        log(f"+     |-/{name}", context=self.name, level=logging.DEBUG)
 
         cmdClass = cmdClass or self.baseCommand
 
@@ -63,14 +64,14 @@ class Module:
         Decorator which attaches the provided function to the current instance.
         """
         setattr(self, func.__name__, func)
-        log(f"+     |--[attach] {func.__name__}", context=self.name)
+        log(f"  |-- {func.__name__}", context=self.name, level=logging.DEBUG)
 
     def launch_task(self, func: Callable) -> Callable:
         """
         Decorator which adds a launch function to complete during the default launch procedure.
         """
         self.launch_tasks.append(func)
-        log(f"t     |--[task] {func.__name__}", context=self.name)
+        log(f"  |-- {func.__name__}", context=self.name, level=logging.DEBUG)
         return func
 
     def init_task(self, func: Callable) -> Callable:
@@ -78,7 +79,7 @@ class Module:
         Decorator which adds an init function to complete during the default initialise procedure.
         """
         self.init_tasks.append(func)
-        log(f"i     |--[init] {func.__name__}", context=self.name)
+        log(f"  |-- {func.__name__}", context=self.name, level=logging.DEBUG)
         return func
 
     def initialise(self, client: cmdClient) -> None:
@@ -88,15 +89,18 @@ class Module:
         or possibly by modules which depend on this one.
         """
         if not self.initialised:
-            log("      task init", context=self.name)
+            if self.init_tasks:
+                names = ", ".join(task.__name__ for task in self.init_tasks)
+                log(f"task init: {names}", context=self.name, level=logging.DEBUG)
+            else:
+                log("task init", context=self.name, level=logging.DEBUG)
 
             for task in self.init_tasks:
-                log(f"t     |--[task] {task.__name__}", context=self.name)
                 task(client)
 
             self.initialised = True
         else:
-            log("s     |--[skip]", context=self.name)
+            log("  |-- skipped", context=self.name, level=logging.DEBUG)
 
     async def launch(self, client: cmdClient) -> None:
         """
@@ -105,15 +109,18 @@ class Module:
         Must set `ready` to `True`, otherwise all commands will hang.
         """
         if not self.ready.is_set():
-            log("launching", context=self.name)
+            if self.launch_tasks:
+                names = ", ".join(task.__name__ for task in self.launch_tasks)
+                log(f"ready: {names}", context=self.name, level=logging.DEBUG)
+            else:
+                log("ready", context=self.name, level=logging.DEBUG)
 
             for task in self.launch_tasks:
-                log(f"t     |--[task] {task.__name__}", context=self.name)
                 await task(client)
 
             self.ready.set()
         else:
-            log("s     |--[skip]", context=self.name)
+            log("  |-- skipped", context=self.name, level=logging.DEBUG)
 
     async def pre_command(self, ctx: Context):
         """

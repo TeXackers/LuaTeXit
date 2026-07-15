@@ -6,7 +6,7 @@ import modules  # noqa
 from apps import load_app
 from cmdClient import cmdClient
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-from logger import attach_log_client, log, log_fmt
+from logger import attach_log_client, discord_context_filter, log, log_fmt
 from paraArgs import args
 
 # Always load modules last
@@ -63,6 +63,7 @@ file_handler = ConcurrentRotatingFileHandler(
     filename=LOGFILE, maxBytes=50000000, backupCount=10, encoding="utf-8", mode="a"
 )
 file_handler.setFormatter(log_fmt)
+file_handler.addFilter(discord_context_filter)
 logger.addHandler(file_handler)
 
 
@@ -107,7 +108,7 @@ else:
     raise Exception("Unknown data storage type {} in configuration".format(DB_TYPE))
 
 # Initialise the module data interfaces
-log("Initialising data for all client modules.")
+log("Initialising modules")
 for module in client.modules:
     if module.enabled:
         module.initialise_data(client)
@@ -193,12 +194,10 @@ async def on_ready():
     # Attach the log client and log the alive message
     attach_log_client(client)
 
-    shard_msg: str = f"on {shard_num} with {SHARD_COUNT}" if SHARD_COUNT > 1 else ""
+    shard_msg: str = f" (Shard {shard_num}/{SHARD_COUNT})" if SHARD_COUNT > 1 else ""
 
     log_msg = (
-        f"Init {client.user.name} [{client.user.id}, {client.app_info['app']}.conf]\n"
-        f"{len(client.guilds)} guilds {shard_msg}\n"
-        f"{len(client.modules)} modules {len(client.cmds)} ({len(client.cmd_names)} incl. aliases) cmds\n"
+        f"{client.user.name}({client.user.id}) using {client.app_info['app']}.conf in {len(client.guilds)} guilds{shard_msg} with {len(client.modules)} modules + {len(client.cmds)} ({len(client.cmd_names)} incl. aliases) cmds"
     )
     log(log_msg)
 
@@ -235,4 +234,4 @@ client.initialise_modules()
 
 
 # ----Everything is set up, start the client!----
-client.run(conf.get("TOKEN"))
+client.run(conf.get("TOKEN"), log_handler = None)

@@ -1,3 +1,4 @@
+import logging
 from itertools import chain
 
 from logger import log
@@ -34,7 +35,7 @@ class Connector:
         """
         Attach a data interface to this connector.
         """
-        log(f"a     |--[attach] {interface.__class__.__name__} as {name}.", context="DATABASE")
+        log(f"  |-- {interface.__class__.__name__} --> {name}.", context="DATABASE", level=logging.DEBUG)
         setattr(self, name, interface)
         self.interfaces[name] = interface
 

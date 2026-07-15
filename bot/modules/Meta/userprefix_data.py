@@ -1,3 +1,5 @@
+import logging
+
 from registry import Column, ColumnType, tableInterface, tableSchema
 
 from .module import meta_module as module
@@ -26,4 +28,4 @@ def load_userprefix_cache(client):
     user_prefixes = {row["userid"]: row["prefix"] for row in client.data.user_prefixes.select_where()}
     client.objects["user_prefix_cache"] = user_prefixes
 
-    client.log(f"r     |--custom user prefix: {len(user_prefixes)}", context="Meta")
+    client.log(f"  |-- custom user prefix: {len(user_prefixes)}", context="Meta", level=logging.DEBUG)

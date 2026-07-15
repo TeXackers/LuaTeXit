@@ -106,13 +106,13 @@ class cmdClient(discord.Client):
         self.valid_prefixes = func.__get__(self)
 
     def initialise_modules(self) -> None:
-        log("client module init")
+        log("Client module init")
         for module in self.modules:
             if module.enabled:
                 module.initialise(self)
 
     async def launch_modules(self) -> None:
-        log("client module start")
+        log("Client module start")
         for module in self.modules:
             if module.enabled:
                 await module.launch(self)
@@ -330,7 +330,7 @@ class cmdClient(discord.Client):
             bisect([parser[1] for parser in self.extra_message_parsers], priority),
             (new_func, priority),
         )
-        log(f"+     |------{func.__name__} (priority: {priority})")
+        log(f"  |------{func.__name__} (priority: {priority})", level=logging.DEBUG)
 
     def add_after_event(self, event, func, priority=0):
         """
@@ -364,7 +364,7 @@ class cmdClient(discord.Client):
             setattr(self, after_handler, [])
         handlers = getattr(self, after_handler)
         handlers.insert(bisect([handler[1] for handler in handlers], priority), (new_func, priority))
-        log(f"+     |--[event] {func.__name__} | {event} (priority: {priority})")
+        log(f"  |-- [event] {func.__name__} | {event} (prio: {priority})", level=logging.DEBUG)
 
     def dispatch(self, event, *args, **kwargs):
         super().dispatch(event, *args, **kwargs)

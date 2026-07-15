@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import discord
 from cmdClient import Context  # noqa
@@ -130,7 +131,7 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
             channel_counter += 1
 
         client.objects["cleaned_guild_channels"] = cleaned_channels
-        client.log(f"r     |--Cleaned {len(cleaned_channels)} guilds (total: {channel_counter})", context="Guild Admin")
+        client.log(f"  |-- cleaned {len(cleaned_channels)} guilds (total: {channel_counter})", context="Guild Admin", level=logging.DEBUG)
 
 
 # Define event handler

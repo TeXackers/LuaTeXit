@@ -1,3 +1,5 @@
+import logging
+
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import ChannelList, GuildSetting, ListData
 from wards import guild_manager
@@ -50,8 +52,9 @@ class disabled_channels(ListData, ChannelList, GuildSetting):
 
         client.objects["disabled_guild_channels"] = disabled_channels
         client.log(
-            f"r     |--disabled: {len(disabled_channels)} guilds (total: {channel_counter})",
+            f"  |-- disabled: {len(disabled_channels)} guilds (total: {channel_counter})",
             context="Guild Admin",
+            level=logging.DEBUG,
         )
 
 

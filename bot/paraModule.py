@@ -34,14 +34,14 @@ class paraModule(Module):
         which will be later loaded on initialisation.
         """
         self.guild_settings.append(cls)
-        log(f"+     |-/{cls.attr_name}", context=self.name)
+        log(f"+     |-/{cls.attr_name}", context=self.name, level=logging.DEBUG)
         return cls
 
     def initialise(self, client: cmdClient):
         if self.guild_settings and not self.initialised:
-            log("guild", context=self.name)
+            names = ", ".join(setting.attr_name for setting in self.guild_settings)
+            log(f"guild settings: {names}", context=self.name, level=logging.DEBUG)
             for setting in self.guild_settings:
-                log(f"+     |--{setting.attr_name}", context=self.name)
                 guild_config.attach_setting(setting)
                 setting.initialise(client)
 
@@ -80,7 +80,7 @@ class paraModule(Module):
         The primary purpose is to attach the data interfaces for each module.
         """
         self.data_init_tasks.append(func)
-        log(f"a     |--{func.__name__}", context=self.name)
+        log(f"  |-- {func.__name__}", context=self.name, level=logging.DEBUG)
         return func
 
     def initialise_data(self, client: cmdClient):
@@ -88,15 +88,16 @@ class paraModule(Module):
         Data initialise hook.
         """
         if not self.data_initialised:
-            log("data init", context=self.name)
+            names = ", ".join(task.__name__ for task in self.data_init_tasks)
+            msg = f"init: {names}" if names else "init"
+            log(msg, context=self.name, level=logging.DEBUG)
 
             for task in self.data_init_tasks:
-                log(f"t     |--[task] {task.__name__}", context=self.name)
                 task(client)
 
             self.data_initialised = True
         else:
-            log("s     |--[skip]", context=self.name)
+            log("s     |--[skip]", context=self.name, level=logging.DEBUG)
 
     async def on_exception(self, ctx: Context, exception: Exception):
         try:

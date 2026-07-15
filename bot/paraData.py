@@ -64,7 +64,7 @@ def check_data_version(client):
             raise DataVersionMismatch(
                 f"Current version `{version}` not equal to required version `{REQUIRED_DATA_VERSION}`",
             )
-        client.log(f"Data Version: {version}", context="DATA_VERSION")
+        client.log(f"Data Version: {version}", context="DATA_VERSION", level=logging.DEBUG)
     else:
         client.log(
             "Refusing to start the client due to nonexistent version! "

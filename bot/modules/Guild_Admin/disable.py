@@ -1,3 +1,5 @@
+import logging
+
 from cmdClient import Context  # noqa
 from cmdClient.lib import SafeCancellation
 from registry import Column, ColumnType, tableInterface, tableSchema
@@ -157,7 +159,7 @@ class disabled_commands(ListData, StringList, GuildSetting):
             command_counter += 1
 
         client.objects["disabled_guild_commands"] = disabled_commands
-        client.log(f"r     |--{len(disabled_commands)} guilds (total: {command_counter})", context="DISABLED_COMMANDS")
+        client.log(f"  |-- disabled: {len(disabled_commands)} guilds (total: {command_counter})", context="DISABLED_COMMANDS", level=logging.DEBUG)
 
 
 # Define data schema

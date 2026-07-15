@@ -268,8 +268,8 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
             "User ID": f"`{user.id!s}`",
             "Top role": (roles[0] if len(roles[0]) < 26 else f"{roles[0][:23]}...") if roles else "N/A",
             "Seen in": f"{numshared} guild{'s' if numshared > 1 else ''}",
-            "Joined at": discord.utils.format_dt(user.joined_at, "R") if user.joined_at else "N/A",
-            "Created at": discord.utils.format_dt(user.created_at, "R"),
+            "Joined": discord.utils.format_dt(user.joined_at, "R") if user.joined_at else "N/A",
+            "Created": discord.utils.format_dt(user.created_at, "R"),
         },
     )
 

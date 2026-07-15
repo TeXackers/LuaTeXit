@@ -323,30 +323,3 @@ def usage_embed(ctx: Context, custom_usage=None) -> discord.Embed:
     else:
         value = custom_usage
     return discord.Embed(title="Usage", colour=discord.Color.red(), description=value)
-
-
-@Context.util
-def ts(ctx: Context, timestamp, mode="F") -> str:
-    """
-    Converts datetime timestamps for use in Discord's timestamp format.
-    Intended to be used to display "created at" dates.
-
-    Parameters
-    ----------
-    timestamp: datetime.datetime
-        The timestamp to be formatted.
-    mode: str
-        The mode for the timestamp to be displayed as:
-            t - short time
-            T - long time
-            d - short date
-            D - long date
-            f - short date with time
-            F - long date with time
-            R - relative time
-
-    Returns: str
-        The formatted timestamp to be displayed in Discord.
-
-    """
-    return f"<t:{int(timestamp.timestamp())}:{mode}>" if timestamp else "Unknown"

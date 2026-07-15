@@ -47,7 +47,7 @@ async def cmd_tickets(ctx):
         "[#{}]({}) ⎪ {} ⎪ `{:<8}` ⎪ {}".format(
             ticket.ticketgid,
             ticket.jumpto,
-            ctx.ts(ticket.created_at, mode="d"),
+            discord.utils.format_dt(ticket.created_at, "d"),
             ticket._ticket_type.name,
             ticket.reason.splitlines()[0]
             if len(ticket.reason.splitlines()[0]) < 45

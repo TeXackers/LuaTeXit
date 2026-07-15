@@ -11,6 +11,8 @@ import discord
 from discord import Interaction, Member, User
 from discord.ui import ActionRow, Button, LayoutView
 
+from .Context import Context
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -120,7 +122,11 @@ class PagerView(LayoutView):
     async def interaction_check(self, interaction: Interaction) -> bool:
         match self.locked, interaction.user != self.author:
             case True, True:
-                # only lock if the pager is locked and the user is not the author
+                from wards import is_dev  # noqa
+
+                ctx: Context = Context(interaction.client, author=interaction.user)
+                if await is_dev.run(ctx):
+                    return True
                 await interaction.response.send_message("You can't control this pager.", ephemeral=True)
                 return False
             case _, _:

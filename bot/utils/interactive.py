@@ -270,7 +270,7 @@ async def pager_v2(
     left_emoji = await ctx.client.fetch_application_emoji(1522165411951546440)
     right_emoji = await ctx.client.fetch_application_emoji(1522165413520081039)
 
-    view = PagerView(pages, locked=False, author=ctx.author, left_emoji=left_emoji, right_emoji=right_emoji)
+    view = PagerView(pages, locked=True, author=ctx.author, left_emoji=left_emoji, right_emoji=right_emoji)
     message = await ctx.reply(view=view)
     view.message = message
     return message

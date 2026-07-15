@@ -1,11 +1,11 @@
-from __future__ import annotations
-
 import asyncio
-import imp
+import importlib.machinery
+import importlib.util
 import itertools
 import logging
 import sys
 import traceback
+import types
 from bisect import bisect
 from collections.abc import Callable
 from contextlib import suppress
@@ -21,7 +21,7 @@ from discord import Message
 
 from .Command import Command  # noqa
 from .Context import Context, FlatContext
-from .logger import log
+from .logger import current_mid, log
 from .Module import Module
 
 LUATEXIT_ID = 871978350393065572
@@ -233,15 +233,15 @@ class cmdClient(discord.Client):
 
         log(
             f"cmd: {cmdname} ({cmd.module.name})\nusr: {message.author} ({message.author.id})\ncid: {'DM' if message.channel.id == LUATEXIT_ID else message.channel} ({'' if message.channel.id == LUATEXIT_ID else message.channel.id})\ngid: {message.guild or ''} ({message.guild.id if message.guild else ''})\n\n{content}",
-            context=f"mid:{message.id}",
+            context=f"{message.id}",
         )
 
         if not cmd.module.enabled:
-            log("s     skip", context=f"mid:{message.id}")
+            log("s     skip", context=f"{message.id}")
             self.update_cmdnames()
 
         if not cmd.module.ready.is_set():
-            log(f"w     |-- waiting {cmd.module.name}", context=f"mid:{message.id}")
+            log(f"w     |-- waiting {cmd.module.name}", context=f"{message.id}")
             await cmd.module.ready.wait()
 
         # Build the context
@@ -258,15 +258,17 @@ class cmdClient(discord.Client):
         self.ctx_cache[message.id] = ctx.flatten()
         self.active_contexts[message.id] = ctx
 
+        mid_token = current_mid.set(message.id)
         try:
             await cmd.run(ctx)
         except Exception:
             log(
                 f"The following exception was encountered executing command '{cmdname}'.\n{traceback.format_exc()}",
-                context=f"mid:{message.id}",
+                context=f"{message.id}",
                 level=logging.ERROR,
             )
         finally:
+            current_mid.reset(mid_token)
             self.ctx_cache[message.id] = ctx.flatten()
             self.active_contexts.pop(message.id, None)
 
@@ -280,9 +282,14 @@ class cmdClient(discord.Client):
 
         for fn in Path(dirpath).iterdir():
             if fn.is_file() and fn.suffix == ".py":
-                path = fn.absolute()
+                path: Path = fn.absolute()
+                module_name: str = "bot_module_" + str(fn)
+                spec: importlib.machinery.ModuleSpec = importlib.util.spec_from_file_location(module_name, path)
+                module: types.ModuleType = importlib.util.module_from_spec(spec)
+
                 sys.path.append(dirpath)
-                module = imp.load_source("bot_module_" + str(fn), path)
+                sys.modules[module_name] = module
+                spec.loader.exec_module(module)
                 sys.path.remove(dirpath)
 
                 if "load_into" in dir(module):
@@ -322,7 +329,7 @@ class cmdClient(discord.Client):
                         content="\n".join("\t" + line for line in message.content.splitlines()),
                         traceback="\n".join("\t" + line for line in traceback.format_exc().splitlines()),
                     ),
-                    context=f"mid:{message.id}",
+                    context=f"{message.id}",
                     level=logging.ERROR,
                 )
 

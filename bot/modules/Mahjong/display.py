@@ -7,8 +7,6 @@ Falls back to `` `tilename` `` text when a tile has no matching application
 emoji (e.g. the emojis haven't been uploaded to the bot application yet).
 """
 
-from __future__ import annotations
-
 import re
 
 from .tiles import HAND_TILE_NAMES

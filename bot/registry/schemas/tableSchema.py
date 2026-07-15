@@ -9,7 +9,7 @@ class tableSchema:
     ----------
     table_name: str
         Name of the table to generate the schema for.
-    columns: List[Column]
+    columns: list[Column]
         List of Columns to add to the schema.
     add_timestamp: bool
         Whether to automatically add a `_timestamp` column with the insert timestamp.
@@ -17,7 +17,7 @@ class tableSchema:
     add_app: bool
         Whether to automatically add an `app` column for the current app.
 
-    Returns: Tuple[str, str, Tuple[Tuple[str, type]]]
+    Returns: tuple[str, str, tuple[tuple[str, type]]]
         Represents `(mysql_schema, sqlite_schema, column_data)`
         where `column_data` is that accepted by `tableManipulator`.
     """
@@ -106,7 +106,7 @@ def schema_generator(table_name, *columns, add_timestamp=True, add_app=False):
     ----------
     table_name: str
         Name of the table to generate the schema for.
-    columns: List[Column]
+    columns: list[Column]
         List of Columns to add to the schema.
     add_timestamp: bool
         Whether to automatically add a `_timestamp` column with the insert timestamp.
@@ -114,7 +114,7 @@ def schema_generator(table_name, *columns, add_timestamp=True, add_app=False):
     add_app: bool
         Whether to automatically add an `app` column for the current app.
 
-    Returns: Tuple[str, str, Tuple[Tuple[str, type]]]
+    Returns: tuple[str, str, tuple[tuple[str, type]]]
         Represents `(mysql_schema, sqlite_schema, column_data)`
         where `column_data` is that accepted by `tableManipulator`.
     """

@@ -20,4 +20,3 @@ pytz
 soupsieve
 urllib3
 yarl
-zombie-imp

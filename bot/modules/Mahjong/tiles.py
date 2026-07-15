@@ -12,8 +12,6 @@ since typing e.g. `1maan,1maan,2maan,...` by hand is painful:
         e.g. "11z" -> east, east; "567z" -> 白發中
 """
 
-from __future__ import annotations
-
 import re
 from collections import Counter
 

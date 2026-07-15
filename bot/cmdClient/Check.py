@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from functools import wraps
 from typing import TYPE_CHECKING
 
@@ -24,10 +22,10 @@ class Check:
         This must take a `Context` as the first argument.
         It must accept arbitrary arguments and keyword arguments.
         It must return `True` if the check passed, and `False` if the check failed.
-    parents: List[Check]
+    parents: list[Check]
         A list of `Checks` which superscede the current check.
         Precisely, if one of the parent checks pass, this check will also pass.
-    requires: List[Check]
+    requires: list[Check]
         A list of `Checks` required by the current check.
         All of these checks must pass for the current check to pass.
         These are checked after the parents.

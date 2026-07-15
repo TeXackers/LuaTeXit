@@ -53,11 +53,11 @@ class Ticket:
     app: str
         Application which created this ticket.
         As tickets are shared between applications, this is completely internal.
-    msgid: Optional[int]
+    msgid: int | None
         Message id of the ticket embed in the modlog.
-    auditid: Optional[int]
+    auditid: int | None
         The id of the associated audit log entry, if any.
-    reason: Optional[str]
+    reason: str | None
         The reason associated with the action, if any.
     """
 
@@ -223,7 +223,7 @@ class Ticket:
 
         Parameters
         ----------
-        memberid: Optional[int]
+        memberid: int | None
             Filter for tickets with the given memberid associated.
         **kwargs:
             Remaining kwargs must be valid columns of `_combined_ticket_data`.

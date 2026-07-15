@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 
 from cmdClient import Module, cmdClient  # noqa

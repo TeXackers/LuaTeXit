@@ -15,8 +15,6 @@ compact notation as everything else:
              Concealed despite being "shown", since ankan doesn't break menzen.
 """
 
-from __future__ import annotations
-
 import re
 
 from .hand import Group

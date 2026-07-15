@@ -164,7 +164,7 @@ async def _run_tex_compile(
             content="\n".join("\t" + line for line in source.splitlines()),
         ),
         level=logging.DEBUG,
-        context=f"mid:{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
+        context=f"{ctx.msg.id}" if ctx.msg else f"tid:{targetid}",
     )
 
     # Target's staging directory

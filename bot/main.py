@@ -6,7 +6,7 @@ import modules  # noqa
 from apps import load_app
 from cmdClient import cmdClient
 from concurrent_log_handler import ConcurrentRotatingFileHandler
-from logger import attach_log_client, discord_context_filter, log, log_fmt
+from logger import attach_log_client, other_log_filter, log, log_fmt
 from paraArgs import args
 
 # Always load modules last
@@ -63,7 +63,7 @@ file_handler = ConcurrentRotatingFileHandler(
     filename=LOGFILE, maxBytes=50000000, backupCount=10, encoding="utf-8", mode="a"
 )
 file_handler.setFormatter(log_fmt)
-file_handler.addFilter(discord_context_filter)
+file_handler.addFilter(other_log_filter)
 logger.addHandler(file_handler)
 
 

@@ -97,7 +97,7 @@ def log(ctx: Context, *args, **kwargs) -> None:
     Shortcut to the logger which automatically adds the context.
     """
     if "context" not in kwargs:
-        kwargs["context"] = f"mid:{ctx.msg.id}"
+        kwargs["context"] = f"{ctx.msg.id}"
     logger.log(*args, **kwargs)
 
 
@@ -173,7 +173,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
 
     Parameters
     ----------
-    to_delete: List[Message]
+    to_delete: list[Message]
         The messages to delete.
 
     timeout: int

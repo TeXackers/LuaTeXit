@@ -160,7 +160,7 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
 
     Returns
     -------
-    List[int]:
+    list[int]:
         The list of indices selected by the user.
 
     Raises
@@ -293,16 +293,16 @@ async def pager(
 
     Parameters
     ----------
-    pages: List(Union(str, discord.Embed))
+    pages: list[str | discord.Embed]
         A list of either strings or embeds to display as the pages.
     locked: bool
         Whether only the `ctx.author` should be able to use the paging reactions.
     blocking: bool
         Whether to block until the pager has finished.
         Useful for cancelling tasks when the pager completes.
-    destination: Optional[discord.Messageable]
+    destination: discord.Messageable | None
         Optional custom destination to use instead of `ctx.ch`.
-    start_page: Optional[int]
+    start_page: int | None
         Optional initial page to display.
     kwargs: ...
         Remaining keyword arguments are transparently passed to the sender method.
@@ -413,7 +413,7 @@ async def on_input(ctx: Context, msg: str | discord.Message = None, delete_after
     Returns the response from ctx.author, if it is provided.
     Parameters
     ----------
-    msg: Optional[Union[string, discord.Message]]
+    msg: str | discord.Message | None
         When given a `Message`, treats it as the prompt message.
         When given a string, sends the message and uses it as the prompt message.
         Will use a default message if not provided.

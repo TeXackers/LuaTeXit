@@ -108,7 +108,7 @@ class ModAction:
         Action to complete once arguments have been parsed.
         This includes creation of the action ticket.
 
-        Returns: Dict[member, ActionState]
+        Returns: dict[member, ActionState]
             A mapping associating each member to the action state.
         """
         raise NotImplementedError

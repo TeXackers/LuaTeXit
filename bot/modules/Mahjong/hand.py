@@ -12,8 +12,6 @@ Since a hand can often be grouped more than one valid way, `decompose_hand`
 returns every valid decomposition; callers pick whichever scores best.
 """
 
-from __future__ import annotations
-
 from collections import Counter
 from dataclasses import dataclass
 

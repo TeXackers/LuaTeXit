@@ -1,7 +1,11 @@
+import contextvars
 import logging
 from collections.abc import Callable
 
 logger = logging.getLogger()
+
+# Message id of the command currently executing in this asyncio task, if any.
+current_mid: contextvars.ContextVar[int | None] = contextvars.ContextVar("current_mid", default=None)
 
 
 def _log(message: str, context: str = "Global", level: int = logging.INFO) -> None:

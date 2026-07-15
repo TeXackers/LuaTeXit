@@ -42,17 +42,17 @@ def _log_purge_result(ctx, channel, count, task):
     except discord.Forbidden:
         ctx.client.log(
             f"Purge of {count} messages in {label} failed: insufficient permissions.",
-            context=f"PRUNE mid:{ctx.msg.id}",
+            context=f"PRUNE {ctx.msg.id}",
             level=logging.ERROR,
         )
     except discord.HTTPException as e:
         ctx.client.log(
             f"Purge of {count} messages in {label} failed: {e}",
-            context=f"PRUNE mid:{ctx.msg.id}",
+            context=f"PRUNE {ctx.msg.id}",
             level=logging.ERROR,
         )
     else:
-        ctx.client.log(f"Purge of {count} messages in {label} completed.", context=f"PRUNE mid:{ctx.msg.id}")
+        ctx.client.log(f"Purge of {count} messages in {label} completed.", context=f"PRUNE {ctx.msg.id}")
 
 
 async def _paced_purge(channel, targets, *, reason=None):

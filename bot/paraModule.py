@@ -128,7 +128,7 @@ class paraModule(Module):
                         f"{full_traceback}\n\n"
                         f"{ctx.flatten()}"
                     ),
-                    context=f"mid:{ctx.msg.id}",
+                    context=f"{ctx.msg.id}",
                     level=logging.WARNING,
                 )
 
@@ -162,7 +162,7 @@ class paraModule(Module):
                     traceback="\n".join("\t" + line for line in full_traceback.splitlines()),
                     flat_ctx=ctx.flatten(),
                 ),
-                context=f"mid:{ctx.msg.id}",
+                context=f"{ctx.msg.id}",
                 level=logging.ERROR,
             )
             # if logging.getLogger().getEffectiveLevel() < logging.INFO:

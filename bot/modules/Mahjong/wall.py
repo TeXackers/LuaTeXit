@@ -2,8 +2,6 @@
 A shuffled single-player tile wall, for the interactive drawer.
 """
 
-from __future__ import annotations
-
 import random
 
 from .tiles import HAND_TILE_NAMES

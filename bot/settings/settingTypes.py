@@ -62,9 +62,9 @@ class Boolean(SettingType):
     Configurable to change truthy and falsey values, and the output map.
 
     Types:
-        data: Optional[bool]
+        data: bool | None
             The stored boolean value.
-        value: Optional[bool]
+        value: bool | None
             The stored boolean value.
     """
 
@@ -80,7 +80,7 @@ class Boolean(SettingType):
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: bool | None, **kwargs):
         """
-        Both data and value are of type Optional[bool].
+        Both data and value are of type bool | None.
         Directly return the provided value as data.
         """
         return value
@@ -88,7 +88,7 @@ class Boolean(SettingType):
     @classmethod
     def _data_to_value(cls, client: cmdClient, guildid: int, data: bool | None, **kwargs):
         """
-        Both data and value are of type Optional[bool].
+        Both data and value are of type bool | None.
         Directly return the internal data as the value.
         """
         return data
@@ -122,9 +122,9 @@ class Integer(SettingType):
     Integer type. Storing any integer.
 
     Types:
-        data: Optional[int]
+        data: int | None
             The stored integer value.
-        value: Optional[int]
+        value: int | None
             The stored integer value.
     """
 
@@ -137,7 +137,7 @@ class Integer(SettingType):
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: bool | None, **kwargs):
         """
-        Both data and value are of type Optional[int].
+        Both data and value are of type int | None.
         Directly return the provided value as data.
         """
         return value
@@ -145,7 +145,7 @@ class Integer(SettingType):
     @classmethod
     def _data_to_value(cls, client: cmdClient, guildid: int, data: bool | None, **kwargs):
         """
-        Both data and value are of type Optional[int].
+        Both data and value are of type int | None.
         Directly return the internal data as the value.
         """
         return data
@@ -186,9 +186,9 @@ class String(SettingType):
     Configurable to limit text length and restrict input options.
 
     Types:
-        data: Optional[str]
+        data: str | None
             The stored string.
-        value: Optional[str]
+        value: str | None
             The stored string.
     """
 
@@ -248,9 +248,9 @@ class IntegerEnum(SettingType):
     Integer Enum type, accepting limited strings, storing an integer, and returning an IntEnum value
 
     Types:
-        data: Optional[int]
+        data: int | None
             The stored integer.
-        value: Optional[Any]
+        value: Any | None
             The corresponding Enum member
     """
 
@@ -315,9 +315,9 @@ class Member(SettingType):
     Member type, storing a single `discord.Member`.
 
     Types:
-        data: Optional[int]
+        data: int | None
             The user id of the stored Member.
-        value: Optional[discord.Member]
+        value: discord.Member | None
             The stored Member, or None if the member was not found.
     """
 
@@ -378,9 +378,9 @@ class Role(SettingType):
     as `discord.Object`.
 
     Types:
-        data: Optional[int]
+        data: int | None
             The id of the stored Role.
-        value: Optional[Union[discord.Role, discord.Object]]
+        value: discord.Role | discord.Object | None
             The stored Role, or, if the role wasn't found and `_strict` is not set,
             a discord Object with the role id set.
     """
@@ -391,7 +391,7 @@ class Role(SettingType):
     _strict = True
 
     @classmethod
-    def _data_from_value(cls, client: cmdClient, guildid: int, value: discord.Role | None, **kwargs):
+    def _data_from_value(cls, client: cmdClient, guildid: int, value: discord.Role | discord.Object | None, **kwargs):
         """
         Returns the role id.
         """
@@ -451,9 +451,9 @@ class Channel(SettingType):
     Channel type, storing a single `discord.Channel`.
 
     Types:
-        data: Optional[int]
+        data: int | None
             The id of the stored Channel.
-        value: Optional[discord.abc.GuildChannel]
+        value: discord.abc.GuildChannel | None
             The stored Channel.
     """
 
@@ -530,7 +530,7 @@ class Emoji(SettingType):
     @classmethod
     def _data_from_value(cls, client: cmdClient, guildid: int, value: discord.PartialEmoji | None, **kwargs):
         """
-        Both data and value are of type Optional[discord.PartialEmoji].
+        Both data and value are of type discord.PartialEmoji | None.
         Directly return the provided value as data.
         """
         return value
@@ -538,7 +538,7 @@ class Emoji(SettingType):
     @classmethod
     def _data_to_value(cls, client: cmdClient, guildid: int, data: discord.PartialEmoji | None, **kwargs):
         """
-        Both data and value are of type Optional[discord.PartialEmoji].
+        Both data and value are of type discord.PartialEmoji | None.
         Directly return the internal data as the value.
         """
         return data
@@ -573,10 +573,10 @@ class SettingList(SettingType):
     The storage reader should never return None.
 
     Types:
-        data: List[SettingType.data]
+        data: list[SettingType.data]
             List of data types of the specified SettingType.
             Some of the data may be None.
-        value: List[SettingType.value]
+        value: list[SettingType.value]
             List of the value types of the specified SettingType.
             Some of the values may be None.
     """

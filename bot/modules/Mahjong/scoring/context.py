@@ -4,8 +4,6 @@ using the same tokeniser `;score` has always used (`tiles.parse_hand`), plus
 the new meld notation (`melds.extract_melds`). Rulesets branch out from here.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 

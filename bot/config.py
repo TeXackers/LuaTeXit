@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import configparser as cfgp
 from pathlib import Path
 

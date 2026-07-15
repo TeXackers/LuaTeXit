@@ -2,7 +2,7 @@ import asyncio
 import logging
 import sys
 
-from cmdClient.logger import cmd_log_handler
+from cmdClient.logger import cmd_log_handler, current_mid
 from discord import AllowedMentions
 from paraArgs import args
 from utils.lib import mail, split_text
@@ -16,24 +16,37 @@ log_fmt = logging.Formatter(
 )
 
 
-class _DiscordContextFilter(logging.Filter):
+class _OtherLogContextFilter(logging.Filter):
     """
-    Reformats records from discord.py's own loggers (e.g. 'discord.gateway')
-    to match the '<context> | <message>' style used by our own `log()` calls.
+    Reformats records from third-party loggers to match the style used by internal `log()` calls.
+
+    Records fired while a command is running are tagged with that command's
+    mid, the same way our own logs are; everything else falls back to
+    'Discord' for discord.py's loggers or the raw logger name otherwise.
     """
 
     def filter(self, record) -> bool:
-        if record.name == "discord" or record.name.startswith("discord"):
-            record.msg = f"[{'Discord':^18}] {record.getMessage().replace('\n', '\\n')}"
-            record.args = None
+        if record.name == "root":
+            return True
+
+        mid = current_mid.get()
+        if mid is not None:
+            context = f"{mid}"
+        elif record.name == "discord" or record.name.startswith("discord"):
+            context = "Discord"
+        else:
+            context = record.name
+
+        record.msg = f"[{context.capitalize():^19}] {record.getMessage().replace('\n', '\\n')}"
+        record.args = None
         return True
 
 
-discord_context_filter = _DiscordContextFilter()
+other_log_filter = _OtherLogContextFilter()
 
 term_handler = logging.StreamHandler(sys.stdout)
 term_handler.setFormatter(log_fmt)
-term_handler.addFilter(discord_context_filter)
+term_handler.addFilter(other_log_filter)
 logger.addHandler(term_handler)
 logger.setLevel(logging.INFO)
 
@@ -52,7 +65,7 @@ def _level_name(level):
 def log(message, context="CLIENT", level=logging.INFO, post=True):
     # Use a single line logging format so the files are more parseable
     context_clean = str(context).capitalize()
-    logger.log(level, f"[{context_clean:^18}] {message.replace('\n', '\\n')}")
+    logger.log(level, f"[{context_clean:^19}] {message.replace('\n', '\\n')}")
 
     # Fire and forget to the channel logger, if it is set up
     if post and _client is not None:

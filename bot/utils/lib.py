@@ -30,10 +30,10 @@ def prop_tabulate(prop_list, value_list, indent=True):
 
     Parameters
     ----------
-    prop_list: List[str]
+    prop_list: list[str]
         List of short names to put on the right side of the list.
         Empty props are considered to be "newlines" for the corresponding value.
-    value_list: List[str]
+    value_list: list[str]
         List of values corresponding to the properties above.
     indent: bool
         Whether to add padding so the properties are right-adjusted.
@@ -75,7 +75,7 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
 
     Parameters
     ----------
-    item_list: List[str]
+    item_list: list[str]
         List of strings to paginate.
     block_length: int
         Maximum number of strings per page.
@@ -86,7 +86,7 @@ def paginate_list(item_list, block_length=20, style="markdown", title=None):
     title: str
         Optional title to add to the top of each page.
 
-    Returns: List[str]
+    Returns: list[str]
         List of pages, each formatted into a codeblock,
         and containing at most `block_length` of the provided strings.
     """
@@ -134,7 +134,7 @@ def split_text(text: str | Iterable, blocksize=2000, code=True, syntax="", maxhe
     maxheight: int | None
         The maximum number of lines in each block. Falsy (e.g. `None` or `0`) disables the check.
 
-    Returns: List[str]
+    Returns: list[str]
         List of blocks,
         each containing at most `block_size` characters,
         of height at most `maxheight`.

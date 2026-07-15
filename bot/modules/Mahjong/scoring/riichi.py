@@ -2,8 +2,6 @@
 Riichi (Japanese) mahjong scoring engine, per [riichi.md](riichi.md)
 """
 
-from __future__ import annotations
-
 from collections import Counter
 from dataclasses import dataclass, field
 

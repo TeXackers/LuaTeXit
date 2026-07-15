@@ -14,7 +14,7 @@ Initialisation:
         Ensure that the required user and guild properties exist.
 
 Client objects:
-    user_prefix_cache:  Dict[int, str]
+    user_prefix_cache:  dict[int, str]
         Dictionary `{userid: prefix}` of custom user prefixes.
 
 User properties:

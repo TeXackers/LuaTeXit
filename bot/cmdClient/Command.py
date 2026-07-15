@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 import textwrap
@@ -44,27 +42,27 @@ class Command:
             ctx.tasks.append(task)
             await task
         except FailedCheck as e:
-            log(f"Command failed check: {e.check.name}", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)
+            log(f"Command failed check: {e.check.name}", context=f"{ctx.msg.id}", level=logging.DEBUG)
 
             if e.check.msg:
                 await ctx.error_reply(e.check.msg)
         except SafeCancellation as e:
             log(
                 f"Caught a safe command cancellation: {e.__class__.__name__}: {e.msg}",
-                context=f"mid:{ctx.msg.id}",
+                context=f"{ctx.msg.id}",
                 level=logging.DEBUG,
             )
 
             if e.msg is not None:
                 await ctx.error_reply(e.msg)
         except asyncio.TimeoutError:
-            log("Caught an unhandled TimeoutError", context=f"mid:{ctx.msg.id}", level=logging.WARNING)
+            log("Caught an unhandled TimeoutError", context=f"{ctx.msg.id}", level=logging.WARNING)
 
             await ctx.error_reply("Operation timed out.")
         except asyncio.CancelledError:
             log(
                 "Cancelled.",
-                context=f"mid:{ctx.msg.id}",
+                context=f"{ctx.msg.id}",
                 level=logging.DEBUG,
             )
         except Exception as e:
@@ -73,7 +71,7 @@ class Command:
 
             log(
                 f"Caught the following exception while running command:\n{full_traceback}",
-                context=f"mid:{ctx.msg.id}",
+                context=f"{ctx.msg.id}",
                 level=logging.ERROR,
             )
 
@@ -82,7 +80,7 @@ class Command:
                 only_error,
             )
         else:
-            log("Success.", context=f"mid:{ctx.msg.id}", level=logging.DEBUG)
+            log("Success.", context=f"{ctx.msg.id}", level=logging.DEBUG)
 
     async def exec_wrapper(self, ctx: Context) -> None:
         """

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.Layouts import TextEmbed

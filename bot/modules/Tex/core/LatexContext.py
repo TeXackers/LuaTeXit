@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 import re
@@ -286,10 +284,10 @@ class LatexContext:
             self.user_buckets[luser.id].request()
         except BucketOverFull:
             # A warning was already given, fail silently
-            log("Aborting compile due to `BucketOverfull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+            log("Aborting compile due to `BucketOverfull`.", context=f"{ctx.msg.id}", level=logging.INFO)
             return None
         except BucketFull:
-            log("Aborting compile due to BucketFull`.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+            log("Aborting compile due to BucketFull`.", context=f"{ctx.msg.id}", level=logging.INFO)
             # Ratelimit warning
             await ctx.error_reply("Too many requests, please slow down!\n(You may try again in `5` seconds.)")
             return None
@@ -301,7 +299,7 @@ class LatexContext:
         async with self.user_locks[luser.id]:
             # Don't compile if the bucket is already overfull
             if self.user_buckets[luser.id].overfull:
-                log("Aborting compile due to a newly overfull bucket.", context=f"mid:{ctx.msg.id}", level=logging.INFO)
+                log("Aborting compile due to a newly overfull bucket.", context=f"{ctx.msg.id}", level=logging.INFO)
                 return None
 
             # Compile the source

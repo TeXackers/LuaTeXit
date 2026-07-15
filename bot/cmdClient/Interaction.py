@@ -2,8 +2,6 @@
 Interactive pagination using Components V2 (LayoutView), replacing reaction-based paging.
 """
 
-from __future__ import annotations
-
 from contextlib import suppress
 from typing import TYPE_CHECKING
 

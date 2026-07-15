@@ -29,7 +29,7 @@ async def find_role(
     interactive: bool
         Whether to offer the user a list of roles to choose from,
         or pick the first matching role.
-    collection: List[Union[discord.Role, discord.Object]]
+    collection: list[discord.Role | discord.Object]
         Collection of roles to search amongst.
         If none, uses the guild role list.
     allow_notfound: bool
@@ -152,7 +152,7 @@ async def find_channel(ctx: Context, userstr: str, interactive=False, collection
     interactive: bool
         Whether to offer the user a list of channels to choose from,
         or pick the first matching channel.
-    collection: List(discord.Channel)
+    collection: list[discord.Channel] | None
         Collection of channels to search amongst.
         If none, uses the full guild channel list.
     chan_type: discord.ChannelType
@@ -252,7 +252,7 @@ async def find_member(
     interactive: bool
         Whether to offer the user a list of members to choose from,
         or pick the first matching member.
-    collection: List(discord.Member)
+    collection: list[discord.Member]
         Collection of members to search amongst.
         If none, uses the full guild member list.
     silent_notfound: bool
@@ -359,7 +359,7 @@ async def find_message(
 
     Returns
     -------
-    Optional[discord.Message]:
+    discord.Message | None:
         If a message is found, returns the message.
         Otherwise, returns `None`.
     """

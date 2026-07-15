@@ -1,17 +1,13 @@
 import time
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import ParamSpec, TypeVar
-
-P = ParamSpec("P")
-T = TypeVar("T")
 
 """
 Utilities for caching the results of slow and infrequently-changing async calls.
 """
 
 
-def async_ttl_cache(
+def async_ttl_cache[**P, T](
     days: float = 0,
     hours: float = 0,
     minutes: float = 0,

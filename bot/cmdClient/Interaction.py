@@ -3,7 +3,7 @@ Interactive pagination using Components V2 (LayoutView), replacing reaction-base
 """
 
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import discord
 from discord import Interaction, Member, User
@@ -117,6 +117,7 @@ class PagerView(LayoutView):
         self._next_button.disabled = True
         self._delete_button.disabled = True
 
+    @override
     async def interaction_check(self, interaction: Interaction) -> bool:
         match self.locked, interaction.user != self.author:
             case True, True:
@@ -163,6 +164,7 @@ class PagerView(LayoutView):
         with suppress(discord.HTTPException):
             await interaction.delete_original_response()
 
+    @override
     async def on_timeout(self) -> None:
         self._disable_controls()
         if self.message is not None:

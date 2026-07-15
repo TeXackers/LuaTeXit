@@ -2,6 +2,7 @@ import datetime
 import re
 from collections.abc import Iterable
 from contextlib import suppress
+from typing import override
 
 import discord
 import iso8601
@@ -351,6 +352,7 @@ class _rawChannel(discord.abc.Messageable):
         self._state = state
         self.id = uid
 
+    @override
     async def _get_channel(self):
         return discord.Object(self.id)
 

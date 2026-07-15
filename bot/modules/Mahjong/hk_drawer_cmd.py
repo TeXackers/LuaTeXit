@@ -1,3 +1,5 @@
+from typing import override
+
 from cmdClient import Context  # noqa
 
 from .display import render_note
@@ -7,6 +9,7 @@ from .scoring import ScoringError, compute_score
 
 
 class HongKongDrawerView(BaseDrawerView):
+    @override
     def _evaluate(self, tiles: list[str]) -> EvalResult | None:
         text = ",".join(tiles)
         try:

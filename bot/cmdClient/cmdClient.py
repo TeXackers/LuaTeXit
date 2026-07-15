@@ -10,7 +10,7 @@ from bisect import bisect
 from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, override
 
 if TYPE_CHECKING:
     from .Module import Module
@@ -132,6 +132,7 @@ class cmdClient(discord.Client):
         )
         log(ready_str)
 
+    @override
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
         """
         An exception was caught in one of the event handlers.

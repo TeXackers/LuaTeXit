@@ -1,3 +1,5 @@
+from typing import override
+
 from cmdClient import Context  # noqa
 
 from .display import render_note
@@ -9,6 +11,7 @@ _riichi = RiichiRuleset()
 
 
 class RiichiDrawerView(BaseDrawerView):
+    @override
     def _evaluate(self, tiles: list[str]) -> EvalResult | None:
         text = ",".join(tiles)
         try:

@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import override
 
 from registry import Column, ColumnType, ForeignKey, ReferenceAction, tableInterface, tableSchema
 from utils.lib import strfdelta
@@ -24,6 +25,7 @@ class TimedMuteTicket(Ticket):
         self.unmute_timestamp = row["tmute_unmute_timestamp"]
 
     @property
+    @override
     def embed(self):
         embed = super().embed
         embed.set_author(name="Timed Mute")
@@ -33,13 +35,15 @@ class TimedMuteTicket(Ticket):
         return embed
 
     @classmethod
-    def _create_ticket(cls, ticketid, memberids, duration=None, roleid=None, unmute_timestamp=None):
+    @override
+    def _create_ticket(cls, ticketid, memberids, duration=None, roleid=None, unmute_timestamp=None, **kwargs):
         # Save the extra timed mute data
         cls._client.data.guild_timed_mute_tickets.insert(
             ticketid=ticketid,
             duration=duration,
             roleid=roleid,
             unmute_timestamp=unmute_timestamp,
+            **kwargs
         )
 
         # Finish creating the ticket

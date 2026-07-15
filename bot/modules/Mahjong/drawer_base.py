@@ -9,7 +9,7 @@ each supplies `BaseDrawerView._evaluate`, everything else here is generic.
 
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 import discord
 from cmdClient.Layouts import Body, Footer
@@ -164,6 +164,7 @@ class BaseDrawerView(LayoutView):
             self._select.disabled = True
             self._end_button.disabled = True
 
+    @override
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user != self.author:
             await interaction.response.send_message("This isn't your practice hand.", ephemeral=True)
@@ -191,6 +192,7 @@ class BaseDrawerView(LayoutView):
         await interaction.response.edit_message(view=self)
         self.stop()
 
+    @override
     async def on_timeout(self) -> None:
         self.ended = True
         self._render()

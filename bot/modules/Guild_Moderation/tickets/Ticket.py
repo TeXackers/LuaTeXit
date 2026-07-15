@@ -4,7 +4,7 @@ ABC and data definitions for manual moderation tickets.
 
 import datetime
 from contextlib import suppress
-from typing import Any, TypeVar, ClassVar, Mapping
+from typing import Any, ClassVar, Mapping
 
 import discord
 from cmdClient.cmdClient import cmdClient  # noqa
@@ -14,8 +14,6 @@ from utils.lib import jumpto
 from modules.Guild_Moderation.module import guild_moderation_module as module
 
 from .TicketTypes import TicketType
-
-T = TypeVar("T", bound="Ticket")
 
 
 class Ticket:
@@ -168,7 +166,7 @@ class Ticket:
         cls._combined_ticket_data = client.data.guild_mod_tickets_combined  # type: tableInterface
 
     @classmethod
-    def create(
+    def create[T: Ticket](
         cls: type[T],
         guildid: int,
         modid: int,
@@ -216,7 +214,7 @@ class Ticket:
         return cls(row, memberids)
 
     @classmethod
-    def fetch_tickets_where(cls: type[T], memberid=None, **kwargs) -> list[T]:
+    def fetch_tickets_where[T: Ticket](cls: type[T], memberid=None, **kwargs) -> list[T]:
         """
         Fetch tickets matching the given criteria.
         Additionally filters by the current `_ticket_type`, if set and not given in `kwargs`.
@@ -268,7 +266,7 @@ class Ticket:
 
         return tickets
 
-    def update(self, **kwargs) -> T:
+    def update[T: Ticket](self: T, **kwargs) -> T:
         """
         Updates and saves the ticket information using the provided kwargs.
         Subclasses should extend or override this if they require new data fields.

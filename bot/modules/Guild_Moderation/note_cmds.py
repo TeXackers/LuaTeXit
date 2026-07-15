@@ -1,4 +1,5 @@
 from datetime import datetime as dt
+from typing import override
 
 import discord
 from cmdClient import Context  # noqa
@@ -47,6 +48,7 @@ async def cmd_note(ctx: Context):
 @describes_ticket(TicketType.NOTE)
 class NoteTicket(Ticket):
     @property
+    @override
     def embed(self):
         """
         The note embed to be posted in the modlog.

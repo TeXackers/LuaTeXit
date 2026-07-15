@@ -2,6 +2,7 @@ import asyncio
 import logging
 import traceback
 from collections.abc import Callable
+from typing import override
 
 import discord
 from cmdClient import Context, Module, cmdClient
@@ -37,6 +38,7 @@ class paraModule(Module):
         log(f"+     |-/{cls.attr_name}", context=self.name, level=logging.DEBUG)
         return cls
 
+    @override
     def initialise(self, client: cmdClient):
         if self.guild_settings and not self.initialised:
             names = ", ".join(setting.attr_name for setting in self.guild_settings)
@@ -53,6 +55,7 @@ class paraModule(Module):
 
         super().initialise(client)
 
+    @override
     async def pre_command(self, ctx: Context):
         if ctx.guild:
             disabled = ctx.client.objects["disabled_guild_commands"]
@@ -99,6 +102,7 @@ class paraModule(Module):
         else:
             log("s     |--[skip]", context=self.name, level=logging.DEBUG)
 
+    @override
     async def on_exception(self, ctx: Context, exception: Exception):
         try:
             raise exception

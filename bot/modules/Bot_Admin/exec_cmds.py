@@ -24,6 +24,22 @@ Commands provided:
 """
 
 
+async def _reply_code_result(ctx: Context, label: str, code: str, output: str, error: int) -> None:
+    """
+    Reply with the `code` that was run and its `output`.
+
+    Falls back to a paginator if the formatted message would exceed Discord's message limit.
+    """
+
+    return await ctx.pager_v2(
+        str(output),
+        title=f"{label} output" + (" (error)" if error else ""),
+        code=True,
+        syntax="py",
+        maxheight=25,
+    )
+
+
 @module.cmd("async", desc="Executes async code and displays the output.")
 @is_dev()
 async def cmd_async(ctx: Context) -> None:
@@ -39,12 +55,9 @@ async def cmd_async(ctx: Context) -> None:
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _async(ctx)
-    return await ctx.reply(
-        "**Async input:**\
-                    \n```py\n{}\n```\
-                    \n**Output {}:** \
-                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output),
-    )
+    if not error and not output:
+        return None
+    return await _reply_code_result(ctx, "Async", ctx.arg_str, output, error)
 
 
 @module.cmd("exec", desc="Executes python code using exec and displays the output.")
@@ -62,12 +75,7 @@ async def cmd_exec(ctx: Context) -> None:
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _exec(ctx)
-    return await ctx.reply(
-        "**Exec input:**\
-                    \n```py\n{}\n```\
-                    \n**Output {}:** \
-                    \n```py\n{}\n```".format(ctx.arg_str, "error" if error else "", output),
-    )
+    return await _reply_code_result(ctx, "Exec", ctx.arg_str, output, error)
 
 
 @module.cmd("eval", desc="Executes python code using eval and displays the output.", flags=["s"])
@@ -88,12 +96,7 @@ async def cmd_eval(ctx: Context, flags) -> None:
 
     output, error = await _eval(ctx)
     if not flags["s"] or error:
-        return await ctx.reply(
-            "**Eval input:**\
-                        \n```py\n{}\n```\
-                        \n**Output {}:** \
-                        \n```py\n{}\n```".format(ctx.args, "error" if error else "", output),
-        )
+        return await _reply_code_result(ctx, "Eval", ctx.args, output, error)
     return None
 
 
@@ -109,19 +112,13 @@ async def cmd_shell(ctx: Context) -> None:
     if not ctx.arg_str:
         return await ctx.error_reply("You must give me something to run!")
 
-    output = await ctx.run_in_shell(ctx.arg_str)
-    if output:
-        return await ctx.reply(
-            f"**Command:**\
-                        \n```sh\n$ {ctx.arg_str}\n```\
-                        \n**Output:** \
-                        \n```ascii\n{output}\n```",
-        )
-    return await ctx.reply(
-        f"**Command:**\
-                        \n```sh\n$ {ctx.arg_str}\n```\
-                        \n**Output:** \
-                        \n```\nNo output.\n```",
+    output = await ctx.run_in_shell(ctx.arg_str) or "No output."
+    return await ctx.pager_v2(
+        output,
+        title=f"Command output for:\n```sh\n$ {ctx.arg_str}\n```",
+        code=True,
+        syntax="python",
+        maxheight=25,
     )
 
 

@@ -1,11 +1,12 @@
 import inspect
 
 import aiohttp
+import anyio
 import discord
 import github
+from anyio import Path as AsyncPath
 from cmdClient import Context  # noqa
 from github import Auth, Github
-from utils.lib import split_text
 from wards import is_admin, is_dev, is_owner
 
 from modules.Github.GithubColours import GithubColour
@@ -48,6 +49,15 @@ activity_dict = {
     "listening": discord.ActivityType.listening,
     "watching": discord.ActivityType.watching,
 }
+
+
+def _format_size(num_bytes: float) -> str:
+    """Format a byte count using the largest unit that keeps it human-readable."""
+    for unit in ("B", "KB", "MB"):
+        if abs(num_bytes) < 1024:
+            return f"{num_bytes:.0f} {unit}" if unit == "B" else f"{num_bytes:.1f} {unit}"
+        num_bytes /= 1024
+    return f"{num_bytes:.1f} GB"
 
 
 @module.cmd("shutdown", desc="Shut down the client.", aliases=["restart"])
@@ -164,29 +174,36 @@ async def cmd_logs(ctx: Context):
         Sends the logfile or the last `<lines>` lines of the log.
     """
     # Get the path to the log file from config
-    logpath = ctx.client.conf.get("LOGFILE")
+    logpath = AsyncPath(ctx.client.conf.get("LOGFILE"))
 
     if not ctx.args:
-        # Attempt to send the logfile
-        logfile = discord.File(logpath)
-        try:
-            await ctx.reply(file=logfile)
-        except discord.HTTPException:
-            await ctx.error_reply("Could not send the logfile. Perhaps it was too large?")
-    else:
-        # Retrieve the number of lines to send
-        if not ctx.args.isdigit():
-            return await ctx.error_reply(ctx.format_usage())
-        lines = int(ctx.args)
+        # Check the logfile isn't too large to upload before attempting to send it
+        limit = ctx.guild.filesize_limit if ctx.guild else discord.utils.DEFAULT_FILE_SIZE_LIMIT_BYTES
+        size = (await logpath.stat()).st_size
+        if size > limit:
+            size_diff = size - limit
+            return await ctx.error_reply(
+                f"The log file is too large to send "
+                f"(`{_format_size(size_diff)}` over the `{_format_size(limit)}` limit). Please download it manually."
+            )
 
-        # Run tail to get the last <lines> lines of the log
-        logs = await ctx.run_in_shell(f"tail -n {lines} {logpath}")
+        return await ctx.reply(file=discord.File(logpath))
 
-        # Strip initial and final backticks from the logs to avoid code block issues
-        logs = logs.strip("`")
+    # Retrieve the number of lines to send
+    if not ctx.args.isdigit():
+        return await ctx.error_reply(ctx.format_usage())
+    lines = int(ctx.args)
 
-        # Split the log blocks and page the result
-        return await ctx.pager_v2(split_text(logs), title=f"Last {lines} lines of the log", code=True, syntax="ini")
+    # Read the last <lines> lines of the log
+    async with await anyio.open_file(logpath) as f:
+        content = await f.read()
+    logs = "\n".join(content.splitlines()[-lines:])
+
+    # Strip all backticks
+    logs_clean = logs.replace("```", "").replace("``", "")
+
+    # Split the log blocks and page the result
+    return await ctx.pager_v2(logs_clean, title=f"Last {lines} lines of the log", code=True, syntax="ini")
 
 
 @module.cmd("showcmd", desc="Shows the source of a command.")

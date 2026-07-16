@@ -1,7 +1,6 @@
 import datetime
 
 import discord
-import iso8601
 from paraCH import paraCH
 from pytz import timezone
 
@@ -65,7 +64,7 @@ async def cmd_profile(ctx):
             )
             return
         timestr = "%I:%M %p on %a, %d/%m/%Y"
-        timestr = iso8601.parse_date(discord.utils.utcnow().isoformat()).astimezone(TZ).strftime(timestr)
+        timestr = discord.utils.utcnow().astimezone(TZ).strftime(timestr)
         embed.add_field(name="Current Time", value=f"{timestr}", inline=False)
     embed.add_field(name="Created at", value=f"{created} ({created_ago} ago)", inline=False)
     await ctx.reply(embed=embed)

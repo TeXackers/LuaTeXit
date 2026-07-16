@@ -5,7 +5,6 @@ from contextlib import suppress
 from typing import override
 
 import discord
-import iso8601
 from cmdClient.Format import enumerate as fmt_enumerate
 
 
@@ -292,7 +291,7 @@ def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
     """
     timestr = "%I:%M %p, %d/%m/%Y"
     if tz:
-        time = iso8601.parse_date(msg.timestamp.isoformat()).astimezone(tz).strftime(timestr)
+        time = msg.timestamp.astimezone(tz).strftime(timestr)
     else:
         time = msg.timestamp.strftime(timestr)
     user = str(msg.author)

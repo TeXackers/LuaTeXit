@@ -2,7 +2,7 @@ import logging
 import traceback
 
 import discord
-from cmdClient import cmdClient  # noqa
+from cmdClient import Context, cmdClient  # noqa
 from discord import Message
 from logger import log
 
@@ -29,6 +29,10 @@ async def latex_message_parser(client: cmdClient, message: Message):
 
     # Make sure there's content
     if not message.content:
+        return
+
+    # Bail out before touching clean_content/parse_content unless the raw content has a marker that could possibly satisfy the Autotex levels
+    if not LatexContext.autotex_trigger_pattern.search(message.content):
         return
 
     # Get the latex guild
@@ -98,7 +102,7 @@ async def latex_message_parser(client: cmdClient, message: Message):
     )
 
     # First create a context for the message and add it to the context caches
-    ctx = client.baseContext(client=client, message=message)
+    ctx: Context = client.baseContext(client=client, message=message)
     client.ctx_cache[message.id] = ctx.flatten()
     client.active_contexts[message.id] = ctx
 
@@ -135,7 +139,7 @@ async def latex_message_parser(client: cmdClient, message: Message):
         )
         raise e
     else:
-        log("Automatic LaTeX compilation completed normally.", context=f"mid:{message.id}", level=logging.DEBUG)
+        log("AutoTeX Success.", context=f"{message.id}", level=logging.DEBUG)
     finally:
         client.ctx_cache[message.id] = ctx.flatten()
         client.active_contexts.pop(message.id, None)

@@ -99,6 +99,9 @@ class LatexContext:
     single_dollars_pattern = re.compile(r"\$(?=\S)[^$]+(?<=\S)\$")
     double_dollars_pattern = re.compile(r"\$\$[^$]+\$\$")
 
+    # Cheap pre-filter for the autotex message parser
+    autotex_trigger_pattern = re.compile(r"```|\$|\\\(|\\\[|\\begin\{")
+
     # Locks to avoid simultaneous compilation for each user
     user_locks: ClassVar[dict[int, asyncio.Lock]] = {}  # userid: Lock
 

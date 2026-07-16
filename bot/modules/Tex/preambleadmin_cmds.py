@@ -136,7 +136,7 @@ async def user_admin(ctx: Context, userid: int):
     match result:
         case 0:
             # Show the preamble
-            preamble = current_preamble["preamble"]
+            preamble = current_preamble["preamble"] if current_preamble else None
             if not preamble:
                 await ctx.reply("This user doesn't have a custom preamble set!")
             else:
@@ -305,7 +305,7 @@ async def guild_admin(ctx: Context, guildid: int):
     match result:
         case 0:
             # Show the preamble
-            preamble = current_preamble["preamble"]
+            preamble = current_preamble["preamble"] if current_preamble else None
             if not preamble:
                 await ctx.reply("This guild doesn't have a custom preamble set!")
             else:

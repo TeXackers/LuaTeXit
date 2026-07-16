@@ -12,7 +12,7 @@ fi
 
 # compile_start=$(date +%s.%N)
 # sudo -u $(whoami) timeout 1m pdflatex $1.tex > texput.log 2>&1
-timeout 3m latexmk -xelatex -shell-escape -halt-on-error -interaction=nonstopmode "$1.tex" > texput_xetex.log #2>&1
+timeout 3m latexmk -xelatex -no-shell-escape -halt-on-error -interaction=nonstopmode "$1.tex" > texput_xetex.log #2>&1
 # compile_end=$(date +%s.%N)
 # compile_time=$(echo "$compile_end - $compile_start" | bc)
 # echo "compile took $compile_time secs." >> texput.log

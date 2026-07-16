@@ -5,6 +5,7 @@ from .core.LatexGuild import LatexGuild
 from .core.LatexUser import LatexUser
 from .core.tex_utils import ParseMode
 from .module import latex_module as module
+from wards import is_dev
 
 
 @module.cmd(
@@ -101,16 +102,19 @@ async def cmd_tex(ctx: Context, flags: dict):
     if ctx.args.lower() in ["help", "--help"]:
         return await ctx.error_reply(f"Please use `{await ctx.best_prefix()}help tex` for command help.")
 
-    # WARNING FOR BEGIN DOCUMET - REMOVED
-    # if r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args:
-    #     await ctx.error_reply(
-    #         "I compile the code you give me by putting it into a template LaTeX document, between "
-    #         "`\\begin{{document}}` and `\\end{{document}}` commands.\n"
-    #         "Please don't give me code that belongs outside of there!\nSee `{prefix}help tex` for some examples "
-    #         "of what I understand.\n\n"
-    #         "**If you want to modify the template to add packages or your own macros, "
-    #         "see `{prefix}help preamble`.**".format(prefix=ctx.best_prefix())
-    #     )
+    # warning for code that belongs outside of the document environment
+    # but skip if the author is a dev
+    has_document_code = r"\begin{document}" in ctx.args or r"\documentclass" in ctx.args or r"\usepackage" in ctx.args
+    if has_document_code and not await is_dev.run(ctx):
+        prefix: str = await ctx.best_prefix()
+        return await ctx.error_reply(
+            "I compile the code you give me by putting it into a template LaTeX document, between "
+            "`\\begin{document}` and `\\end{document}` commands.\n"
+            f"Please don't give me code that belongs outside of there!\nSee `{prefix}help tex` for some examples "
+            "of what I understand.\n\n"
+            "**If you want to modify the template to add packages or your own macros, "
+            f"see `{prefix}help preamble`.**"
+        )
 
     # Get latex user and guild
     lguild = LatexGuild.get(ctx.guild.id if ctx.guild else 0)

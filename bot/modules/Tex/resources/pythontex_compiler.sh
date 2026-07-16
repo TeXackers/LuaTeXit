@@ -8,9 +8,9 @@ if grep -o '<a\?:[a-zA-Z0-9_]\{2,\}:[0-9]\+>' $1.tex >$1.emotes; then
     sed -i 's/<a\?:\([a-zA-Z0-9_]\{2,\}\):\([0-9]\+\)>/{\\texitemote{\1}{}{\2.png}}/g' $1.tex
 fi
 
-timeout 30 latexmk -lualatex -shell-escape -halt-on-error "$1.tex" > texput_pytex.log && \
+timeout 30 latexmk -lualatex -no-shell-escape -halt-on-error "$1.tex" > texput_pytex.log && \
 timeout 10 pythontex "$1.tex" > texput_pytex.log && \
-timeout 30 latexmk -lualatex -shell-escape -halt-on-error "$1.tex" >> texput_pytex.log
+timeout 30 latexmk -lualatex -no-shell-escape -halt-on-error "$1.tex" >> texput_pytex.log
 
 RET=$?
 if [ $RET -eq 0 ];

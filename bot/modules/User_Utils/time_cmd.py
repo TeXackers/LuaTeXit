@@ -4,10 +4,14 @@ from datetime import datetime
 
 import discord
 from cmdClient import Context  # noqa
+from cmdClient.Layouts import Body, Footer, Header
+from constants import LuaTeXitCC
+from discord.ui import Container, LayoutView, MediaGallery, Separator
 from pytz import all_timezones, timezone
 
 from .countrymap import countries
 from .module import utils_module as module
+from .swiss_clock import SECONDARY_HAND_NAME, render_swiss_clock
 
 """
 Provides a time command for setting user timezone and displaying time.
@@ -113,7 +117,8 @@ async def tz_lookup(ctx: Context, search_str: str) -> str | None:
         )
         return options[tzid] or None
     # Nope, we tried our best but couldn't find any matches
-    return await ctx.error_reply("No matching timezones were found!")
+    await ctx.error_reply("No matching timezones were found!")
+    return None
 
 
 async def tz_picker(ctx):
@@ -145,31 +150,32 @@ def get_timestr(tz, brief=False):
     return get_time(tz).strftime(format_str)
 
 
-async def time_diff(ctx, tz, auth_tz, brief=False):
+async def reply_with_clock(ctx: Context, tz: str, auth_tz: str | None, header: str, body: str) -> None:
     """
-    Get a string representing the time difference between the user's timezone and the given one.
+    Reply with a Swiss railway clock face for `tz`, shown full-size via a MediaGallery.
+
+    If the author has their own timezone set and it differs from `tz`, a second,
+    differently-coloured hour hand is added to the same face for the author's time,
+    instead of rendering a whole separate clock.
     """
-    if auth_tz is None or tz is None:
-        return None
-    author_time = get_time(auth_tz)
-    other_time = get_time(tz)
-    timediff = other_time.replace(tzinfo=None) - author_time.replace(tzinfo=None)
-    diffsecs = round(timediff.total_seconds())
-    name = ctx.author.name
+    dt = get_time(tz)
+    other_dt = get_time(auth_tz) if auth_tz and auth_tz != tz else None
+    buf = render_swiss_clock(dt, other_dt=other_dt)
 
-    if diffsecs == 0:
-        return f", the same as **{name}**!"
+    footer = f"Requested by {ctx.author}"
+    if other_dt:
+        footer += f" | {SECONDARY_HAND_NAME}: your time"
 
-    modifier = "behind" if diffsecs > 0 else "ahead"
-    diffsecs = abs(diffsecs)
+    container = Container(accent_colour=LuaTeXitCC["cyan"])
+    container.add_item(Header(header, 3))
+    container.add_item(Separator())
+    container.add_item(Body(body))
+    container.add_item(MediaGallery(discord.MediaGalleryItem("attachment://clock.png")))
+    container.add_item(Footer(footer))
 
-    hours, remainder = divmod(diffsecs, 3600)
-    mins, _ = divmod(remainder, 60)
-
-    hourstr = "{} hour{} ".format(hours, "s" if hours > 1 else "") if hours else ""
-    minstr = f"{mins} minutes " if mins else ""
-    joiner = "and " if (hourstr and minstr) else ""
-    return f".\n**{name}** is {hourstr}{joiner}{minstr}{modifier}, at {get_timestr(auth_tz, brief=brief)}."
+    view = LayoutView()
+    view.add_item(container)
+    await ctx.reply(file=discord.File(buf, filename="clock.png"), view=view)
 
 
 @module.cmd(
@@ -188,7 +194,9 @@ async def cmd_time(ctx: Context, flags: dict):
         {prefix}time --list
         {prefix}time --reset
     Description:
-        Shows the current time for yourself or the provided user.
+        Shows the current time for yourself or the provided user, alongside a Swiss railway clock face.
+        If you're comparing against someone else's time (or your own, via `at`) and you have your own
+        timezone set, the clock gets a second, cyan hour hand showing your own time.
         Use the `set` flag to interactively pick your timezone from the international tz database.
         You can also view the time in a particular timezone using the `at` flag.
         The `at` flag also allows you to see a list of timezones with a specific given time.
@@ -274,12 +282,8 @@ async def cmd_time(ctx: Context, flags: dict):
                 # Timezone lookup failed, the lookup will have already grumbled so just pass on
                 pass
             else:
-                # Report the time, with the time difference if possible
-                tdiffstr = await time_diff(ctx, tz, auth_tz, brief=brief)
-                timestr = get_timestr(tz, brief=brief)
-
-                msg = "The time in `{}` is {}{}".format(tz, timestr, tdiffstr or ".")
-                await ctx.reply(msg)
+                body = get_timestr(tz, brief=brief)
+                await reply_with_clock(ctx, tz, auth_tz, header=f"Time in `{tz}`", body=body)
     elif flags["list"]:
         tzl: list[tuple[str, str]] = [(tz, get_time(tz).strftime("%H:%M")) for tz in all_timezones]
         max_len = len(max(next(zip(*tzl, strict=True)), key=len))
@@ -337,8 +341,7 @@ async def cmd_time(ctx: Context, flags: dict):
                 msg = random.choice(time_quotes)
             else:
                 msg = "This user hasn't set their timezone! Ask them to set it using `{prefix}ti --set`."
+            await ctx.reply(msg.format(prefix=prefix))
         else:
-            timestr = get_timestr(tz, brief=brief)
-            tdiffstr = await time_diff(ctx, tz, auth_tz, brief=brief) if user != ctx.author else ""
-            msg = "The current time for **{}** is {}{}".format(user.name, timestr, tdiffstr or ".")
-        await ctx.reply(msg.format(prefix=prefix))
+            body = get_timestr(tz, brief=brief)
+            await reply_with_clock(ctx, tz, auth_tz, header=f"{user.display_name}'s time", body=body)

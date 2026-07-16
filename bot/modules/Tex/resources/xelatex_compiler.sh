@@ -1,4 +1,4 @@
-cd "tex/staging/$1/" || exit 1
+cd "$2/$1/" || exit 1
 
 # chmod --quiet -R o+rwx .
 
@@ -24,7 +24,7 @@ then
 elif [ $RET -eq 124 ];
 then
     echo "[E167] Compilation timed out!";
-    cp "../../failed/1x7.png" "$1.png";
+    cp "$3/1x7.png" "$1.png";
     exit 1
 else
     grep -A 6 -m 1 "^!" "$1.log";
@@ -33,7 +33,7 @@ fi
 if [ ! -f "$1.pdf" ];
 then
     # echo "\n[E162]";
-    cp "../../failed/1x2.png" "$1.png";
+    cp "$3/1x2.png" "$1.png";
     exit 1
 fi
 
@@ -53,6 +53,6 @@ timeout 20 gs -q -r600 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=1 -
 # echo "convert took $convert_time secs." >> texput.log
 if [ $? -eq 124 ]; then
     echo "[E168] Image processing timed out!";
-    cp "../../failed/1x8.png" "$1.png";
+    cp "$3/1x8.png" "$1.png";
     exit 1
 fi

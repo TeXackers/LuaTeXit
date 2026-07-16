@@ -13,6 +13,8 @@ with Path.open(__location__ / "whitelist.txt") as pw:
 
 # Store the path to the failed image
 failed_image_path = __location__ / "failed.png"
+failed_dir = __location__.parents[3] / "tex" / "failed"
+staging_root = Path("/dev/shm/tex-staging")  # noqa: S108
 
 # Store the path to the latex compile script
 pdflatex_script_path = __location__ / "pdflatex_compiler.sh"

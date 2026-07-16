@@ -1,4 +1,4 @@
-cd "tex/staging/$1/" || exit 1
+cd "$2/$1/" || exit 1
 
 # chmod --quiet -R o+rwx .
 
@@ -32,7 +32,7 @@ then
     cp failed.pdf "$1.pdf"
     if [ ! -f "$1.pdf" ];
     then
-        cp ../../failed/1x7.png "$1.png"
+        cp "$3/1x7.png" "$1.png"
         exit 1
     fi
 else
@@ -51,7 +51,7 @@ then
         gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pngalpha -r600 -dDownScaleFactor=1 \
             -sOutputFile=$1.png failed.pdf >> /dev/null
     if [ ! -f $1.png ]; then
-        cp "../../failed/1x2.png" $1.png
+        cp "$3/1x2.png" "$1.png"
         exit 1
     fi
   exit 1
@@ -63,6 +63,6 @@ if [ $? -eq 124 ];
 then
   # 128
   echo "[E128] Image processing timed out!";
-  cp "../../failed/1x8.png" "$1.png"
+  cp "$3/1x8.png" "$1.png"
   exit 1
 fi

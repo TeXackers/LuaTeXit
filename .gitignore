@@ -23,7 +23,6 @@ tags
 **.aux
 **.out
 tex/presets/**
-tex/staging/**
 !tex/failed/**
 
 **.synctex*

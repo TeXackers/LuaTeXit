@@ -1,4 +1,4 @@
-cd "tex/staging/$1/" || exit 1
+cd "$2/$1/" || exit 1
 
 # parse discord emotes as images
 if grep -o '<a\?:[a-zA-Z0-9_]\{2,\}:[0-9]\+>' $1.tex >$1.emotes; then
@@ -19,7 +19,7 @@ then
 elif [ $RET -eq 124 ];
 then
     echo "[E177] Compilation timed out!";
-    cp "../../failed/1x7.png" "$1.png";
+    cp "$3/1x7.png" "$1.png";
     exit 1
 else
     grep -A 6 -m 1 "^!" "$1.log";
@@ -29,7 +29,7 @@ if [ ! -f "$1.pdf" ];
 then
     # 172
     # echo "\n[E172]";
-    cp "../../failed/1x2.png" "$1.png"
+    cp "$3/1x2.png" "$1.png"
     exit 1
 fi
 
@@ -48,6 +48,6 @@ timeout 20 gs -q -r600 -sDEVICE=pngalpha -dBATCH -dNOPAUSE -dDownScaleFactor=1 -
 if [ $? -eq 124 ]; then
     echo "[E178] Image processing timed out!";
     # 178
-    cp "../../failed/1x8.png" "$1.png"
+    cp "$3/1x8.png" "$1.png"
     exit 1
 fi

@@ -1,4 +1,4 @@
-cd "tex/staging/$1/" || exit 1
+cd "$2/$1/" || exit 1
 
 # chmod --quiet -R o+rwx .
 
@@ -20,7 +20,7 @@ fi
 if [ ! -f "$1.pdf" ];
 then
   # echo "[E102]";
-  cp "../../failed/1x2.png" "$1.png"
+  cp "$3/1x2.png" "$1.png"
   exit 1
 # check if .dvi might be present
 elif [ -f "$1.dvi" ];
@@ -38,6 +38,6 @@ timeout 10 gs -q -r600 -sDEVICE=png16m -dBATCH -dNOPAUSE -dDownScaleFactor=1 -sO
 if [ $? -eq 124 ];
 then
  echo "[E108] Image processing timed out!";
- cp "../../failed/1x8.png" "$1.png"
+ cp "$3/1x8.png" "$1.png"
  exit 1
 fi

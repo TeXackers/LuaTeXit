@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import shutil
 import time
 from contextlib import suppress
 from typing import ClassVar
@@ -11,7 +12,7 @@ from cmdClient import Context, cmdClient  # noqa
 from logger import log
 
 from modules.Tex.module import latex_module as module
-from modules.Tex.resources import default_preamble, failed_image_path
+from modules.Tex.resources import default_preamble, failed_image_path, staging_root
 
 from .LatexGuild import LatexGuild
 from .LatexUser import LatexUser
@@ -237,6 +238,15 @@ class LatexContext:
         except discord.Forbidden:
             pass
 
+    async def cleanup_staging(self, targetid: int) -> None:
+        """
+        Remove the target's staging directory in the background.
+
+        Called once the compiled png has already been read and uploaded, so as to reclaim tmpfs
+        """
+        with suppress(asyncio.CancelledError):
+            await asyncio.to_thread(shutil.rmtree, f"{staging_root}/{targetid}", ignore_errors=True)
+
     async def lifetime(self):
         """
         Asynchronously block until the context deactivates.
@@ -343,7 +353,7 @@ class LatexContext:
                 self.ctx.tasks.append(self._source_deletion_task)
 
             # Obtain the output image path, potentially the failed image
-            file_path_staged: AsyncPath = AsyncPath(f"tex/staging/{luser.id}/{luser.id}.png")
+            file_path_staged: AsyncPath = AsyncPath(f"{staging_root}/{luser.id}/{luser.id}.png")
             exists = await file_path_staged.is_file()
             file_path = AsyncPath(failed_image_path) if not exists else file_path_staged
 
@@ -361,6 +371,11 @@ class LatexContext:
                 self.ctx.tasks.append(self._lifetime_task)
             except discord.Forbidden:
                 pass
+
+            # purge storage if successful (no need for logs)
+            if exists:
+                cleanup_task = asyncio.ensure_future(self.cleanup_staging(luser.id))
+                self.ctx.tasks.append(cleanup_task)
 
         return self._output_message
 

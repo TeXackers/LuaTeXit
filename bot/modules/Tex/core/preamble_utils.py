@@ -17,7 +17,7 @@ from discord.ui import Container, Separator
 from utils.lib import mail, split_text
 from wards import is_reviewer
 
-from modules.Tex.resources import default_preamble, failed_image_path
+from modules.Tex.resources import default_preamble, failed_image_path, staging_root
 
 from .LatexLayouts import TexPagerView
 from .LatexUser import LatexUser
@@ -840,7 +840,7 @@ async def test_submission(ctx, userid, manager):
     # Compile the latex with this preamble
     # Construct a for loop for testing, embedding and logging three LaTeX engines
     engines = ["pdfLaTeX", "XeLaTeX", "LuaLaTeX"]
-    file_path = f"tex/staging/{testid}/{testid}.png"
+    file_path = f"{staging_root}/{testid}/{testid}.png"
 
     for engine in engines:
         match engine.lower():

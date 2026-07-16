@@ -11,12 +11,14 @@ from logger import log
 from modules.Tex.module import latex_module as module
 from modules.Tex.resources import (
     default_preamble,
+    failed_dir,
     failed_image_path,
     lualatex_script_path,
     luatex_script_path,
     pdflatex_script_path,
     pdftex_script_path,
     pythontex_script_path,
+    staging_root,
     xelatex_script_path,
 )
 
@@ -170,7 +172,7 @@ async def _run_tex_compile(
     )
 
     # Target's staging directory
-    path = f"tex/staging/{targetid}"
+    path = f"{staging_root}/{targetid}"
 
     # Remove the staging directory, if it exists
     await anyio.to_thread.run_sync(functools.partial(shutil.rmtree, path, ignore_errors=True))
@@ -194,7 +196,7 @@ async def _run_tex_compile(
     await fn.write_text(content)
 
     # Build compile script
-    script = f"{script_path} {targetid} || exit;\ncd {path}\n"
+    script = f'{script_path} {targetid} "{staging_root}" "{failed_dir}" || exit;\ncd {path}\n'
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)
@@ -325,6 +327,6 @@ def setup_structure(client):
     including copying the required resources.
     """
     # Delete and recreate the staging directory, if it exists
-    shutil.rmtree("tex/staging", ignore_errors=True)
-    Path("tex/staging").mkdir(parents=True, exist_ok=True)
+    shutil.rmtree(staging_root, ignore_errors=True)
+    staging_root.mkdir(parents=True, exist_ok=True)
     shutil.copy(failed_image_path, "tex")

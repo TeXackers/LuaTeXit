@@ -211,7 +211,7 @@ async def cmd_preamble(ctx: Context, flags: dict):
                 "separated by commas, or type `c` now to cancel.\n"
                 "(Example input: `1, 2-5, 10-20`)"
             )
-            prompt_msg = await view_preamble(ctx, lined_preamble, prompt)
+            prompt_msg = await view_preamble_v2(ctx, lined_preamble, prompt)
 
             # Handle timeouts and negative response
             try:
@@ -372,9 +372,9 @@ async def cmd_preamble(ctx: Context, flags: dict):
             if all(not package.strip() or (package.strip() in whitelisted_packages) for package in packages):
                 # All the requested packages are whitelisted
                 # Update the preamble, log the changes, and notify the user
-                preamble_data.insert(
-                    allow_replace=True,
-                    userid=ctx.author.id,
+                set_user_preamble(
+                    ctx.client,
+                    ctx.author.id,
                     preamble=new_submission,
                     previous_preamble=preamble,
                 )
@@ -449,10 +449,4 @@ async def cmd_preamble(ctx: Context, flags: dict):
     # If the user doesn't want to edit their preamble, they must just want to view it
 
     title = f"{ctx.author.display_name}'s current preamble for LuaTeXit ({header})"
-    return await view_preamble_v2(
-        ctx,
-        preamble,
-        title,
-        file_react=True,
-        file_message=f"Current Preamble for {ctx.author}",
-    )
+    return await view_preamble_v2(ctx, preamble, title)

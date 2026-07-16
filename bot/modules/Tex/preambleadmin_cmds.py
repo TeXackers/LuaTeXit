@@ -16,8 +16,8 @@ from .core.preamble_utils import (
     preamblelog,
     resolve_pending_preamble,
     set_user_preamble,
-    view_preamble,
-    view_preamble_diff,
+    view_preamble_diff_v2,
+    view_preamble_v2,
 )
 from .module import latex_module as module
 
@@ -65,12 +65,11 @@ async def approval_queue(ctx: Context):
 
             current_preamble_row = ctx.client.data.user_latex_preambles.select_where(userid=currently_on_wait)
             current: str | None = current_preamble_row[0]["preamble"] if current_preamble_row else None
-            sub_msg = await view_preamble_diff(
+            sub_msg = await view_preamble_diff_v2(
                 ctx,
                 preamble_old=current,
                 preamble_pending=judging["pending_preamble"],
                 title="Preamble submission!",
-                start_page=-1,
                 author=waiting_list[result],
                 time=datetime.fromtimestamp(float(judging["submission_time"]), tz=datetime.now().astimezone().tzinfo),
                 header=judging["submission_summary"],
@@ -97,10 +96,10 @@ async def user_admin(ctx: Context, userid: int):
     """
     Shows a preamble management menu for a single user.
     Menu:
-        1. Show current preamble
-        2. Set preamble
-        3. Reset preamble
-        4. Approve/Deny pending preamble (Only appears if user has a pending submission.)
+    1. Show current preamble
+    2. Set preamble
+    3. Reset preamble
+    4. Approve/Deny pending preamble (Only appears if user has a pending submission.)
     """
     # Get the data interfaces, for faster access
     preamble_data = ctx.client.data.user_latex_preambles
@@ -142,7 +141,7 @@ async def user_admin(ctx: Context, userid: int):
                 await ctx.reply("This user doesn't have a custom preamble set!")
             else:
                 title = "Current preamble"
-                await view_preamble(ctx, preamble, title, author=author, file_react=True)
+                await view_preamble_v2(ctx, preamble, title, author=author, file_react=True)
         case 1:
             # Set the preamble. Takes file input as well as message input.
             # Also asks for confirmation before setting.
@@ -240,12 +239,11 @@ async def user_admin(ctx: Context, userid: int):
 
             # Display the preamble for judgement
             judging = pending_preamble
-            sub_msg = await view_preamble(
+            sub_msg = await view_preamble_v2(
                 ctx,
                 current_preamble,
                 judging["pending_preamble"],
-                "Preamble submission!",
-                start_page=-1,
+                "Preamble submission",
                 author="{} ({})".format(judging["username"], userid),
                 time=datetime.fromtimestamp(judging["submission_time"], tz=discord.utils.utcnow().astimezone().tzinfo),
                 header=judging["submission_summary"],
@@ -312,7 +310,7 @@ async def guild_admin(ctx: Context, guildid: int):
                 await ctx.reply("This guild doesn't have a custom preamble set!")
             else:
                 title = "Current guild preamble"
-                await view_preamble(ctx, preamble, title, author=author, file_react=True)
+                await view_preamble_v2(ctx, preamble, title, author=author)
         case 1:
             # Set the preamble. Takes file input as well as message input.
             # Also asks for confirmation before setting.
@@ -391,7 +389,7 @@ async def guild_admin(ctx: Context, guildid: int):
     return None
 
 
-async def general_menu(ctx):
+async def general_menu(ctx: Context):
     await ctx.reply("Not implemented yet!")
 
 

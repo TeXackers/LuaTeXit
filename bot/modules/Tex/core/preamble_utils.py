@@ -9,13 +9,17 @@ from pathlib import Path
 import anyio
 import discord
 from cmdClient import Context  # noqa
+from cmdClient.Layouts import Body, Footer, Header
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from constants import LuaTeXitCC
 from discord import Member, User
+from discord.ui import Container, Separator
 from utils.lib import mail, split_text
 from wards import is_reviewer
 
 from modules.Tex.resources import default_preamble, failed_image_path
+
+from .LatexLayouts import TexPagerView
 from .LatexUser import LatexUser
 
 __location__ = str((Path.cwd() / Path(__file__).parent).resolve())
@@ -192,6 +196,107 @@ async def tex_pagination_diff(
     return embeds
 
 
+def _tex_container_pages(
+    blocks: list[str | None],
+    basetitle: str,
+    header: str | None,
+    author: Member | User | None,
+    time,
+    colour: discord.Colour,
+    extra_fields,
+    footer: str,
+) -> list[Container]:
+    """
+    Page-builder for turning pre-split text blocks into components V2 Container pages
+    """
+    if time is None:
+        time = discord.utils.utcnow()
+    elif isinstance(time, (float, int)):
+        time = datetime.datetime.fromtimestamp(time, tz=discord.utils.utcnow().astimezone().tzinfo)
+
+    footer_bits = [str(author)] if author is not None else []
+    footer_bits.append(discord.utils.format_dt(time, "f"))
+    if footer:
+        footer_bits.append(footer)
+
+    blocknum = len(blocks)
+    pages = []
+    for i, block in enumerate(blocks):
+        items = [*([Header(basetitle)] if basetitle else []), Separator()]
+        if header:
+            items.append(Body(header))
+        if block:
+            items.append(Body(block))
+        if extra_fields:
+            items.extend(Body(f"**{name}**\n{value}") for name, value in extra_fields if name and value)
+
+        page_footer_bits = [*footer_bits, f"Page {i + 1}/{blocknum}"] if blocknum > 1 else footer_bits
+        items.append(Separator())
+        items.append(Footer(" | ".join(page_footer_bits)))
+
+        pages.append(Container(*items, accent_colour=colour))
+
+    return pages
+
+
+def tex_pagination_v2(
+    text,
+    basetitle="",
+    header=None,
+    author=None,
+    time=None,
+    colour=LuaTeXitCC["purple"],
+    extra_fields=None,
+    footer="",
+    block_length=1500,
+) -> list[Container]:
+    """
+    Components V2 counterpart of `tex_pagination`.
+    Break up source LaTeX code into a number of `Container` pages,
+    with the code in codeblocks of maximum `block_length` chars.
+    """
+    blocks = split_text(text, block_length, code=True, syntax="tex", maxheight=30) if text else [None]
+    return _tex_container_pages(blocks, basetitle, header, author, time, colour, extra_fields, footer)
+
+
+async def tex_pagination_diff_v2(
+    text_old: str | None,
+    tex_new: str,
+    basetitle="",
+    header: str | None = None,
+    author: Member | User | None = None,
+    time=None,
+    colour=LuaTeXitCC["yellow"],
+    extra_fields=None,
+    footer="",
+    block_length=1000,
+) -> list[Container]:
+    """
+    Components V2 counterpart of `tex_pagination_diff`.
+    Run a `diff` on the old and new text, and view the result as a number of `Container` pages.
+    """
+    if text_old is None:
+        # if text_old is None, that means it's the default preamble
+        # default preamble is in paradox/bot/modules/Tex/resources/default_preamble.tex
+        default_preamble_path: str = str(Path("bot") / "modules" / "Tex" / "resources" / "default_preamble.tex")
+        async with await anyio.open_file(default_preamble_path) as f:
+            text_old = await f.read()
+
+    diff = "\n".join(
+        difflib.unified_diff(
+            text_old.splitlines(keepends=False),
+            tex_new.splitlines(keepends=False),
+            fromfile="current preamble",
+            tofile="pending preamble",
+            lineterm="",
+            n=0,
+        ),
+    )
+
+    blocks = split_text(diff, block_length, code=True, syntax="diff") if diff else [None]
+    return _tex_container_pages(blocks, basetitle, header, author, time, colour, extra_fields, footer)
+
+
 async def sendfile_reaction_handler(ctx: Context, msg, contents, title, file_name="preamble.tex"):
     """
     Attach a reaction to the given message which sends reacting users
@@ -261,24 +366,19 @@ async def view_preamble_v2(
     ctx: Context,
     preamble: str,
     title: str,
-    file_react=False,
-    file_message=None,
+    **pagination_args,
 ):
-    out_msg = await ctx.pager_v2(
-        content=preamble,
-        title=title,
-        code=True,
-        syntax="latex",
-        block_length=1500,
-        maxheight=30,
+    pages = tex_pagination_v2(preamble, basetitle=title, **pagination_args)
+
+    return await ctx.pager_v2_pages(
+        pages,
+        view_cls=TexPagerView,
+        view_kwargs={
+            "preamble": preamble,
+            "userid": ctx.author.id,
+            "download_emoji": ctx.client.conf.emojis.getemoji("sendfile", "📥"),
+        },
     )
-
-    if file_react and out_msg is not None:
-        # Add the sendfile reaction if required
-        task = asyncio.ensure_future(sendfile_reaction_handler(ctx, out_msg, preamble, file_message or title))
-        task.cancel()  # Don't wait for it to finish, just let it run in the background
-
-    return out_msg
 
 
 async def view_preamble_diff(
@@ -294,6 +394,18 @@ async def view_preamble_diff(
     pages = await tex_pagination_diff(preamble_old, preamble_pending, basetitle=title, **pagination_args)
 
     return await ctx.pager(pages, start_page=start_page, locked=False)
+
+
+async def view_preamble_diff_v2(
+    ctx: Context,
+    preamble_old: str,
+    preamble_pending: str,
+    title: str,
+    **pagination_args,
+):
+    pages = await tex_pagination_diff_v2(preamble_old, preamble_pending, basetitle=title, **pagination_args)
+
+    return await ctx.pager_v2_pages(pages)
 
 
 async def confirm(ctx: Context, question: str, preamble: str, **kwargs):

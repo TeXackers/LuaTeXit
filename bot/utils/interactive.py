@@ -220,6 +220,51 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
 
 
 @Context.util
+async def pager_v2_pages(
+    ctx: Context,
+    pages: Iterable[Container],
+    view_cls: type[PagerView] = PagerView,
+    view_kwargs: dict | None = None,
+):
+    """
+    Reply to `ctx` with a pre-built sequence of `Container` pages,
+    browsable with buttons via a `cmdClient.Interaction.PagerView`.
+
+    This is the Components V2 counterpart of `ctx.pager`, for callers
+    (e.g. `tex_pagination_v2`) that build their own pages instead of
+    relying on `ctx.pager_v2` to split raw text.
+
+    Parameters
+    ----------
+    ctx: Context
+        The context to reply to.
+    pages: Iterable[Container]
+        The pre-built pages to browse.
+    view_cls: type[PagerView]
+        The `PagerView` subclass to render, for callers that need extra buttons/behaviour.
+    view_kwargs: dict | None
+        Extra keyword arguments to pass through to `view_cls`.
+    Returns: discord.Message
+        The message the pager was sent in.
+    """
+    # get emojis
+    left_emoji = await ctx.client.fetch_application_emoji(1522165411951546440)
+    right_emoji = await ctx.client.fetch_application_emoji(1522165413520081039)
+
+    view = view_cls(
+        list(pages),
+        locked=True,
+        author=ctx.author,
+        left_emoji=left_emoji,
+        right_emoji=right_emoji,
+        **(view_kwargs or {}),
+    )
+    message = await ctx.reply(view=view)
+    view.message = message
+    return message
+
+
+@Context.util
 async def pager_v2(
     ctx: Context,
     content: str | Iterable,
@@ -227,6 +272,8 @@ async def pager_v2(
     block_length: int = 1000,
     code: bool = False,
     colour: str | discord.Colour = LuaTeXitCC["yellow"],
+    view_cls: type[PagerView] = PagerView,
+    view_kwargs: dict | None = None,
     **kwargs,
 ):
     """
@@ -247,6 +294,10 @@ async def pager_v2(
         Whether to wrap each page in codeblocks.
     colour: str | None
         The colour of the LayoutView, if applicable.
+    view_cls: type[PagerView]
+        The `PagerView` subclass to render, for callers that need extra buttons/behaviour.
+    view_kwargs: dict | None
+        Extra keyword arguments to pass through to `view_cls`.
     Returns: discord.Message
         The message the pager was sent in.
     """
@@ -266,14 +317,7 @@ async def pager_v2(
         for block in blocks
     ]
 
-    # get emojis
-    left_emoji = await ctx.client.fetch_application_emoji(1522165411951546440)
-    right_emoji = await ctx.client.fetch_application_emoji(1522165413520081039)
-
-    view = PagerView(pages, locked=True, author=ctx.author, left_emoji=left_emoji, right_emoji=right_emoji)
-    message = await ctx.reply(view=view)
-    view.message = message
-    return message
+    return await ctx.pager_v2_pages(pages, view_cls=view_cls, view_kwargs=view_kwargs)
 
 
 @Context.util

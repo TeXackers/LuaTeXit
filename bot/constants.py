@@ -50,6 +50,11 @@ ParaCC: dict[str, discord.Colour] = {
     "blue": discord.Colour(int("00a7fe", 16)),
 }
 LuaTeXitCC: dict[str, discord.Colour] = {
+    "red": discord.Colour.from_str("#BC0909"),
+    "green": discord.Colour.from_str("#5EB859"),
     "yellow": discord.Colour.from_str("#FFC107"),
     "purple": discord.Colour.from_str("#C073E5"),
+    "blue": discord.Colour.from_str("#69A2CC"),
+    "white": discord.Colour.from_str("#EBE9E2"),
+    "cyan": discord.Colour.from_str("#3194A5"),
 }

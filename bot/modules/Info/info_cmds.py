@@ -1,10 +1,12 @@
 import random
+from typing import cast
 
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.Format import emph
 from cmdClient.Layouts import Body, Footer, Header, SectionWithThumbnail, TextEmbed
 from constants import LuaTeXitCC
+from discord import Guild, Member, User
 from discord.http import Route
 from discord.ui import Container, LayoutView, Separator
 from utils.lib import tabulate
@@ -115,8 +117,10 @@ async def cmd_roleinfo(ctx: Context):
         Provides information about the given role.
         If no role is provided, all of the roles in the guild will be listed.
     """
+    guild = cast("Guild", ctx.guild)
+    author = cast("Member", ctx.author)
     # Get a sorted list of guild roles by position
-    guild_roles: list[discord.Role] = sorted(ctx.guild.roles, key=lambda role: role.position)
+    guild_roles: list[discord.Role] = sorted(guild.roles, key=lambda role: role.position)
 
     # Handle not having arguments, list all the current roles
     if not ctx.args:
@@ -163,19 +167,19 @@ async def cmd_roleinfo(ctx: Context):
         position += "{}.   <@&{}> {}\n".format(
             len(guild_roles) - line_pos,
             guild_roles[line_pos].id,
-            "👈️" if guild_roles[line_pos] == role else "🔰" if guild_roles[line_pos] == ctx.author.top_role else "",
+            "👈️" if guild_roles[line_pos] == role else "🔰" if guild_roles[line_pos] == author.top_role else "",
         )
 
     desc_text += f"\n### Role positioning\n{position}\n-# 👈️: requested role; 🔰: your highest role"
 
     # Build the relative string
     diff_str = ""
-    if ctx.guild.default_role != ctx.author.top_role:
-        if role > ctx.author.top_role:
+    if guild.default_role != author.top_role:
+        if role > author.top_role:
             diff_str = f"(This role is {emph('above')} your highest role)"
-        elif role < ctx.author.top_role:
+        elif role < author.top_role:
             diff_str = f"(This role is {emph('below')} your highest role.)"
-        elif role == ctx.author.top_role:
+        elif role == author.top_role:
             diff_str = f"(This is your {emph('highest')} role.)"
     else:
         diff_str = "(This is the default role for the guild.)"
@@ -206,7 +210,7 @@ async def cmd_rolemembers(ctx: Context) -> None:
     if not role:
         return None
 
-    members: list[discord.Member] = role.members
+    members: list[Member] = role.members
     if len(members) == 0:
         await ctx.reply("No members have this role.")
         return None
@@ -236,7 +240,8 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
         Sends information on the provided user.
         If no user is provided, the author will be used.
     """
-    user: discord.Member = ctx.author
+    user = cast("Member", ctx.author)
+    guild = cast("Guild", ctx.guild)
 
     if ctx.args:
         user = await ctx.find_member(ctx.args, interactive=True)
@@ -275,9 +280,9 @@ async def cmd_userinfo(ctx: Context, flags: dict) -> None:
 
     role_text = f"\n### Roles\n{('`' + '`, `'.join(roles) + '`') if roles else 'N/A'}"
 
-    if user.joined_at and ctx.guild:  # joined_at is Optional
+    if user.joined_at:  # joined_at is Optional
         joined = sorted(
-            ctx.guild.members,
+            guild.members,
             key=lambda mem: mem.joined_at or user.created_at,
         )
         pos = joined.index(user)
@@ -328,33 +333,35 @@ async def cmd_guildinfo(ctx: Context) -> None:
         Shows information about the guild you are in.
     """
 
-    total = len(ctx.server.channels)
+    server = cast("Guild", ctx.server)  # guaranteed non-None by @in_guild()
 
-    bots: int = sum(m.bot for m in ctx.server.members)
-    humans: int = max((ctx.server.member_count or 0) - bots, 0)
+    total = len(server.channels)
+
+    bots: int = sum(m.bot for m in server.members)
+    humans: int = max((server.member_count or 0) - bots, 0)
 
     desc_text = tabulate(
         {
-            "Owner": f"{ctx.server.owner.display_name}",
-            "Created": f"{discord.utils.format_dt(ctx.server.created_at, 'f')} ({discord.utils.format_dt(ctx.server.created_at, 'R')})",
+            "Owner": f"{server.owner.display_name}",
+            "Created": f"{discord.utils.format_dt(server.created_at, 'f')} ({discord.utils.format_dt(server.created_at, 'R')})",
             "Members": f"{humans} 🫃, {bots} 🤖  |  {bots + humans} total",
-            "Large?": "Yes" if ctx.server.large else "No",
-            "Channels": f"{len(ctx.server.text_channels)} 📝, {len(ctx.server.voice_channels)} 🗣️ ({total} total)",
-            "Premium": f"Level {ctx.server.premium_tier} | {ctx.server.premium_subscription_count} boost{'s' if ctx.server.premium_subscription_count != 1 else ''} total",
+            "Large?": "Yes" if server.large else "No",
+            "Channels": f"{len(server.text_channels)} 📝, {len(server.voice_channels)} 🗣️ ({total} total)",
+            "Premium": f"Level {server.premium_tier} | {server.premium_subscription_count} boost{'s' if server.premium_subscription_count != 1 else ''} total",
         },
     )
-    server_icon = await get_server_avatar(ctx, ctx.server.id, ctx.client.user.id) or str(ctx.server.icon)
+    server_icon = await get_server_avatar(ctx, server.id, ctx.client.user.id) or str(server.icon)
 
     container = Container(
-        accent_colour=ctx.server.owner.colour if ctx.server.owner.colour.value else discord.Colour.teal(),
+        accent_colour=server.owner.colour if server.owner.colour.value else discord.Colour.teal(),
     )
-    if ctx.server.banner:
+    if server.banner:
         container.add_item(
             discord.ui.MediaGallery(
-                discord.MediaGalleryItem(str(ctx.server.banner), description=f"Banner for {ctx.server.name}"),
+                discord.MediaGalleryItem(str(server.banner), description=f"Banner for {server.name}"),
             ),
         )
-    container.add_item(Header(f"{ctx.server}"))
+    container.add_item(Header(f"{server}"))
     container.add_item(SectionWithThumbnail(desc_text, server_icon))
     container.add_item(Footer(f"{discord.utils.format_dt(ctx.msg.created_at, 'f')} | Requested by: {ctx.author}"))
 
@@ -390,12 +397,14 @@ async def cmd_channelinfo(ctx: Context) -> None:
     }
 
     # Definitions to shorten the character count
-    gch = ctx.server.channels
-    me = ctx.server.me
-    user = ctx.author
+    server = cast("Guild", ctx.server)
+    gch = cast("list[discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel]", server.channels)
+    me = server.me
+    user = cast("Member", ctx.author)
+
     # Disallow selecting channels that the user and bot cannot see.
     valid = [ch for ch in gch if (ch.permissions_for(user).read_messages) and (ch.permissions_for(me).read_messages)]
-    ch = ctx.ch
+    ch = cast("discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel", ctx.ch)
     if ctx.args:
         ch = await ctx.find_channel(ctx.args, interactive=True, collection=valid)
         if not ch:
@@ -452,13 +461,13 @@ async def cmd_avatar(ctx: Context, flags) -> None:
         global: Display the user's global avatar, if set.
     """
     if not ctx.args:
-        user = ctx.author
-        colour = LuaTeXitCC["purple"] if user.colour.value == "#000000" else user.accent_colour
+        user = cast("Member | User", ctx.author)
+        colour = user.accent_colour if user.accent_colour is not None else LuaTeXitCC["purple"]
     else:
-        user = await ctx.find_member(ctx.args, interactive=True)
+        user = cast("Member | User", await ctx.find_member(ctx.args, interactive=True))
         if not user:
             ctx.error_reply("User not found.")
-        colour = LuaTeXitCC["yellow"] if user.colour.value == "#000000" else user.accent_colour
+        colour = user.accent_colour if user.accent_colour is not None else LuaTeXitCC["purple"]
 
     # avatar
     if flags["global"]:

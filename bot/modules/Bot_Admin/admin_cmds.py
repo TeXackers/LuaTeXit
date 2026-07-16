@@ -182,8 +182,11 @@ async def cmd_logs(ctx: Context):
         # Run tail to get the last <lines> lines of the log
         logs = await ctx.run_in_shell(f"tail -n {lines} {logpath}")
 
+        # Strip initial and final backticks from the logs to avoid code block issues
+        logs = logs.strip("`")
+
         # Split the log blocks and page the result
-        return await ctx.pager(split_text(logs))
+        return await ctx.pager_v2(split_text(logs), title=f"Last {lines} lines of the log", code=True, syntax="ini")
 
 
 @module.cmd("showcmd", desc="Shows the source of a command.")

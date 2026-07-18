@@ -8,6 +8,7 @@ flags mirroring riichi.py's haitei/houtei/rinshan/chankan/tenhou/chiihou.
 """
 
 from dataclasses import dataclass
+from typing import cast
 
 from modules.Mahjong.hand import Group, decompose_hand, is_seven_pairs, is_thirteen_orphans
 from modules.Mahjong.tiles import WINDS, is_dragon, is_honor, is_terminal, is_wind, suit_of
@@ -85,8 +86,14 @@ class ScoreResult:
     points: int  # faan converted to a score via the half-spicy table
 
 
-def _points_for(total_faan: int, zimo: bool) -> int:
-    table_points = _HALF_SPICY[total_faan]
+def _points_for(total_faan: int, zimo: bool, spice: str = "full") -> int:
+    spices = frozenset({"full", "half"})
+    if spice not in spices:
+        raise ScoringError(f"Invalid spice: {spice}. Must be one of {', '.join(spices)}.")
+    if spice == "full":
+        table_points = 2**total_faan if total_faan <= MAX_FAAN else 2**MAX_FAAN
+    else:
+        table_points = _HALF_SPICY.get(total_faan, _HALF_SPICY[MAX_FAAN])
     return round(table_points * 1.5) if zimo else table_points
 
 
@@ -178,14 +185,14 @@ def _score_standard_decomp(
     generic_limit: list[ScoreLine],
 ) -> tuple[list[ScoreLine], list[ScoreLine], bool]:
     """Returns (hand_tier_lines, wind_dragon_lines, is_strictly_concealed) for one decomposition."""
-    triplets = [g for g in groups if g.kind in ("triplet", "kan")]
-    kans = [g for g in groups if g.kind == "kan"]
+    triplets: list[Group] = [g for g in groups if g.kind in ("triplet", "kan")]
+    kans: list[Group] = [g for g in groups if g.kind == "kan"]
 
     regular = list(generic_regular)
     limit = list(generic_limit)
 
     if not triplets:
-        regular.append(ScoreLine("平糊", 1, "every group is a chow"))
+        regular.append(ScoreLine("平糊", 1, "flat winning hand"))
     if len(triplets) == 4:
         regular.append(ScoreLine("對對糊", 3, "every group is a pung/kong"))
 
@@ -250,6 +257,8 @@ class HongKongRuleset(Ruleset):
         gsg: bool = False,
         tinwu: bool = False,
         deiwu: bool = False,
+        spice: str = "full",
+        **kwargs,
     ) -> ScoreResult:
         flags = ScoreFlags(
             seat_wind=seat_wind,
@@ -315,10 +324,14 @@ class HongKongRuleset(Ruleset):
             if best_total is None or total > best_total:
                 best_shape, best_lines, best_total = shape, lines, total
 
+        best_shape = cast("str", best_shape)
+        best_lines = cast("list[ScoreLine]", best_lines)
+        best_total = cast("int", best_total)
+
         if best_total == 0:
-            raise ScoringError("No matching 役 at all (雞糊, a chicken hand) -- this can't win.")
+            raise ScoringError("This is a 雞糊, a chicken hand.")
         if best_total < flags.min_faan:
-            raise ScoringError(f"Only {best_total} faan, below the {flags.min_faan}-faan minimum to win (雞糊).")
+            raise ScoringError(f"Only {best_total} faan, below the {flags.min_faan}-faan minimum to win.")
 
         return ScoreResult(
             shape=best_shape,
@@ -326,5 +339,5 @@ class HongKongRuleset(Ruleset):
             winning_tile=winning_tile,
             lines=best_lines,
             total=best_total,
-            points=_points_for(best_total, flags.zimo),
+            points=_points_for(best_total, flags.zimo, spice),
         )

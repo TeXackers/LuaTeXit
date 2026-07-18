@@ -13,6 +13,7 @@ from cmdClient.Format import bf, footnote
 from cmdClient.Layouts import TextEmbed
 from iso639 import Language, LanguageNotFoundError
 from utils.cache import async_ttl_cache
+from utils.interactive import get_application_emoji_by_name
 from utils.lib import tabulate
 
 from .module import latex_module as module
@@ -254,8 +255,9 @@ async def cmd_texdoc(ctx: Context):
     Examples``:
         {prefix}texdoc tikz
     """
+    loading = await get_application_emoji_by_name(ctx.client, "loading")
     out_msg = await ctx.reply(
-        f"Searching the texdoc database, please wait... {ctx.client.conf.emojis.getemoji('loading')}",
+        f"Searching the texdoc database, please wait... {loading}",
     )
     if len(ctx.args) > 800:
         await out_msg.delete()
@@ -310,8 +312,8 @@ async def cmd_ctan(ctx: Context):
     if not re.sub(r"[-_.]", "", ctx.args).isalnum():
         return await ctx.error_reply(f"`{ctx.args}` is not a valid package name!")
 
-    loading_emoji = ctx.client.conf.emojis.getemoji("loading")
-    out_msg = await ctx.reply(f"Searching the CTAN, please wait... {loading_emoji}")
+    loading = await get_application_emoji_by_name(ctx.client, "loading")
+    out_msg = await ctx.reply(f"Searching the CTAN, please wait... {loading}")
 
     soup: BeautifulSoup = await soup_site(url)
     title, desc, prop_list, value_list = search_n_parse(soup)
@@ -447,7 +449,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
     fclist_chars: str = ""
     fclist_lang: str = ""
     params_dict: dict = {"query": None, "type": None}
-    out_msg = await ctx.reply(f"Searching for fonts, please wait... {ctx.client.conf.emojis.getemoji('loading')}")
+    loading = await get_application_emoji_by_name(ctx.client, "loading")
+    out_msg = await ctx.reply(f"Searching for fonts, please wait... {loading}")
 
     if flags["char"]:
         cleaned_chars = ",".join(clean_md(part) for part in flags["char"].split(","))

@@ -1,6 +1,7 @@
 from typing import override
 
 from cmdClient import Context  # noqa
+from utils.interactive import get_application_emojis_by_name
 
 from .display import render_note
 from .drawer_base import BaseDrawerView, EvalResult
@@ -44,8 +45,7 @@ async def cmd_mahjongdraw(ctx: Context):
         score (or continue discarding). See `;help riichidraw` for the
         Riichi (Japanese) version.
     """
-    emojis = await ctx.client.fetch_application_emojis()
-    emojis_by_name = {e.name: e for e in emojis}
+    emojis_by_name = await get_application_emojis_by_name(ctx.client)
 
     view = HongKongDrawerView(ctx.author, emojis_by_name)
     message = await ctx.reply(view=view)

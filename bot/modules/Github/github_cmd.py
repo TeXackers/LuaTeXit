@@ -9,6 +9,7 @@ import discord
 import github
 from cmdClient import Context  # noqa
 from github import Auth, Github
+from utils.interactive import get_application_emoji_by_name
 
 if TYPE_CHECKING:
     from github.Issue import Issue
@@ -84,7 +85,7 @@ async def cmd_github_lookup(ctx: Context, flags):
 
     # return await ctx.reply(f"Given {org}/{reponame} \#{issue_num}, I would look up the issue and display its information here. This is a placeholder response for now.")
     # load emoji
-    LOADING_EMOJI = await ctx.client.fetch_application_emoji(1522161416134721677)
+    LOADING_EMOJI = await get_application_emoji_by_name(ctx.client, "loading")
 
     out_msg = await ctx.reply(f"{LOADING_EMOJI} Querying Github, please wait...")
     GITHUB_TOKEN: str = ctx.client.conf["GITHUB_AUTH_TOKEN"]

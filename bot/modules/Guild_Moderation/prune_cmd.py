@@ -7,6 +7,7 @@ from typing import NamedTuple
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.lib import ResponseTimedOut, UserCancelled
+from utils.interactive import get_application_emoji_by_name
 from wards import guild_moderator
 
 from .module import guild_moderation_module as module
@@ -281,7 +282,7 @@ async def cmd_prune(ctx: Context, flags: dict):
                 await out_msg.delete()
 
     if not abort:
-        loading_emoji = ctx.client.fetch_application_emoji(1522161416134721677)
+        loading_emoji = await get_application_emoji_by_name(ctx.client, "loading")
         progress_msg = await ctx.reply(
             f"Purging **{len(message_list)}** messages in {target_channel.mention}, please wait... {loading_emoji}\n\n-# Initiated: {discord.utils.format_dt(discord.utils.utcnow(), 'R')}",
         )

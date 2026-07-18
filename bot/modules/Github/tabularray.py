@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 import github
 from cmdClient import Context  # noqa
 from github import Auth, Github
+from utils.interactive import get_application_emoji_by_name
 
 if TYPE_CHECKING:
     from github.ContentFile import ContentFile
@@ -49,7 +50,8 @@ async def cmd_tabularray(ctx: Context, flags):
     __texackers: Organization = __github_api.get_organization("TeXackers")
     __tabularray: Repository = __texackers.get_repo("tabularray")
 
-    out_msg = await ctx.reply(f"Querying Github, please wait... {ctx.client.conf.emojis.getemoji('loading')}")
+    loading = await get_application_emoji_by_name(ctx.client, "loading")
+    out_msg = await ctx.reply(f"Querying Github, please wait... {loading}")
     # no flags provided, treat the argument as either an issue/PR number or a search query
     if not flags["file"] and not flags["list"]:
         query = ctx.args.strip()

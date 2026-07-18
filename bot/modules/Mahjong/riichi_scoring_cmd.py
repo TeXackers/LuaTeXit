@@ -1,6 +1,7 @@
 import discord
 from cmdClient import Context  # noqa
 from cmdClient.Layouts import TextEmbed
+from utils.interactive import get_application_emojis_by_name
 
 from .display import render_note, tile_str
 from .module import mahjong_module as module
@@ -117,8 +118,7 @@ async def cmd_riichi(ctx: Context, flags: dict):
     except (MahjongParseError, ScoringError) as e:
         return await ctx.error_reply(str(e))
 
-    emojis = await ctx.client.fetch_application_emojis()
-    emojis_by_name = {e.name: e for e in emojis}
+    emojis_by_name = await get_application_emojis_by_name(ctx.client)
 
     hand_display = "".join(tile_str(emojis_by_name, t) for t in sorted(result.hand_tiles, key=tile_sort_key))
 

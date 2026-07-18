@@ -15,7 +15,6 @@ info = {
         "Use `{prefix}help` for information on how to use me, "
         "and `{prefix}list` to see all my commands."
     ),
-    # "invite_link": "https://discordapp.com/api/oauth2/authorize?client_id=871978350393065572&permissions=0&scope=bot",
     "invite_link": "Currently not accepting invites due to Discord's new policies.",
     "donate_link": "https://www.patreon.com/texit",
     "github": "https://github.com/texackers/LuaTeXit",
@@ -26,14 +25,7 @@ info = {
     "help_file": "bot/resources/apps/luatexit/luatexit_thanks.png",
 }
 
-disabled_modules = [
-    "Guild_Admin",
-    "Guild_Logging",
-    # "Guild_Moderation",
-    "Maths",
-    "Starboard",
-    "Social",
-]
+disabled_modules = []
 
 disabled_commands = {}
 

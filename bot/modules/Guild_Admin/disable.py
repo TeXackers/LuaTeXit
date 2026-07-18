@@ -159,7 +159,11 @@ class disabled_commands(ListData, StringList, GuildSetting):
             command_counter += 1
 
         client.objects["disabled_guild_commands"] = disabled_commands
-        client.log(f"  |-- disabled: {len(disabled_commands)} guilds (total: {command_counter})", context="DISABLED_COMMANDS", level=logging.DEBUG)
+        client.log(
+            f"  |-- disabled: {len(disabled_commands)} guilds (total: {command_counter})",
+            context="DISABLED_COMMANDS",
+            level=logging.DEBUG,
+        )
 
 
 # Define data schema

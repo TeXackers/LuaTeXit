@@ -90,7 +90,13 @@ async def cmd_about(ctx: Context):
         )
     except subprocess.CalledProcessError:
         git_version = "unknown"
-    status["Version"] = git_version
+
+    try:
+        git_branch = (await cached_check_output("git", "rev-parse", "--abbrev-ref", "HEAD")).decode().strip()
+    except subprocess.CalledProcessError:
+        git_branch = None
+
+    status["Version"] = f"{git_version} [{git_branch}]" if git_branch else git_version
 
     # Shards, guilds, and members
     member_count = await cached_member_count(ctx.client)

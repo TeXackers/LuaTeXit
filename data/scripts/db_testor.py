@@ -1,7 +1,7 @@
 import asyncio
 
-from paradata_mysql import BotData
 from botconf import Conf
+from paradata_mysql import BotData
 
 conf = Conf("paradox.conf")
 
@@ -58,11 +58,11 @@ async def main():
     print("Retrieving data, checking consistency")
     response = await data_noapp.users.get(fakeuser, "property1")
     if response != fakedata1:
-        print("ISSUE: Got\n{}\nfor property1. Expected\n{}".format(response, fakedata1))
+        print(f"ISSUE: Got\n{response}\nfor property1. Expected\n{fakedata1}")
 
     response = await data_noapp.users.get(fakeuser, "property2")
     if response != fakedata2:
-        print("ISSUE: Got\n{}\nfor property2. Expected\n{}".format(response, fakedata2))
+        print(f"ISSUE: Got\n{response}\nfor property2. Expected\n{fakedata2}")
 
     # Test that non-existent values produce None
     print("Checking non-existent values")
@@ -74,18 +74,12 @@ async def main():
     print("Testing shared flag behaviour")
     response = await data_testapp.users.get(fakeuser, "property1")
     if response is not None:
-        print(
-            "ISSUE: Non-shared property property1 is non-empty for app testapp. Value: {}".format(
-                response
-            )
-        )
+        print(f"ISSUE: Non-shared property property1 is non-empty for app testapp. Value: {response}")
 
     response = await data_testapp.users.get(fakeuser, "property3")
     if response != fakedata1:
         print(
-            "ISSUE: Shared property property3 not consistent for app testapp. Got\n{}\nExpected\n{}".format(
-                response, fakedata1
-            )
+            f"ISSUE: Shared property property3 not consistent for app testapp. Got\n{response}\nExpected\n{fakedata1}"
         )
 
     # Test setting member data
@@ -96,43 +90,29 @@ async def main():
     print("Retrieving member data")
     response = await data_noapp.members.get(fakeserver, fakeuser, "property1")
     if response != fakedata1:
-        print("ISSUE: Got\n{}\nfor property1. Expected\n{}".format(response, fakedata1))
+        print(f"ISSUE: Got\n{response}\nfor property1. Expected\n{fakedata1}")
 
     # Test find
     print("Testing find for user data")
     response = await data_noapp.users.find("property1", fakedata1, read=True)
     if set(response) != {fakeuser, otherfakeuser}:
-        print(
-            "ISSUE: Got the following response from find:\n{}\nExpecting:\n{}".format(
-                response, [fakeuser, otherfakeuser]
-            )
-        )
+        print(f"ISSUE: Got the following response from find:\n{response}\nExpecting:\n{[fakeuser, otherfakeuser]}")
 
     response = await data_noapp.users.find("property1", fakedata2, read=True)
     if response != []:
-        print(
-            "ISSUE: Got unexpected non-empty response from find, response\n{}".formtat(
-                response
-            )
-        )
+        print("ISSUE: Got unexpected non-empty response from find, response\n{}".formtat(response))
 
     # Test find not empty
     print("Testing finding non-empty values in user data")
     response = await data_noapp.users.find_not_empty("property1")
     if set(response) != {fakeuser, otherfakeuser}:
         print(
-            "ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(
-                response, [fakeuser, otherfakeuser]
-            )
+            f"ISSUE: Got the following response from find not empty:\n{response}\nExpecting:\n{[fakeuser, otherfakeuser]}"
         )
 
     response = await data_noapp.users.find_not_empty("property2")
     if response != [fakeuser]:
-        print(
-            "ISSUE: Got the following response from find not empty:\n{}\nExpecting:\n{}".format(
-                response, [fakeuser]
-            )
-        )
+        print(f"ISSUE: Got the following response from find not empty:\n{response}\nExpecting:\n{[fakeuser]}")
 
     print("All tests complete")
 

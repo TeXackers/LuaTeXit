@@ -131,7 +131,11 @@ class cleaned_channels(ListData, ChannelList, GuildSetting):
             channel_counter += 1
 
         client.objects["cleaned_guild_channels"] = cleaned_channels
-        client.log(f"  |-- cleaned {len(cleaned_channels)} guilds (total: {channel_counter})", context="Guild Admin", level=logging.DEBUG)
+        client.log(
+            f"  |-- cleaned {len(cleaned_channels)} guilds (total: {channel_counter})",
+            context="Guild Admin",
+            level=logging.DEBUG,
+        )
 
 
 # Define event handler

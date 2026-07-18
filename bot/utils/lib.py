@@ -290,10 +290,7 @@ def msg_string(msg, mask_link=False, line_break=False, tz=None, clean=True):
         User timezone, message author, message content, attachments
     """
     timestr = "%I:%M %p, %d/%m/%Y"
-    if tz:
-        time = msg.timestamp.astimezone(tz).strftime(timestr)
-    else:
-        time = msg.timestamp.strftime(timestr)
+    time = msg.timestamp.astimezone(tz).strftime(timestr) if tz else msg.timestamp.strftime(timestr)
     user = str(msg.author)
     attach_list = [attach["url"] for attach in msg.attachments if "url" in attach]
     if mask_link:

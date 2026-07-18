@@ -11,7 +11,6 @@ from wards import guild_moderator
 
 from .module import guild_moderation_module as module
 
-
 BULK_DELETE_MAX_AGE = timedelta(days=14)
 SINGLE_DELETE_DELAY = 1.0
 BULK_DELETE_DELAY = 1.0
@@ -210,7 +209,8 @@ async def cmd_prune(ctx: Context, flags: dict):
     except discord.Forbidden as e:
         return await ctx.traceback(
             f"I do not have permissions to delete messages here.\n"
-            "If this is in error, please give me the `MANAGE MESSAGES` permission.", f"{e}"
+            "If this is in error, please give me the `MANAGE MESSAGES` permission.",
+            f"{e}",
         )
 
     # Start going through the channel history, counting messages
@@ -281,7 +281,7 @@ async def cmd_prune(ctx: Context, flags: dict):
                 await out_msg.delete()
 
     if not abort:
-        loading_emoji = ctx.client.conf.emojis.getemoji("loading")
+        loading_emoji = ctx.client.fetch_application_emoji(1522161416134721677)
         progress_msg = await ctx.reply(
             f"Purging **{len(message_list)}** messages in {target_channel.mention}, please wait... {loading_emoji}\n\n-# Initiated: {discord.utils.format_dt(discord.utils.utcnow(), 'R')}",
         )
@@ -314,8 +314,8 @@ async def cmd_prune(ctx: Context, flags: dict):
     if abort:
         return None
 
-    try:
+    with suppress(Exception):
         await asyncio.sleep(3)
         await progress_msg.delete()
-    except Exception:
-        pass
+
+    return None

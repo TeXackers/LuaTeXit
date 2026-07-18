@@ -1,13 +1,16 @@
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 import discord
-from cmdClient import Check
 from discord import Status
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting
 from utils.lib import format_activity, join_list, prop_tabulate, strfdelta
 from wards import guild_manager
+
+if TYPE_CHECKING:
+    from cmdClient import Check
 
 from .module import guild_logging_module as module
 

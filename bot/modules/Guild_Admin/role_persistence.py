@@ -1,5 +1,6 @@
 import logging
 from contextlib import suppress
+from typing import ClassVar
 
 import discord
 from aiohttp import payload
@@ -67,7 +68,7 @@ class role_persistence(BoolData, Boolean, GuildSetting):
         "and users may be forgotten with the command `forgetrolesfor`."
     )
 
-    _outputs = {True: "Enabled", False: "Disabled"}
+    _outputs: ClassVar[dict[bool, str]] = {True: "Enabled", False: "Disabled"}
 
     _default = False
 
@@ -133,9 +134,7 @@ async def restore_roles(client, member):
 
     # Retrieve the stored roles for this member
     roles = client.data.member_stored_roles.select_where(guildid=member.guild.id, userid=member.id)
-    roleids = []
-    for i in range(len(roles)):
-        roleids.append(roles[i]["roleid"])
+    roleids = [role["roleid"] for role in roles]
 
     if roleids:
         # Get the ignored roles

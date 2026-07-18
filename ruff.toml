@@ -9,13 +9,7 @@ exclude = [
     "bot/settings/__init__.py", # order-sensitive
     "tests/conftest.py", # order-sensitive
     # low-priority
-    "bot/modules/Guild_Moderation/**",
-    "bot/modules/Guild_Utils/**",
-    "bot/modules/Guild_Admin/**",
-    "bot/modules/Guild_Logging/**",
     "bot/registry/**/*",
-    "bot/utils/old/**",
-    "data/migration/**",
     "data/scripts/**",
 ]
 

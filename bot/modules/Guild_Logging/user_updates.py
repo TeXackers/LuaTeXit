@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from enum import Enum
+from typing import ClassVar
 
 import discord
 from cmdClient import cmdClient  # noqa
@@ -109,7 +110,8 @@ async def user_update_handler(client, before, after):
     guilds = [g for g in client.guilds if after in g.members]
 
     for guild in guilds:
-        asyncio.ensure_future(member_update_handler(client, before, after, from_user=True, guild=guild))
+        fut = asyncio.ensure_future(member_update_handler(client, before, after, from_user=True, guild=guild))
+        fut.add_done_callback(lambda f: f.exception() or None)
 
 
 @module.init_task
@@ -163,7 +165,7 @@ class guild_userlog_ignores(ListData, MemberList, GuildSetting):
 class _userlog_event(IntegerEnum):
     _enum = UserLogEvent
 
-    _output_map = {
+    _output_map: ClassVar[dict[UserLogEvent, str]] = {
         UserLogEvent.USERNAME: "Username",
         UserLogEvent.NICKNAME: "Nickname",
         UserLogEvent.AVATAR: "Avatar",
@@ -186,7 +188,7 @@ class guild_userlog_events(ListData, SettingList, GuildSetting):
     _setting = _userlog_event
     _force_unique = True
 
-    _default = [0, 1, 2, 3]
+    _default = frozenset({0, 1, 2, 3})
     _table_interface_name = "guild_userupdate_events"
     _data_column = "event"
 

@@ -8,9 +8,50 @@ from cmdClient.Interaction import PagerView
 from cmdClient.Layouts import Body, Header
 from cmdClient.lib import ResponseTimedOut, UserCancelled
 from constants import LuaTeXitCC
+from discord import Emoji
 from discord.ui import Container, Separator
 
+from .cache import async_ttl_cache
 from .lib import paginate_list, split_text
+
+
+@async_ttl_cache(days=30)
+async def _fetch_application_emojis(client) -> list[Emoji]:
+    """Fetch (and cache) the raw list of the bot application's custom emojis."""
+    return await client.fetch_application_emojis()
+
+
+async def get_application_emoji_by_id(client, emoji_id: int) -> Emoji:
+    """
+    Look up one of the bot application's custom emojis by id.
+
+    Application emojis essentially never change, so this goes through a long-lived
+    cache instead of hitting the Discord API on every single use.
+    """
+    emojis: list[Emoji] = await _fetch_application_emojis(client)
+    emoji: Emoji | None = next((e for e in emojis if e.id == emoji_id), None)
+    if emoji is None:
+        raise LookupError(f"No application emoji found with id={emoji_id}.")
+    return emoji
+
+
+async def get_application_emoji_by_name(client, name: str) -> Emoji:
+    """
+    Look up one of the bot application's custom emojis by name. See `get_application_emoji_by_id`.
+    """
+    emojis: list[Emoji] = await _fetch_application_emojis(client)
+    emoji: Emoji | None = next((e for e in emojis if e.name == name), None)
+    if emoji is None:
+        raise LookupError(f"No application emoji found with name={name!r}.")
+    return emoji
+
+
+async def get_application_emojis_by_name(client) -> dict[str, Emoji]:
+    """
+    Fetch and cache _all_ of the bot application's custom emojis, key'e'd by name. Useful for looking up multiple emojis by name.
+    """
+    emojis: list[Emoji] = await _fetch_application_emojis(client)
+    return {e.name: e for e in emojis}
 
 
 @Context.util
@@ -256,8 +297,8 @@ async def pager_v2_pages(
         The message the pager was sent in.
     """
     # get emojis
-    left_emoji = await ctx.client.fetch_application_emoji(1522165411951546440)
-    right_emoji = await ctx.client.fetch_application_emoji(1522165413520081039)
+    left_emoji = await get_application_emoji_by_name(ctx.client, "left")
+    right_emoji = await get_application_emoji_by_name(ctx.client, "right")
 
     view = view_cls(
         list(pages),

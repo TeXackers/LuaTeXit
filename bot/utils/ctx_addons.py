@@ -1,9 +1,9 @@
 import asyncio
 import logging
 from asyncio.subprocess import Process
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from contextlib import suppress
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import discord
 from cmdClient import Context, cmdClient
@@ -31,7 +31,12 @@ async def embedreply(ctx: Context, desc: str, colour: Colour = default_colour, *
 
 
 @Context.util
-async def live_reply(ctx: Context, reply_func: Coroutine, update_interval: int = 5, max_messages: int = 20):
+async def live_reply(
+    ctx: Context,
+    reply_func: Callable[[], Coroutine[Any, Any, dict[str, Any] | None]],
+    update_interval: int = 5,
+    max_messages: int = 20,
+):
     """
     Acts as `ctx.reply`, but asynchronously updates the reply every `update_interval` seconds
     with the value of `reply_func`, until the value is `None`.
@@ -51,7 +56,10 @@ async def live_reply(ctx: Context, reply_func: Coroutine, update_interval: int =
     The output message after the first reply.
     """
     # Send the initial message
-    message = await ctx.reply(**(await reply_func()))
+    first_args = await reply_func()
+    if first_args is None:
+        raise ValueError("`reply_func` must return a mapping on its first call.")
+    message = await ctx.reply(**first_args)
 
     # Start the counter
     future = asyncio.ensure_future(_message_counter(ctx.client, ctx.ch, max_messages))
@@ -127,8 +135,8 @@ async def best_prefix(ctx: Context) -> str:
     otherwise the default client prefix.
     """
     if ctx.guild is None:
-        return ctx.client.prefix
-    return ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix)
+        return ctx.client.prefix or ""
+    return ctx.client.objects["guild_prefix_cache"].get(ctx.guild.id, ctx.client.prefix or "")
 
 
 @Context.util
@@ -191,6 +199,7 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
 
     # Build the reaction check function
     if ctx.guild:
+        guild = ctx.guild
         try:
             modrole = ctx.get_guild_setting.modrole.value
         except KeyError:
@@ -198,21 +207,25 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
             # loaded in every deployment -- treat "not registered" as "not configured".
             modrole = None
 
-        def check(reaction, user):
+        def check_guild(reaction, user) -> bool:
             if not (reaction.message.id == react_msg.id and reaction.emoji == emoji):
                 return False
-            if user == ctx.guild.me:
+            if user == guild.me:
                 return False
-            return (
+            return bool(
                 (user == ctx.author)
-                or (user.permissions_in(ctx.ch).manage_messages)
+                or (ctx.ch.permissions_for(user).manage_messages)
                 or (modrole and modrole in user.roles)
             )
 
+        check = check_guild
+
     else:
 
-        def check(reaction, user):
+        def check_dm(reaction, user) -> bool:
             return user == ctx.author and reaction.message.id == react_msg.id and reaction.emoji == emoji
+
+        check = check_dm
 
     with suppress(discord.Forbidden, discord.NotFound, discord.HTTPException):
         # Add the reaction to the message
@@ -230,7 +243,8 @@ async def offer_delete(ctx: Context, *to_delete, timeout=60):
         # Since the check was satisfied, the reaction is correct. Delete the messages, ignoring any exceptions
         deleted = False
         # First try to bulk delete if we have the permissions
-        if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
+        bulk_deletable = (discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread)
+        if ctx.guild and isinstance(ctx.ch, bulk_deletable) and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
             try:
                 await ctx.ch.delete_messages(to_delete)
                 deleted = True
@@ -320,6 +334,8 @@ def usage_embed(ctx: Context, custom_usage=None) -> discord.Embed:
             raise ValueError("Cannot extract usage from command with no usage field.")
         if usage_field[0].endswith("``"):
             value = "`{}`".format("`\n".join(usage_field[1].splitlines()))
+        else:
+            value = usage_field[1]
     else:
         value = custom_usage
     return discord.Embed(title="Usage", colour=discord.Color.red(), description=value)

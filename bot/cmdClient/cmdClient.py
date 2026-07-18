@@ -10,7 +10,7 @@ from bisect import bisect
 from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, override
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 if TYPE_CHECKING:
     from .Module import Module
@@ -29,6 +29,7 @@ LUATEXIT_ID = 871978350393065572
 
 class cmdClient(discord.Client):
     prefix: str | None
+    conf: Any
 
     baseModule: ClassVar[type[Module]] = Module
     default_module: ClassVar[Module | None]

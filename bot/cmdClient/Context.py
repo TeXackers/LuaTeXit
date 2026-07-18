@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypeVar, cast
 
 import discord
 from discord import (
@@ -9,12 +9,62 @@ from discord import (
 
 if TYPE_CHECKING:
     from asyncio import Task
-    from collections.abc import Awaitable, Callable
+
+    # Need these for pyright/pylance to work
+    from modules.Tex.core.tex_compile import (
+        make_plain_luatex,
+        make_plain_pdftex,
+        makeluatex,
+        makepythontex,
+        maketex,
+        makexetex,
+    )
+    from settings.ctx_guildsetting import get_guild_setting
+    from utils.ctx_addons import (
+        best_prefix,
+        clean_arg_str,
+        confirm_sent,
+        dm_reply,
+        embedreply,
+        format_usage,
+        live_reply,
+        log,
+        mail,
+        offer_delete,
+        run_in_shell,
+        safe_delete_msgs,
+        usage_embed,
+    )
+    from utils.interactive import (
+        ask,
+        listen_for,
+        multi_selector,
+        on_input,
+        pager,
+        pager_v2,
+        pager_v2_pages,
+        selector,
+    )
+    from utils.seekers import (
+        find_channel,
+        find_member,
+        find_message,
+        find_role,
+    )
 
     from .cmdClient import cmdClient
     from .Command import Command
 
 from .Layouts import DebugEmbedView, ErrorEmbedView
+
+
+class _Registrable(Protocol):
+    """only need name for lookups"""
+
+    __name__: str
+
+
+F = TypeVar("F", bound=_Registrable)
 
 
 class FlatContext(NamedTuple):
@@ -114,17 +164,59 @@ class Context:
         self.tasks: list[Task] = []
 
     @classmethod
-    def util(cls: type[Context], util_func: Callable[..., Awaitable | None]) -> None:
+    def util(cls: type[Context], util_func: F) -> F:
         """
         Decorator to make a utility function available as a Context instance method
         """
         setattr(cls, util_func.__name__, util_func)
+        return util_func
 
-    def __getattr__(self, name: str) -> Any:
-        """
-        Allow dynamic utility methods registered with Context.util to type-check cleanly.
-        """
-        raise AttributeError(name)
+    if TYPE_CHECKING:
+        # For function objects as class attributes (#27)
+        embedreply = embedreply
+        live_reply = live_reply
+        log = log
+        run_in_shell = run_in_shell
+        best_prefix = best_prefix
+        format_usage = format_usage
+        confirm_sent = confirm_sent
+        offer_delete = offer_delete
+        mail = mail
+        safe_delete_msgs = safe_delete_msgs
+        dm_reply = dm_reply
+        clean_arg_str = clean_arg_str
+        usage_embed = usage_embed
+
+        listen_for = listen_for
+        selector = selector
+        multi_selector = multi_selector
+        pager_v2_pages = pager_v2_pages
+        pager_v2 = pager_v2
+        pager = pager
+        on_input = on_input
+        ask = ask
+
+        find_role = find_role
+        find_channel = find_channel
+        find_member = find_member
+        find_message = find_message
+
+        maketex = maketex
+        makeluatex = makeluatex
+        makexetex = makexetex
+        make_plain_luatex = make_plain_luatex
+        make_plain_pdftex = make_plain_pdftex
+        makepythontex = makepythontex
+
+        get_guild_setting = get_guild_setting
+
+        # `reply`/`error_reply`/`traceback` are defined further down in this same file, so
+        # they can't be imported the same way (pyright can't forward-reference a same-file
+        # name from inside a class body) -- these three still need hand-written stubs, kept
+        # deliberately close to their real implementations below to limit drift.
+        async def reply(self, content: str | None = ..., **kwargs: Any) -> Message: ...
+        async def error_reply(self, error_str: str) -> Message | None: ...
+        async def traceback(self, helper_msg: str, error_str: str) -> Message | None: ...
 
     def flatten(self) -> FlatContext:
         """

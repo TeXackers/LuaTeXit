@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import suppress
 
 import discord
@@ -14,7 +14,13 @@ from .lib import paginate_list, split_text
 
 
 @Context.util
-async def listen_for(ctx: Context, allowed_input=None, timeout=120, lower=True, check=None):
+async def listen_for(
+    ctx: Context,
+    allowed_input: list | None = None,
+    timeout: int = 120,
+    lower: bool = True,
+    check_fn: Callable[[discord.Message], bool] | None = None,
+):
     """
     Listen for a one of a particular set of input strings,
     sent in the current channel by `ctx.author`.
@@ -24,12 +30,12 @@ async def listen_for(ctx: Context, allowed_input=None, timeout=120, lower=True, 
     ----------
     allowed_input: Union(List(str), None)
         List of strings to listen for.
-        Allowed to be `None` precisely when a `check` function is also supplied.
+        Allowed to be `None` precisely when a `check_fn` function is also supplied.
     timeout: int
         Number of seconds to wait before timing out.
     lower: bool
         Whether to shift the allowed and message strings to lowercase before checking.
-    check: Function(message) -> bool
+    check_fn: Function(message) -> bool
         Alternative custom check function.
 
     Returns: discord.Message
@@ -41,23 +47,25 @@ async def listen_for(ctx: Context, allowed_input=None, timeout=120, lower=True, 
         Raised when no messages matching the given criteria are detected in `timeout` seconds.
     """
     # Generate the check if it hasn't been provided
-    if not check:
+    if not check_fn:
         # Quick check the arguments are sane
         if not allowed_input:
-            raise ValueError("allowed_input and check cannot both be None")
+            raise ValueError("allowed_input and check_fn cannot both be None")
 
         # Force a lower on the allowed inputs
         allowed_input = [s.lower() for s in allowed_input]
 
         # Create the check function
-        def check(message: discord.Message) -> bool:
+        def _default_check(message: discord.Message) -> bool:
             result = message.author == ctx.author
             result = result and (message.channel == ctx.ch)
             return result and ((message.content.lower() if lower else message.content) in allowed_input)
 
+        check_fn = _default_check
+
     # Wait for a matching message, catch and transform the timeout
     try:
-        message = await ctx.client.wait_for("message", check=check, timeout=timeout)
+        message = await ctx.client.wait_for("message", check=check_fn, timeout=timeout)
     except asyncio.TimeoutError:
         raise ResponseTimedOut("Session timed out waiting for user response.") from None
 
@@ -65,7 +73,9 @@ async def listen_for(ctx: Context, allowed_input=None, timeout=120, lower=True, 
 
 
 @Context.util
-async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, allow_single=True):
+async def selector(
+    ctx: Context, header: str, select_from: list[str], timeout: int = 120, max_len: int = 20, allow_single: bool = True
+):
     """
     Interactive routine to prompt the `ctx.author` to select an item from a list.
     Returns the list index that was selected.
@@ -75,7 +85,7 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
     header: str
         String to put at the top of each page of selection options.
         Intended to be information about the list the user is selecting from.
-    select_from: List(str)
+    select_from: list[str]
         The list of strings to select from.
     timeout: int
         The number of seconds to wait before throwing `ResponseTimedOut`.
@@ -107,8 +117,8 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
 
     # Generate the selector pages
     footer = "Please type the number corresponding to your selection, or type `c` now to cancel."
-    list_pages = paginate_list(select_from, block_length=max_len)
-    pages = [f"{header}\n{page}\n{footer}" for page in list_pages]
+    list_pages: list[str] = paginate_list(select_from, block_length=max_len)
+    pages: list[str] = [f"{header}\n{page}\n{footer}" for page in list_pages]
 
     # Post the pages in a paged message
     out_msg = await ctx.pager(pages)
@@ -121,13 +131,9 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
         raise ResponseTimedOut("Selector timed out waiting for a response.") from None
 
     # Try and delete the selector message and the user response.
-    try:
+    with suppress(discord.NotFound, discord.Forbidden):
         await out_msg.delete()
         await result_msg.delete()
-    except discord.NotFound:
-        pass
-    except discord.Forbidden:
-        pass
 
     # Handle user cancellation
     if result_msg.content in ["c", "C"]:
@@ -138,7 +144,9 @@ async def selector(ctx: Context, header, select_from, timeout=120, max_len=20, a
 
 
 @Context.util
-async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len=20, allow_single=True):
+async def multi_selector(
+    ctx: Context, header: str, select_from: list[str], timeout: int = 120, max_len: int = 20, allow_single: bool = True
+):
     """
     Interactive routine to prompt the `ctx.author` to select multiple items from a list.
     Returns a list of list indices that were selected.
@@ -148,7 +156,7 @@ async def multi_selector(ctx: Context, header, select_from, timeout=120, max_len
     header: str
         String to put at the top of each page of selection options.
         Intended to be information about the list the user is selecting from.
-    select_from: List(str)
+    select_from: list[str]
         The list of strings to select from.
     timeout: int
         The number of seconds to wait before throwing `ResponseTimedOut`.
@@ -323,7 +331,7 @@ async def pager_v2(
 @Context.util
 async def pager(
     ctx: Context,
-    pages: list[str | discord.Embed],
+    pages: Sequence[str | discord.Embed],
     locked: bool = True,
     blocking: bool = False,
     destination: discord.abc.Messageable | None = None,
@@ -337,7 +345,7 @@ async def pager(
 
     Parameters
     ----------
-    pages: list[str | discord.Embed]
+    pages: Sequence[str | discord.Embed]
         A list of either strings or embeds to display as the pages.
     locked: bool
         Whether only the `ctx.author` should be able to use the paging reactions.
@@ -362,10 +370,11 @@ async def pager(
     sender = ctx.reply if destination is None or destination == ctx.ch else destination.send
 
     # Post first page. Method depends on whether the page is an embed or not.
-    if isinstance(pages[0], discord.Embed):
-        out_msg = await sender(embed=pages[start_page], **kwargs)
+    first_page = pages[start_page]
+    if isinstance(first_page, discord.Embed):
+        out_msg = await sender(embed=first_page, **kwargs)
     else:
-        out_msg = await sender(pages[start_page], **kwargs)
+        out_msg = await sender(first_page, **kwargs)
 
     # Run the paging loop if required
     if len(pages) > 1:
@@ -451,7 +460,9 @@ async def _safe_async_future(future):
 
 
 @Context.util
-async def on_input(ctx: Context, msg: str | discord.Message = None, delete_after: bool = True, timeout: int = 120):
+async def on_input(
+    ctx: Context, msg: str | discord.Message | None = None, delete_after: bool = True, timeout: int = 120
+):
     """
     Listen for a response in the current channel, from ctx.author.
     Returns the response from ctx.author, if it is provided.

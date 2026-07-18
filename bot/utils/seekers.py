@@ -124,7 +124,8 @@ async def find_role(
                             name=userstr,
                             reason=f"Interactive role creation for {ctx.author} (uid:{ctx.author.id})",
                         )
-                        await msg.delete()
+                        if msg is not None:
+                            await msg.delete()
                         await ctx.reply(f"You have created the role `{userstr}`!")
 
             # If we still don't have a role, cancel unless allow_notfound is set
@@ -185,8 +186,8 @@ async def find_channel(ctx: Context, userstr: str, interactive=False, collection
         collection = [chan for chan in collection if chan.type == chan_type]
 
     # If the user input was a number or possible channel mention, extract it
-    cid: str = userstr.strip("<#@&!>")
-    cid: int | None = int(cid) if cid.isdigit() else None
+    raw_cid: str = userstr.strip("<#@&!>")
+    cid: int | None = int(raw_cid) if raw_cid.isdigit() else None
     searchstr: str = userstr.lower()
 
     # Find the channel
@@ -342,7 +343,7 @@ async def find_message(
     ctx: Context,
     msgid: int,
     chlist: list[discord.TextChannel] | None = None,
-    ignore: list | None = None,
+    ignore: list[int] | None = None,
 ) -> discord.Message | None:
     """
     Searches for the given message id in the guild channels.
@@ -365,15 +366,19 @@ async def find_message(
     """
     if not ctx.guild:
         raise InvalidContext("Cannot use this seeker outside of a guild!")
+    if not isinstance(ctx.author, discord.Member):
+        raise InvalidContext("Cannot use this seeker without a guild member author!")
+    author = ctx.author
 
     msgid = int(msgid)
 
     # Build the channel list to search
     if chlist is None:
-        chlist = [ch for ch in ctx.guild.text_channels if ch.permissions_for(ctx.author).read_messages]
+        chlist = [ch for ch in ctx.guild.text_channels if ch.permissions_for(author).read_messages]
 
     # Remove any channels we are ignoring
-    chlist = [ch for ch in chlist if ch.id not in ignore]
+    if ignore is not None:
+        chlist = [ch for ch in chlist if ch.id not in ignore]
 
     tasks = set()
 

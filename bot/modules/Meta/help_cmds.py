@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import discord
 from cmdClient import Context  # noqa
 from constants import sorted_cats
-from utils.lib import prop_tabulate, tabulate
+from utils.lib import tabulate
 from wards import is_admin
 
 if TYPE_CHECKING:
@@ -127,12 +127,12 @@ async def cmd_help(ctx: Context):
         )
         sections.append("-# [optional] and <required> denote optional and required arguments, respectively.")
 
-        return await ctx.pager_v2("\n\n".join(sections), title=title, colour=discord.Colour(0x9B59B6))
+        return await ctx.pager_v2("\n".join(sections), title=title, colour=discord.Colour(0x9B59B6))
     return None
 
 
 @module.cmd("list", desc="Lists all my commands!", aliases=["ls"])
-async def cmd_list(ctx: Context) -> None:
+async def cmd_list(ctx: Context):
     """
     Usage``:
         {prefix}list [module]
@@ -196,7 +196,7 @@ async def cmd_list(ctx: Context) -> None:
             )
 
         # Build the stringy command tables, skipping modules with no visible commands
-        stringy_groups = []
+        sections = [help_str]
         for cat in filtered_modules:
             cmd_rows = [
                 (cmd.name, getattr(cmd, "desc", f"See `{await ctx.best_prefix()}help {cmd.name}`."), cmd)
@@ -205,52 +205,12 @@ async def cmd_list(ctx: Context) -> None:
             ]
             if not cmd_rows:
                 continue
-            props, values, commands = zip(*cmd_rows, strict=True)
-            table = prop_tabulate(props, values)
+            names, descs, commands = zip(*cmd_rows, strict=True)
+            table = tabulate(dict(zip(names, descs, strict=True)))
             table = "\n".join(
                 ("~~{}~~" if commands[i].disabled else "{}").format(line) for i, line in enumerate(table.splitlines())
             )
-            stringy_groups.append((cat, table))
+            sections.append(f"### {cat.name}\n{cat.description}\n{table}")
 
-        # Now put everything into embeds
-        help_embeds = []  # List of embed pages to respond with
-        current_page_fields = []  # Buffer list of current fields before making a page
-        current_page_len = 0  # Current length of the page being built
-        for cat, catstr in stringy_groups:
-            # Create new field
-            new_field = (cat.name, cat.description + "\n" + catstr)
-            if current_page_len + len(new_field[1]) > 1000:
-                # Flush to a new page
-                # Create the embed
-                embed = discord.Embed(description=help_str, colour=discord.Colour(0x9B59B6), title=help_title)
-                for name, field in current_page_fields:
-                    embed.add_field(name=name, value=field, inline=False)
-
-                # Add the embed to the pages list
-                help_embeds.append(embed)
-
-                # Flush page trackers
-                current_page_fields = []
-                current_page_len = 0
-
-            # Add to current page and continue
-            current_page_fields.append(new_field)
-            current_page_len += len(new_field[1])
-
-        # If there is anything left, add it as the last page
-        if current_page_fields:
-            # Create the embed
-            embed = discord.Embed(description=help_str, colour=discord.Colour(0x9B59B6), title=help_title)
-            for name, field in current_page_fields:
-                embed.add_field(name=name, value=field, inline=False)
-
-            # Add the embed to the pages list
-            help_embeds.append(embed)
-
-        # Add the page numbers
-        for i, embed in enumerate(help_embeds):
-            embed.set_footer(text=f"Page {i + 1}/{len(help_embeds)}")
-
-        # Send the embeds
-        return await ctx.offer_delete(await ctx.pager(help_embeds))
+        return await ctx.pager_v2("\n".join(sections), title=help_title, colour=discord.Colour(0x9B59B6))
     return None

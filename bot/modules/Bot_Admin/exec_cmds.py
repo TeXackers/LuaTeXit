@@ -2,11 +2,15 @@ import asyncio
 import sys
 import traceback
 from io import StringIO
+from typing import TYPE_CHECKING
 
 from cmdClient import Context  # noqa
 from wards import is_dev, is_owner
 
 from .module import bot_admin_module as module
+
+if TYPE_CHECKING:
+    from discord import Message
 
 """
 Exec level commands to manage the bot.
@@ -24,7 +28,7 @@ Commands provided:
 """
 
 
-async def _reply_code_result(ctx: Context, label: str, code: str, output: str, error: int) -> None:
+async def _reply_code_result(ctx: Context, label: str, code: str, output: str, error: int) -> Message:
     """
     Reply with the `code` that was run and its `output`.
 
@@ -42,7 +46,7 @@ async def _reply_code_result(ctx: Context, label: str, code: str, output: str, e
 
 @module.cmd("async", desc="Executes async code and displays the output.")
 @is_dev()
-async def cmd_async(ctx: Context) -> None:
+async def cmd_async(ctx: Context) -> Message | None:
     """
     Usage``:
         {prefix}async <code>
@@ -62,7 +66,7 @@ async def cmd_async(ctx: Context) -> None:
 
 @module.cmd("exec", desc="Executes python code using exec and displays the output.")
 @is_owner()
-async def cmd_exec(ctx: Context) -> None:
+async def cmd_exec(ctx: Context) -> Message | None:
     """
     Usage``:
         {prefix}exec <code>
@@ -75,12 +79,14 @@ async def cmd_exec(ctx: Context) -> None:
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _exec(ctx)
+    if not error and not output:
+        return None
     return await _reply_code_result(ctx, "Exec", ctx.arg_str, output, error)
 
 
 @module.cmd("eval", desc="Executes python code using eval and displays the output.", flags=["s"])
 @is_owner()
-async def cmd_eval(ctx: Context, flags) -> None:
+async def cmd_eval(ctx: Context, flags) -> Message | None:
     """
     Usage``:
         {prefix}eval <code> [-s]
@@ -95,6 +101,8 @@ async def cmd_eval(ctx: Context, flags) -> None:
         return await ctx.error_reply("You must give me something to run!")
 
     output, error = await _eval(ctx)
+    if not error and not output:
+        return None
     if not flags["s"] or error:
         return await _reply_code_result(ctx, "Eval", ctx.args, output, error)
     return None
@@ -102,7 +110,7 @@ async def cmd_eval(ctx: Context, flags) -> None:
 
 @module.cmd("shell", desc="Runs a command in the operating environment.")
 @is_owner()
-async def cmd_shell(ctx: Context) -> None:
+async def cmd_shell(ctx: Context) -> Message | None:
     """
     Usage``:
         {prefix}shell <command>

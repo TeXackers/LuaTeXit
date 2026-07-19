@@ -9,7 +9,7 @@ Specifically:
     Define the version table and check the current version matches.
 """
 
-REQUIRED_DATA_VERSION = 3
+REQUIRED_DATA_VERSION = 4
 
 
 # ------------------------------

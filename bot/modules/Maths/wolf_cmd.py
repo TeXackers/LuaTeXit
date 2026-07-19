@@ -10,7 +10,7 @@ from urllib import parse
 import aiohttp
 import discord
 from cmdClient import Context  # noqa
-from cmdClient.Format import bf
+from cmdClient.Format import bf, hyperlink
 from cmdClient.Layouts import Body, Footer, Header
 from constants import LuaTeXitCC
 from discord.ui import Container, MediaGallery, Separator
@@ -20,7 +20,8 @@ from .module import maths_module as module
 from .wolf_layouts import MORE_EMOJI, TeaserPagerView
 
 ENDPOINT = "http://api.wolframalpha.com/v2/query?"
-WEB = "https://www.wolframalpha.com/"
+SHORT_ENDPOINT = "http://api.wolframalpha.com/v1/result?"
+WOLFRAM_WEB = "https://www.wolframalpha.com/"
 
 DEFAULT_SEMATIC_LOCATION: str = parse.quote_plus("Melbourne, Australia")
 DEFAULT_LONGLAT: str = "-37.840935,144.946457"
@@ -41,13 +42,6 @@ APIErrorDesc = """
                This service is most likely unavailable.
                Please check Wolfram Alpha's website for status updates.
                """
-
-
-def build_web_url(query: str) -> str:
-    """
-    Returns the url for Wolfram Alpha search for this query.
-    """
-    return "{}input/?i={}".format(WEB, parse.quote_plus(query, safe=""))
 
 
 async def get_query(query: str, appid: str, **kwargs) -> dict | None:
@@ -89,6 +83,34 @@ async def get_query(query: str, appid: str, **kwargs) -> dict | None:
             raise WolframAPIError("Unable to establish connection with Wolfram Alpha's API at `get_query`", e) from None
 
 
+async def get_short_answer(query: str, appid: str) -> tuple[int, str]:
+    """
+    Fetches the provided query from Wolfram Alpha's Short Answers API.
+
+    Arguments:
+        query: The query to post.
+        appid: The Wolfram Appid to use in the query.
+    Returns:
+        A tuple of (http status, response body text). The body is only meaningful when the status is 200.
+    """
+    query_url: str = (
+        f"{SHORT_ENDPOINT}appid={appid}&i={parse.quote_plus(query)}"
+        "&units=metric"
+        f"&location={DEFAULT_SEMATIC_LOCATION}"
+        f"&longlat={DEFAULT_LONGLAT}"
+        f"&ip={DEFAULT_IP_ADDR}"
+    )
+
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(query_url) as r:
+                return r.status, await r.text()
+        except Exception as e:
+            raise WolframAPIError(
+                "Unable to establish connection with Wolfram Alpha's API at `get_short_answer`", e
+            ) from None
+
+
 async def _report_api_error(ctx: Context, e: WolframAPIError) -> None:
     """
     Log a WolframAPIError and report it to the user via the shared traceback layout.
@@ -105,19 +127,16 @@ RESULTS_HEADER = "Results from Wolfram Alpha Pro"
 TEASER_POD_COUNT = 2
 
 
-def _build_page(entries: list[tuple[str, str, int]], text: bool, footer_text: str, colour: discord.Colour) -> Container:
+def _build_page(entries: list[tuple[str, str, int]], footer_text: str, colour: discord.Colour) -> Container:
     container = Container(Header(RESULTS_HEADER, 3), Separator(), accent_colour=colour)
     for title, content, _ in entries:
         container.add_item(Body(bf(discord.utils.escape_mentions(title))))
-        if text:
-            container.add_item(Body(discord.utils.escape_mentions(content)))
-        else:
-            container.add_item(MediaGallery(discord.MediaGalleryItem(content)))
+        container.add_item(MediaGallery(discord.MediaGalleryItem(content)))
     container.add_item(Footer(footer_text))
     return container
 
 
-def build_pages(pods: list[dict], text: bool, footer_text: str, colour: discord.Colour) -> tuple[list[Container], int]:
+def build_pages(pods: list[dict], footer_text: str, colour: discord.Colour) -> tuple[list[Container], int]:
     """
     Flattens every pod into (title, content, pod_index) entries.
 
@@ -129,7 +148,7 @@ def build_pages(pods: list[dict], text: bool, footer_text: str, colour: discord.
     for i, pod in enumerate(pods):
         is_teaser_pod = i < TEASER_POD_COUNT
         for sub in (pod, *pod.get("subpods", [])):
-            content = sub.get("plaintext") if text else sub.get("img", {}).get("src")
+            content = sub.get("img", {}).get("src")
             if content:
                 title = sub.get("title") or pod["title"]
                 (teaser if is_teaser_pod else rest).append((title, content, i))
@@ -138,25 +157,86 @@ def build_pages(pods: list[dict], text: bool, footer_text: str, colour: discord.
     if teaser:
         chunks.insert(0, teaser)
 
-    pages = [_build_page(chunk, text, footer_text, colour) for chunk in chunks]
+    pages = [_build_page(chunk, footer_text, colour) for chunk in chunks]
     return pages, 0
 
 
+async def _reply_short_answer(ctx: Context, appid: str, custom_appid: bool, prefix: str):
+    """
+    Fetches and replies with a plain-text answer from Wolfram Alpha's Short Answers API.
+    """
+    t_start = time.monotonic()
+    async with ctx.ch.typing():
+        try:
+            status, answer = await get_short_answer(ctx.args, appid)
+        except WolframAPIError as e:
+            return await _report_api_error(ctx, e)
+        except Exception:
+            try:
+                status, answer = await get_short_answer(
+                    ctx.args, ctx.client.conf.get("WOLFRAM_API_SHORTANSWERS").strip()
+                )
+            except WolframAPIError as e:
+                return await _report_api_error(ctx, e)
+            except Exception:
+                return await ctx.error_reply(
+                    "An unknown exception occurred while fetching the Wolfram Alpha query!\n"
+                    "If the problem persists please contact support.",
+                )
+    t_query = time.monotonic()
+    ctx.log(f"Wolfram Alpha responded in {t_query - t_start:.2f}s.", level=logging.DEBUG)
+
+    if status == 403:
+        if custom_appid:
+            desc = (
+                "Couldn't send your query!\n"
+                "**Error:** Invalid Wolfram Alpha `AppID`!\n"
+                "Please ask a guild admin to re-configure the `wolfram_short_id`.\n"
+                f"(See `{prefix}config wolfram_short_id` for more information.)"
+            )
+        else:
+            desc = (
+                "There was an unhandled error querying the WolframAlpha API!\n"
+                "This should be fixed soon, but if the issue persists, please contact "
+                "[our support team]({})."
+            ).format(ctx.client.app_info["support_guild"])
+        return await ctx.error_reply(desc)
+    if status != 200 or not answer.strip():
+        return await ctx.error_reply(
+            "Wolfram Alpha doesn't have a short answer for your query.\n"
+            f"Try `{prefix}wa {ctx.args} --full` for the full result, or rephrase your question.",
+        )
+
+    message = await ctx.reply(
+        f"```\n{discord.utils.escape_mentions(answer.replace('  ', ' ').strip())}\n```",
+        reference=ctx.msg.to_reference(),
+        allowed_mentions=discord.AllowedMentions.none(),
+    )
+    t_sent = time.monotonic()
+    ctx.log(
+        f"Sent reply in {t_sent - t_query:.2f}s (total {t_sent - t_start:.2f}s).",
+        level=logging.DEBUG,
+    )
+    return message
+
+
 @module.cmd(
-    "query",
-    desc=f"Query the [Wolfram Alpha computation engine]({WEB}).",
-    flags=["text", "t"],
-    aliases=["ask", "wolf", "wa", "?w"],
+    "wolframalpha",
+    desc=f"Query the [Wolfram Alpha computation engine]({WOLFRAM_WEB}).",
+    flags=["full", "f"],
+    aliases=["wa"],
 )
 async def cmd_query(ctx: Context, flags: dict):
     """
     Usage``:
-        {prefix}ask [query] [--text/-t]
+        {prefix}wa [query] [--full/-f]
     Description:
         Sends the query to the Wolfram Alpha computational engine and returns the result.
+        By default this returns a quick short answer; pass `--full` for the full,
+        multi-pod result with images.
         The reply opens on the top result; press the button to browse the rest.
     Flags::
-        text, t: Respond with copyable text instead of images, where possible.
+        full, f: Fetch the full, multi-pod result instead of the short answer.
     """
     # Hack to disallow `w` being used with no space
     if ctx.alias == "w":
@@ -165,20 +245,26 @@ async def cmd_query(ctx: Context, flags: dict):
             return None
 
     prefix = await ctx.best_prefix()
-    text = flags["text"] or flags["t"]
+    full = flags["full"] or flags["f"]
 
     # Handle no arguments
     if not ctx.args:
         return await ctx.error_reply(
-            f"Please submit a valid query! For example, `{prefix}ask differentiate x+y^2 with respect to x`.",
+            f"Please submit a valid query! For example, `{prefix}wa differentiate x+y^2 with respect to x`.",
         )
 
-    appid = ctx.get_guild_setting.wolfram_id.value if ctx.guild else None
+    if ctx.guild:
+        appid = ctx.get_guild_setting.wolfram_id.value if full else ctx.get_guild_setting.wolfram_short_id.value
+    else:
+        appid = None
     if appid:
         custom_appid = True
     else:
         custom_appid = False
-        appid = ctx.client.conf.get("wolfram_id").strip()
+        appid = ctx.client.conf.get("WOLFRAM_API_FULLRESULT" if full else "WOLFRAM_API_SHORTANSWERS").strip()
+
+    if not full:
+        return await _reply_short_answer(ctx, appid, custom_appid, prefix)
 
     # Query the API, handle errors
     t_start = time.monotonic()
@@ -189,7 +275,7 @@ async def cmd_query(ctx: Context, flags: dict):
             return await _report_api_error(ctx, e)
         except Exception:
             try:
-                result = await get_query(ctx.args, ctx.client.conf.get("WOLFRAM_ID").strip())
+                result = await get_query(ctx.args, ctx.client.conf.get("WOLFRAM_API_FULLRESULT").strip())
             except WolframAPIError as e:
                 return await _report_api_error(ctx, e)
             except Exception:
@@ -219,7 +305,7 @@ async def cmd_query(ctx: Context, flags: dict):
                         "Couldn't send your query!\n"
                         "**Error:** Invalid Wolfram Alpha `AppID`!\n"
                         "Please ask a guild admin to re-configure the `wolfram_id`.\n"
-                        f"(See `{prefix}config wofram_id` for more information.)"
+                        f"(See `{prefix}config wolfram_id` for more information.)"
                     )
                 else:
                     desc = ("An unknown error occurred querying the WolframAlpha API!\n**ERROR:** {}\t{}").format(
@@ -237,17 +323,13 @@ async def cmd_query(ctx: Context, flags: dict):
         return await ctx.error_reply(desc)
 
     pods = queryresult["pods"]
-    footer_text = f"Requested by {ctx.author}"
-    pages, start_page = build_pages(pods, text, footer_text, discord.Colour.from_str("#DD1100"))
+    footer_text = f"Requested by {ctx.author} | {hyperlink('View on Wolfram Alpha', f'{WOLFRAM_WEB}input/?i={parse.quote_plus(ctx.args, safe='')}')}"
+    pages, start_page = build_pages(pods, footer_text, discord.Colour.from_str("#DD1100"))
     t_built = time.monotonic()
     ctx.log(f"Built {len(pages)} page(s) in {t_built - t_query:.2f}s.", level=logging.DEBUG)
 
     if not pages:
-        return await ctx.error_reply(
-            "This result doesn't have any copyable text to show.\nTry again without `--text`/`-t` to see it as images."
-            if text
-            else "This result doesn't have any content to show.",
-        )
+        return await ctx.error_reply("This result doesn't have any content to show.")
 
     more_emoji = ctx.client.conf.emojis.getemoji("more", MORE_EMOJI)
     message = await ctx.pager_v2_pages(

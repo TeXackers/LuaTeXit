@@ -107,7 +107,7 @@ async def cmd_config(ctx: Context):
     elif len(params) == 1:
         # Assume argument is an option, display option information
         option = settings[params[0]].get(ctx.client, ctx.guild.id)
-        embed = option.med if (option.read_check is None) or await option.read_check.run(ctx) else option.hidden_med
+        embed = option.embed if (option.read_check is None) or await option.read_check.run(ctx) else option.hidden_embed
         await ctx.reply(embed=embed)
     else:
         # Handle setting an option

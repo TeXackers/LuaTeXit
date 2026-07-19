@@ -84,9 +84,9 @@ async def live_log(message, context, level):
         blocks = split_text(message, blocksize=1900, code=False) if len(message) > 1900 else [message]
 
         if len(blocks) > 1:
-            blocks = [f"```\n{header}[{i + 1}/{len(blocks)}]\n{block}\n```" for i, block in enumerate(blocks)]
+            blocks = [f"```ini\n{header}[{i + 1}/{len(blocks)}]\n{block}\n```" for i, block in enumerate(blocks)]
         else:
-            blocks = [f"```\n{header}\n{blocks[0]}\n```"]
+            blocks = [f"```ini\n{header}\n{blocks[0]}\n```"]
 
         # Post the log messages
         if log_chid:

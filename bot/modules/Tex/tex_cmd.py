@@ -44,18 +44,13 @@ async def cmd_tex(ctx: Context, flags: dict):
         {prefix}tikz <code>
 
     Description:
-        Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code.\
-            For a quick introduction to using LaTeX, see one of the resources linked below.
+        Compiles and displays [LaTeX](https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes) document code. For a quick introduction to using LaTeX, see one of the resources linked below.
 
-        The output is extensively configurable, see `{prefix}help texconfig` \
-            for more information about the possible configuration options.
+        The output is extensively configurable, see `{prefix}help texconfig` for more information about the possible configuration options.
 
-        LaTeX macros and packages may also be used in this command via \
-            inclusion into the *preamble*, see `{prefix}help preamble` for more information.
+        LaTeX macros and packages may also be used in this command via inclusion into the *preamble*, see `{prefix}help preamble` for more information.
 
-        If a guild or user has *latex recognition* enabled (see `{prefix}config latex` and `{prefix}help autotex`), \
-            messages containing LaTeX will automatically be compiled and this command \
-            is generally not required.
+        If a guild or user has *latex recognition* enabled (see `{prefix}config latex` and `{prefix}help autotex`), messages containing LaTeX will automatically be compiled and this command is generally not required.
     Aliases::
         luatex: Code is compiled using LuaLaTeX.
         pdftex: Code is compiled using pdfLaTeX.

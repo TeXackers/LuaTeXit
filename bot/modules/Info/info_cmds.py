@@ -3,7 +3,7 @@ from typing import cast
 
 import discord
 from cmdClient import Context  # noqa
-from cmdClient.Format import emph
+from cmdClient.Format import it
 from cmdClient.Layouts import Body, Footer, Header, SectionWithThumbnail, TextEmbed
 from constants import LuaTeXitCC
 from discord import Guild, Member, User
@@ -176,11 +176,11 @@ async def cmd_roleinfo(ctx: Context):
     diff_str = ""
     if guild.default_role != author.top_role:
         if role > author.top_role:
-            diff_str = f"(This role is {emph('above')} your highest role)"
+            diff_str = f"(This role is {it('above')} your highest role)"
         elif role < author.top_role:
-            diff_str = f"(This role is {emph('below')} your highest role.)"
+            diff_str = f"(This role is {it('below')} your highest role.)"
         elif role == author.top_role:
-            diff_str = f"(This is your {emph('highest')} role.)"
+            diff_str = f"(This is your {it('highest')} role.)"
     else:
         diff_str = "(This is the default role for the guild.)"
 

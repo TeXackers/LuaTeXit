@@ -6,6 +6,8 @@ exclude = [
     "bot/cmdClient/__init__.py", # order-sensitive
     "bot/modules/Tex/__init__.py", # order-sensitive
     "bot/modules/Tex/core/__init__.py", # order-sensitive
+    "bot/modules/Typst/__init__.py", # order-sensitive
+    "bot/modules/Typst/core/__init__.py", # order-sensitive
     "bot/settings/__init__.py", # order-sensitive
     "tests/conftest.py", # order-sensitive
     # low-priority

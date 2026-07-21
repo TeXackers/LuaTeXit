@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         maketex,
         makexetex,
     )
+    from modules.Typst.core.typst_compile import maketypst
     from settings.ctx_guildsetting import get_guild_setting
     from utils.ctx_addons import (
         best_prefix,
@@ -207,6 +208,7 @@ class Context:
         make_plain_luatex = make_plain_luatex
         make_plain_pdftex = make_plain_pdftex
         makepythontex = makepythontex
+        maketypst = maketypst
 
         get_guild_setting = get_guild_setting
 

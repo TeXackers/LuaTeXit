@@ -36,29 +36,32 @@ def gencolour(bgcolour: str, textcolour: str) -> str:
     return rf"pagecolor={bgcolour}, textcolor={textcolour}"
 
 
-# Dictionary of valid colours and the associated transformation commands
-colourschemes: dict = {
-    "default": gencolour("ffffff", "000000"),
+# Pairs for each named colourscheme
+colourscheme_hex: dict[str, tuple[str, str]] = {
+    "default": ("ffffff", "000000"),
     # New Discord UI colours (in HEX)
-    "light": gencolour("dfdfdf", "1d1d1d"),
-    "ash": gencolour("323339", "DFDFDF"),
-    "dark": gencolour("1A1A1E", "DFDFDF"),
-    "onyx": gencolour("070709", "ffffff"),
-    "white": gencolour("ffffff", "000000"),
+    "light": ("dfdfdf", "1d1d1d"),
+    "ash": ("323339", "DFDFDF"),
+    "dark": ("1A1A1E", "DFDFDF"),
+    "onyx": ("070709", "ffffff"),
+    "white": ("ffffff", "000000"),
     # Trans colours
-    "transparent": gencolour("trans", "ffffff"),
-    "trans_white": gencolour("trans", "ffffff"),
-    "trans_black": gencolour("trans", "000000"),
+    "transparent": ("trans", "ffffff"),
+    "trans_white": ("trans", "ffffff"),
+    "trans_black": ("trans", "000000"),
 }
 
-# add alias names to colourschemes
-colourschemes.update(
+# add alias names to colourscheme_hex
+colourscheme_hex.update(
     {
-        "grey": colourschemes["ash"],  # ash
-        "darkgrey": colourschemes["dark"],  # dark
-        "black": colourschemes["onyx"],  # onyx
+        "grey": colourscheme_hex["ash"],  # ash
+        "darkgrey": colourscheme_hex["dark"],  # dark
+        "black": colourscheme_hex["onyx"],  # onyx
     },
 )
+
+# Dictionary of valid colours and the associated LaTeX transformation commands
+colourschemes: dict = {name: gencolour(*hexes) for name, hexes in colourscheme_hex.items()}
 
 # Header for every LaTeX source file
 header: str = r"""

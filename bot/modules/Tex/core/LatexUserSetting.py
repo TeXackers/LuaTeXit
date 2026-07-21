@@ -1,10 +1,10 @@
-from typing import ClassVar
+from typing import ClassVar, override
 
 import discord
 from cmdClient import Context, cmdClient  # noqa
 from constants import LuaTeXitCC
 from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
-from utils.lib import prop_tabulate
+from utils.lib import prop_tabulate, tabulate
 
 from .tex_utils import AutoTexLevel, TexNameStyle
 
@@ -42,10 +42,13 @@ class LatexUserSetting(SettingType):
     # The upsert constraint
     _upsert_constraint = "userid"
 
+    # Other user-data caches to refresh when a setting on this table changes (in addition to `LatexUser`)
+    _linked_user_caches: ClassVar[list] = []
+
     @classmethod
     def save(cls, client, userid, data):
         """
-        Uses the appropriate tableInterface to save the data, then refreshes the cached `LatexUser` so as to not serve stale settings.
+        Uses the appropriate tableInterface to save the data, then refreshes the cached `LatexUser` (and any linked user caches, see `_linked_user_caches`) so as to not serve stale settings.
         """
         params = {"userid": userid, cls._data_column: data}
 
@@ -56,6 +59,10 @@ class LatexUserSetting(SettingType):
 
         if userid in LatexUser.cached_users:
             LatexUser.cached_users[userid].load()
+
+        for other_cache_cls in cls._linked_user_caches:
+            if userid in other_cache_cls.cached_users:
+                other_cache_cls.cached_users[userid].load()
 
     @classmethod
     def response(cls, ctx, new_data):
@@ -167,7 +174,7 @@ class keepsourcefor(LatexUserSetting, Integer):
 
 
 class colour(LatexUserSetting, String):
-    desc = "Your LaTeX colourscheme."
+    desc = "Your colourscheme."
     name = "colour"
     accepts = "One of the colourschemes listed below."
 
@@ -180,7 +187,7 @@ class colour(LatexUserSetting, String):
         "transparent": "Transparent background, with white text.",
         "trans_black": "Transparent background, with black text.",
     }
-    tabled_colourschemes = prop_tabulate(list(colourschemes.keys()), list(colourschemes.values()))
+    tabled_colourschemes = tabulate(colourschemes)
 
     default = "white"
     _options = set(colourschemes.keys()) | {"grey", "gray", "trans_white", "darkgrey", "darkgray", "black", "default"}
@@ -263,7 +270,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
 
     default = TexNameStyle.NICKNAME.value
     _enum = TexNameStyle
-    _parsing_failed_response = f"Unknown namestyle `{{userstr}}`. Valid namestyles:\n{prop_tabulate(list(namestyles.keys()), list(namestyles.values()))}"
+    _parsing_failed_response = f"Unknown namestyle `{{userstr}}`. Valid namestyles:\n{tabulate(namestyles)}"
 
     _data_column = "namestyle"
 
@@ -289,7 +296,7 @@ class namestyle(LatexUserSetting, IntegerEnum):
         embed = super().info_embed(ctx, data)
         props = cls.namestyles.keys()
         values = [val.format(ctx=ctx) for val in cls.namestyles.values()]
-        embed.add_field(name="Name styles", value=prop_tabulate(props, values))
+        embed.add_field(name="Name styles", value=tabulate(dict(zip(props, values, strict=True))))
         return embed
 
 
@@ -303,7 +310,7 @@ class autotex_level(LatexUserSetting, IntegerEnum):
         "STRICT": r"Also recognise environments, `$$...$$`, `\(...\)` and `\[...\]`.",
         "WEAK": r"Also recognise paired single dollars, i.e. `$...$`, but not `\$...\$`",
     }
-    tabled_levels = prop_tabulate(list(tex_levels.keys()), list(tex_levels.values()))
+    tabled_levels = tabulate(tex_levels)
 
     default = AutoTexLevel.WEAK
     _enum = AutoTexLevel

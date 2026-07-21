@@ -27,8 +27,19 @@ async def run_fc_list(*args: str) -> tuple[bytes, bytes]:
 
 @async_ttl_cache(days=7)
 async def run_typst_fonts() -> tuple[bytes, bytes]:
-    """Run `typst fonts`, caching the result since installed fonts rarely change."""
-    proc = await asyncio.create_subprocess_exec("typst", "fonts", stdout=PIPE, stderr=PIPE)
+    """
+    Run `typst fonts` for caching purposes.
+
+    Excludes fonts embedded in the `typst` binary itself.
+    """
+    proc = await asyncio.create_subprocess_exec("typst", "fonts", "--ignore-embedded-fonts", stdout=PIPE, stderr=PIPE)
+    return await proc.communicate()
+
+
+@async_ttl_cache(days=7)
+async def run_fc_match(*args: str) -> tuple[bytes, bytes]:
+    """Run `fc-match <args>` for caching purposes."""
+    proc = await asyncio.create_subprocess_exec("fc-match", *args, stdout=PIPE, stderr=PIPE)
     return await proc.communicate()
 
 

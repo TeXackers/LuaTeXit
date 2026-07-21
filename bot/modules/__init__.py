@@ -1,5 +1,6 @@
 from .Bot_Admin import *
 from .Custom import *
+from .Fonts import *
 from .Fun import *
 from .Github import *
 from .Guild_Admin import *

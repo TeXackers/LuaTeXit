@@ -1,17 +1,13 @@
-import asyncio
 import random
 import re
 import urllib.parse
-from asyncio.subprocess import PIPE
 
 import discord
 from aiohttp import ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
 from cmdClient import Context  # noqa
-from cmdClient.Format import bf, footnote
 from cmdClient.Layouts import TextEmbed
-from iso639 import Language, LanguageNotFoundError
 from utils.cache import async_ttl_cache
 from utils.interactive import get_application_emoji_by_name
 from utils.lib import tabulate
@@ -28,13 +24,6 @@ lion_url: str = "https://ctan.org/lion/files/ctan_lion_350x350.png"
 bend_url: str = "https://cdn.discordapp.com/attachments/1043075521476579398/1043077445911322624/dangerous-bend.png"
 
 thumbnails = [lion_url, bend_url]
-
-
-@async_ttl_cache(days=7)
-async def run_fc_list(*args: str) -> tuple[bytes, bytes]:
-    """Run `fc-list <args>`, caching the result since installed fonts rarely change."""
-    proc = await asyncio.create_subprocess_exec("fc-list", *args, stdout=PIPE, stderr=PIPE)
-    return await proc.communicate()
 
 
 @async_ttl_cache(days=7)
@@ -369,169 +358,3 @@ async def cmd_ctan(ctx: Context):
     )
 
     return await out_msg.edit(content="", view=v)
-
-
-def glyph_or_unicode(arg: str) -> list[str] | None:
-    """
-    Purpose: Making four or five digit to be used in `:charset` for fc-list.
-
-    Parse the input and determine if it is a unicode or a glyph.
-    If it's a glyph, then convert it to its unicode hex value.
-    The final output is a string containing a four (preferred) or five-letter unicode hex value.
-    Remove any U+ as fontconfig doesn't need it.
-    """
-    if not arg:
-        raise ValueError("Argument cannot be empty.")
-
-    # if space or comma in arg, split it
-    if "," in arg:
-        argstack: list[str] = arg.split(",")
-    else:
-        argstack: list[str] = [arg]
-    output: list[str] = []
-
-    for a in argstack:
-        a = a.strip().lower().lstrip("u+")
-
-        # User enters glyph(s)
-        if len(a) == 1:
-            # It's a glyph
-            output.append(f"{ord(a):05x}")
-
-        # User enters unicode(s)
-        elif len(a) > 1:
-            a_test = f"{a:0>5}"
-            # Is it unicode? Each letter must be between 0-9 or a-f
-            if all(c in "0123456789abcdef" for c in a_test):
-                # also ensure that the hex value is no greater than 1FA6D
-                if int(a_test, 16) <= 0x1FA6D:
-                    output.append(a_test)
-                else:
-                    output.append(None)
-            else:
-                output.append(None)
-        else:
-            output.append(None)
-
-    return [o for o in output if o is not None]
-
-
-def clean_md(text: str) -> str:
-    """
-    Cleans up markdown text by removing unnecessary whitespace and formatting.
-    """
-    if not text:
-        return ""
-    # remove all markdown formatting things, i.e. <>!@#$%^&*()_+-=~`[]{}|;:'",.<>?/
-    text = re.sub(r"[<>!@#$%^&*()_+\-=\~`[\]{}|;:'\",.<>?/]", "", text)
-    # remove all whitespace characters, i.e. \n, \r, \t, space
-    text = re.sub(r"[\n\r\t ]+", " ", text)
-    return text.strip()
-
-
-@module.cmd(
-    "findfont",
-    desc="Looks for fonts supporting a given argument",
-    aliases=["fc"],
-    flags=["char==", "lang==", "name=="],
-)
-async def cmd_findfont(ctx: Context, flags: dict):
-    """
-    Usage``:
-        {prefix}findfont <feature>
-    Description:
-        Search for fonts in LuaTeXit's system for a given feature or features.
-    Examples``:
-        {prefix}findfont --lang <iso639 | name>
-        {prefix}findfont --char <unicode hex code | glyph(s)>
-        {prefix}findfont --name <pattern>
-    """
-    fclist_chars: str = ""
-    fclist_lang: str = ""
-    params_dict: dict = {"query": None, "type": None}
-    loading = await get_application_emoji_by_name(ctx.client, "loading")
-    out_msg = await ctx.reply(f"Searching for fonts, please wait... {loading}")
-
-    if flags["char"]:
-        cleaned_chars = ",".join(clean_md(part) for part in flags["char"].split(","))
-        requested_chars = glyph_or_unicode(cleaned_chars)
-        if not requested_chars:
-            await out_msg.delete()
-            return await ctx.error_reply("Invalid unicode or glyph(s).")
-        if len(requested_chars) > 1:
-            fclist_chars = ":charset=" + ",".join(requested_chars)
-            params_dict["Characters"] = ", ".join(requested_chars)
-        elif len(requested_chars) == 1:
-            fclist_chars = ":charset=" + str(requested_chars[0])
-            params_dict["Characters"] = str(requested_chars[0])
-        else:
-            await out_msg.delete()
-            ctx.log(f"Requested characters: {requested_chars}", context="findfont")
-            return await ctx.error_reply("Something went wrong while processing the characters.")
-
-        params_dict["query"] = cleaned_chars
-        params_dict["type"] = "character" if len(requested_chars) == 1 else "characters"
-
-    if flags["lang"]:
-        requested_language: Language
-        if len(flags["lang"]) > 3:
-            try:
-                requested_language = Language.match(clean_md(flags["lang"]).capitalize())
-            except LanguageNotFoundError:
-                await out_msg.delete()
-                return await ctx.error_reply("Invalid language code.")
-        else:
-            try:
-                requested_language = Language.match(clean_md(flags["lang"]).lower())
-            except LanguageNotFoundError:
-                await out_msg.delete()
-                return await ctx.error_reply("Invalid language code.")
-
-        params_dict["query"] = requested_language.name
-        params_dict["type"] = "language"
-
-        fclist_lang: str = ":lang=" + str(requested_language.part1 or requested_language.part2t)
-
-    fc_out, fc_err = await run_fc_list(f"{fclist_chars}{fclist_lang}", ":", "family")
-
-    # Error out early
-    if fc_err:
-        await out_msg.delete()
-        return await ctx.error_reply(f"{fc_err.decode('utf-8')}")
-
-    fc_out = fc_out.decode("utf-8").split("\n")
-
-    if not fc_out:
-        await out_msg.delete()
-        return await ctx.error_reply("No fonts found.")
-
-    # Remove fonts that start with `.`
-    fc_out_preprocessed = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
-    # Split by `,` and only grab the first element
-    fc_out_preprocessed = [line.split(",")[0].strip() for line in fc_out_preprocessed]
-
-    if flags["name"]:
-        params_dict["query"] = clean_md(flags["name"])
-        params_dict["type"] = "name"
-        fc_out_preprocessed = [
-            f.title() for f in [f.lower() for f in fc_out_preprocessed] if clean_md(flags["name"]).lower() in f
-        ]
-        if not fc_out_preprocessed:
-            await out_msg.delete()
-            return await ctx.error_reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
-
-    fc_out_sorted: list[str] = sorted(set(fc_out_preprocessed))
-    fc_out: list[str] = [f for f in fc_out_sorted if f]
-    footnote_text = (
-        f"searching for {bf(params_dict['query'])} by {bf(params_dict['type'])}"
-        if params_dict["query"] and params_dict["type"]
-        else "Showing all fonts"
-    )
-    title_text = (
-        f"Font query ({len(fc_out)} results)\n{footnote(footnote_text)}"
-        if flags
-        else f"Font query ({len(fc_out)} results)"
-    )
-
-    await out_msg.delete()
-    return await ctx.pager_v2(content=fc_out, title=title_text, code=True, maxheight=25)

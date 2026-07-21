@@ -274,6 +274,7 @@ async def pager_v2_pages(
     pages: Iterable[Container],
     view_cls: type[PagerView] = PagerView,
     view_kwargs: dict | None = None,
+    files: Sequence[discord.File] | None = None,
 ):
     """
     Reply to `ctx` with a pre-built sequence of `Container` pages,
@@ -293,6 +294,12 @@ async def pager_v2_pages(
         The `PagerView` subclass to render, for callers that need extra buttons/behaviour.
     view_kwargs: dict | None
         Extra keyword arguments to pass through to `view_cls`.
+    files: Sequence[discord.File] | None
+        Attachments referenced (via `attachment://<filename>`) by any of the pages,
+        e.g. images the caller downloaded so they persist as Discord attachments
+        instead of hotlinking an external URL. Uploaded once with the initial reply,
+        and stay available to every page since later/earlier page switches only swap
+        the view rather than re-sending attachments.
     Returns: discord.Message
         The message the pager was sent in.
     """
@@ -308,7 +315,7 @@ async def pager_v2_pages(
         right_emoji=right_emoji,
         **(view_kwargs or {}),
     )
-    message = await ctx.reply(view=view)
+    message = await ctx.reply(view=view, files=list(files) if files else None)
     view.message = message
     return message
 

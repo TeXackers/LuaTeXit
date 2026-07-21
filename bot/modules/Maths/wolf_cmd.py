@@ -17,6 +17,7 @@ from cmdClient.Layouts import Body, Footer, Header
 from discord import Colour, File, MediaGalleryItem
 from discord.ui import Container, MediaGallery, Separator
 
+from . import wolf_data
 from .module import maths_module as module
 from .wolf_layouts import MORE_EMOJI, TeaserPagerView
 
@@ -226,7 +227,7 @@ async def _reply_short_answer(ctx: Context, appid: str, custom_appid: bool, pref
                     "If the problem persists please contact support.",
                 )
     t_query = time.monotonic()
-    ctx.log(f"Wolfram Alpha responded in {t_query - t_start:.2f}s.", level=logging.DEBUG)
+    ctx.log(f"Wolfram Alpha responded in {t_query - t_start:.3f}s.", level=logging.DEBUG)
 
     if status == 403:
         if custom_appid:
@@ -256,7 +257,7 @@ async def _reply_short_answer(ctx: Context, appid: str, custom_appid: bool, pref
     )
     t_sent = time.monotonic()
     ctx.log(
-        f"Sent reply in {t_sent - t_query:.2f}s (total {t_sent - t_start:.2f}s).",
+        f"Sent reply in {t_sent - t_query:.3f}s (total {t_sent - t_start:.3f}s).",
         level=logging.DEBUG,
     )
     return message
@@ -326,7 +327,7 @@ async def cmd_query(ctx: Context, flags: dict):
                     "If the problem persists please contact support.",
                 )
     t_query = time.monotonic()
-    ctx.log(f"Wolfram Alpha responded in {t_query - t_start:.2f}s.", level=logging.DEBUG)
+    ctx.log(f"Wolfram Alpha responded in {t_query - t_start:.3f}s.", level=logging.DEBUG)
 
     if not result:
         return await ctx.error_reply(
@@ -368,7 +369,7 @@ async def cmd_query(ctx: Context, flags: dict):
     footer_text = f"Requested by {ctx.author} | {hyperlink('View on Wolfram Alpha', f'{WOLFRAM_WEB}input/?i={parse.quote_plus(ctx.args, safe='')}')}"
     pages, start_page, attachments = await build_pages(pods, footer_text, Colour.from_str("#DD1100"))
     t_built = time.monotonic()
-    ctx.log(f"Built {len(pages)} page(s) in {t_built - t_query:.2f}s.", level=logging.DEBUG)
+    ctx.log(f"Built {len(pages)} page(s) in {t_built - t_query:.3f}s.", level=logging.DEBUG)
 
     if not pages:
         return await ctx.error_reply("This result doesn't have any content to show.")
@@ -382,7 +383,7 @@ async def cmd_query(ctx: Context, flags: dict):
     )
     t_sent = time.monotonic()
     ctx.log(
-        f"Sent reply in {t_sent - t_built:.2f}s (total {t_sent - t_start:.2f}s).",
+        f"Sent reply in {t_sent - t_built:.3f}s (total {t_sent - t_start:.3f}s).",
         level=logging.DEBUG,
     )
     return message

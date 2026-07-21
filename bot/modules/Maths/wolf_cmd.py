@@ -2,9 +2,11 @@
 Wolfram Alpha command implementation.
 """
 
+import asyncio
 import json
 import logging
 import time
+from io import BytesIO
 from urllib import parse
 
 import aiohttp
@@ -12,10 +14,9 @@ import discord
 from cmdClient import Context  # noqa
 from cmdClient.Format import bf, hyperlink
 from cmdClient.Layouts import Body, Footer, Header
-from constants import LuaTeXitCC
+from discord import Colour, File, MediaGalleryItem
 from discord.ui import Container, MediaGallery, Separator
 
-from . import wolf_data
 from .module import maths_module as module
 from .wolf_layouts import MORE_EMOJI, TeaserPagerView
 
@@ -125,23 +126,52 @@ async def _report_api_error(ctx: Context, e: WolframAPIError) -> None:
 MAX_ENTRIES_PER_PAGE = 5
 RESULTS_HEADER = "Results from Wolfram Alpha Pro"
 TEASER_POD_COUNT = 2
+MAX_ATTACHED_IMAGES = 10
 
 
-def _build_page(entries: list[tuple[str, str, int]], footer_text: str, colour: discord.Colour) -> Container:
+async def _fetch_image_file(session: aiohttp.ClientSession, url: str, filename: str) -> File | None:
+    """
+    Downloads `url` and wraps it as a `File` so it can be re-hosted as a Discord attachment, since Wolfram's own image URLs expire and eventually show as broken.
+    Returns None on any failure, so the caller can fall back to the original URL.
+    """
+    try:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.read()
+    except Exception:
+        return None
+    return File(BytesIO(data), filename=filename)
+
+
+def _build_page(
+    entries: list[tuple[str, str, int]],
+    footer_text: str,
+    colour: Colour,
+    files_by_url: dict[str, File],
+) -> Container:
     container = Container(Header(RESULTS_HEADER, 3), Separator(), accent_colour=colour)
     for title, content, _ in entries:
         container.add_item(Body(bf(discord.utils.escape_mentions(title))))
-        container.add_item(MediaGallery(discord.MediaGalleryItem(content)))
+        media = files_by_url.get(content, content)
+        container.add_item(MediaGallery(MediaGalleryItem(media)))
     container.add_item(Footer(footer_text))
     return container
 
 
-def build_pages(pods: list[dict], footer_text: str, colour: discord.Colour) -> tuple[list[Container], int]:
+async def build_pages(
+    pods: list[dict],
+    footer_text: str,
+    colour: Colour,
+) -> tuple[list[Container], int, list[File]]:
     """
     Flattens every pod into (title, content, pod_index) entries.
 
+    Downloads and re-attaches as many of the pod images as fit within
+    `MAX_ATTACHED_IMAGES`; any beyond that budget keep Wolfram's original URL.
 
-    Returns the built pages, and the index of the teaser page (always 0).
+    Returns the built pages, the index of the teaser page (always 0), and the
+    list of downloaded attachments to send alongside the pages.
     """
     teaser: list[tuple[str, str, int]] = []
     rest: list[tuple[str, str, int]] = []
@@ -157,8 +187,20 @@ def build_pages(pods: list[dict], footer_text: str, colour: discord.Colour) -> t
     if teaser:
         chunks.insert(0, teaser)
 
-    pages = [_build_page(chunk, footer_text, colour) for chunk in chunks]
-    return pages, 0
+    urls = list(dict.fromkeys(url for chunk in chunks for _, url, _ in chunk))[:MAX_ATTACHED_IMAGES]
+    files_by_url: dict[str, File] = {}
+    attachments: list[File] = []
+    async with aiohttp.ClientSession() as session:
+        results = await asyncio.gather(
+            *(_fetch_image_file(session, url, f"wolf_{i}.png") for i, url in enumerate(urls)),
+        )
+    for url, file in zip(urls, results, strict=True):
+        if file is not None:
+            files_by_url[url] = file
+            attachments.append(file)
+
+    pages = [_build_page(chunk, footer_text, colour, files_by_url) for chunk in chunks]
+    return pages, 0, attachments
 
 
 async def _reply_short_answer(ctx: Context, appid: str, custom_appid: bool, prefix: str):
@@ -324,7 +366,7 @@ async def cmd_query(ctx: Context, flags: dict):
 
     pods = queryresult["pods"]
     footer_text = f"Requested by {ctx.author} | {hyperlink('View on Wolfram Alpha', f'{WOLFRAM_WEB}input/?i={parse.quote_plus(ctx.args, safe='')}')}"
-    pages, start_page = build_pages(pods, footer_text, discord.Colour.from_str("#DD1100"))
+    pages, start_page, attachments = await build_pages(pods, footer_text, Colour.from_str("#DD1100"))
     t_built = time.monotonic()
     ctx.log(f"Built {len(pages)} page(s) in {t_built - t_query:.2f}s.", level=logging.DEBUG)
 
@@ -336,6 +378,7 @@ async def cmd_query(ctx: Context, flags: dict):
         pages,
         view_cls=TeaserPagerView,
         view_kwargs={"start_page": start_page, "more_emoji": more_emoji},
+        files=attachments,
     )
     t_sent = time.monotonic()
     ctx.log(

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 import time
 from asyncio.subprocess import PIPE
@@ -11,17 +12,22 @@ from iso639 import Language, LanguageNotFoundError
 from utils.cache import async_ttl_cache
 from utils.interactive import get_application_emoji_by_name
 
+from modules.Typst.resources import extra_font_paths
+
 from .module import fonts_module as module
+from .resources import fontconfig_file
 
 """
 Provides the findfont command.
 """
 
+fontconfig_env = {**os.environ, "FONTCONFIG_FILE": str(fontconfig_file)}
+
 
 @async_ttl_cache(days=7)
 async def run_fc_list(*args: str) -> tuple[bytes, bytes]:
     """Run `fc-list <args>`, caching the result since installed fonts rarely change."""
-    proc = await asyncio.create_subprocess_exec("fc-list", *args, stdout=PIPE, stderr=PIPE)
+    proc = await asyncio.create_subprocess_exec("fc-list", *args, stdout=PIPE, stderr=PIPE, env=fontconfig_env)
     return await proc.communicate()
 
 
@@ -32,14 +38,16 @@ async def run_typst_fonts() -> tuple[bytes, bytes]:
 
     Excludes fonts embedded in the `typst` binary itself.
     """
-    proc = await asyncio.create_subprocess_exec("typst", "fonts", "--ignore-embedded-fonts", stdout=PIPE, stderr=PIPE)
+    proc = await asyncio.create_subprocess_exec(
+        "typst", "fonts", "--ignore-embedded-fonts", "--font-path", extra_font_paths, stdout=PIPE, stderr=PIPE,
+    )
     return await proc.communicate()
 
 
 @async_ttl_cache(days=7)
 async def run_fc_match(*args: str) -> tuple[bytes, bytes]:
     """Run `fc-match <args>` for caching purposes."""
-    proc = await asyncio.create_subprocess_exec("fc-match", *args, stdout=PIPE, stderr=PIPE)
+    proc = await asyncio.create_subprocess_exec("fc-match", *args, stdout=PIPE, stderr=PIPE, env=fontconfig_env)
     return await proc.communicate()
 
 

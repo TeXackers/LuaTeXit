@@ -10,7 +10,13 @@ from logger import log
 
 from modules.Tex.core.tex_compile import colourscheme_hex
 from modules.Typst.module import typst_module as module
-from modules.Typst.resources import default_preamble, importable_resources, staging_root, typst_script_path
+from modules.Typst.resources import (
+    default_preamble,
+    extra_font_paths,
+    importable_resources,
+    staging_root,
+    typst_script_path,
+)
 
 """
 Provides a single context utility to compile Typst code from a user and return any error message
@@ -83,7 +89,10 @@ async def _run_typst_compile(
     await fn.write_text(content)
 
     # Build compile script
-    script = f'{typst_script_path} {targetid} "{staging_root}" "{bg_hex}" "{text_hex}" || exit;\ncd {path}\n'
+    script = (
+        f'{typst_script_path} {targetid} "{staging_root}" "{bg_hex}" "{text_hex}" "{extra_font_paths}" || exit;\n'
+        f"cd {path}\n"
+    )
 
     # Run the script in an async executor
     return await ctx.run_in_shell(script)

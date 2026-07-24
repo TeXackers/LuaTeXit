@@ -131,31 +131,52 @@ class TypstContext:
             # Compile the source
             error = await ctx.maketypst(self.source, tuser.id, preamble=self.preamble, colour=self.colour)
 
-            # Obtain the output image path, potentially the failed image
-            file_path_staged = AsyncPath(f"{staging_root}/{tuser.id}/{tuser.id}.png")
-            exists = await file_path_staged.is_file()
-            file_path = AsyncPath(failed_image_path) if not exists else file_path_staged
+            # Obtain the output image path(s): either the single-page "{id}.png" or the
+            # "{id}-NN.png" set produced when the document spans multiple pages.
+            stage_dir = AsyncPath(f"{staging_root}/{tuser.id}")
+            single_page = stage_dir / f"{tuser.id}.png"
+            if await single_page.is_file():
+                staged_pages = [single_page]
+            else:
+                staged_pages = sorted(
+                    [p async for p in stage_dir.glob(f"{tuser.id}-*.png")],
+                    key=lambda p: p.name,
+                )
 
-            # Force a consistent filename so the Components V2 `File` item
-            # below can always reference `attachment://{filename}`, whether
-            # this is the real output or the shared fallback image.
-            filename = f"{tuser.id}.png"
-            output_file = discord.File(file_path, filename=filename)
+            exists = bool(staged_pages)
+
+            if exists:
+                # Discord allows at most 10 attachments (and MediaGallery items) per message.
+                staged_pages = staged_pages[:10]
+                filenames = [p.name for p in staged_pages]
+                output_files = [discord.File(p, filename=p.name) for p in staged_pages]
+            else:
+                # Fall back to the shared "compilation is broken" placeholder image.
+                filenames = [f"{tuser.id}.png"]
+                output_files = [discord.File(AsyncPath(failed_image_path), filename=filenames[0])]
 
             view = TypstOutputView(
                 source=self.source,
                 error=error or None,
-                image_filename=filename,
+                image_filenames=filenames,
                 author=ctx.author,
                 header_name=self.header_name,
             )
 
             message: discord.Message | None = None
             try:
-                message = await ctx.reply(file=output_file, view=view)
+                message = await ctx.reply(files=output_files, view=view)
                 view.message = message
             except discord.Forbidden:
                 pass
+            except discord.HTTPException as e:
+                if e.status == 413:
+                    await ctx.error_reply(
+                        "The compiled output is too large for Discord to accept.\n"
+                        'Consider shortening the source, reducing its page count or size - or simply not be an *"experimentalist"*.',
+                    )
+                else:
+                    raise
 
             # purge storage if successful (no need for logs)
             if exists:

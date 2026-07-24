@@ -8,7 +8,7 @@ from typing import override
 import discord
 from cmdClient.Layouts import Body
 from discord import Interaction, MediaGalleryItem, Member, User
-from discord.ui import ActionRow, Button, LayoutView, MediaGallery, TextDisplay
+from discord.ui import ActionRow, Button, LayoutView, MediaGallery, Separator, TextDisplay
 
 
 class TypstOutputView(LayoutView):
@@ -22,9 +22,9 @@ class TypstOutputView(LayoutView):
         The Typst source that was compiled.
     error: str | None
         The compile error, if compilation failed.
-    image_filename: str
-        The filename of the attached output image, referenced via
-        `attachment://{image_filename}`.
+    image_filenames: list[str]
+        Filenames of the attached output images (one per page), each referenced via
+        `attachment://{filename}`.
     author: User | Member
         The user who ran the command; only they (or someone with
         `manage_messages`) may use the buttons.
@@ -36,7 +36,7 @@ class TypstOutputView(LayoutView):
         self,
         source: str,
         error: str | None,
-        image_filename: str,
+        image_filenames: list[str],
         author: User | Member,
         header_name: str = "",
         timeout: float | None = 300,
@@ -45,7 +45,7 @@ class TypstOutputView(LayoutView):
 
         self.source = source
         self.error = error
-        self.image_filename = image_filename
+        self.image_filenames = image_filenames
         self.author = author
         self.header_name = header_name
         self.shown = False
@@ -69,7 +69,10 @@ class TypstOutputView(LayoutView):
             text = self.error or self.source
             syntax = "" if self.error else "typst"
             self.add_item(Body(f"```{syntax}\n{text}\n```"))
-        self.add_item(MediaGallery(MediaGalleryItem(f"attachment://{self.image_filename}")))
+        for i, filename in enumerate(self.image_filenames):
+            if i > 0:
+                self.add_item(Separator(visible=False))
+            self.add_item(MediaGallery(MediaGalleryItem(f"attachment://{filename}")))
 
         label_subject = "error" if self.error else "source"
         self._toggle_button.label = f"{'Hide' if self.shown else 'Show'} {label_subject}"

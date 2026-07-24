@@ -13,6 +13,12 @@ TYPST_TEXT="rgb(\"#$4\")"
 timeout --kill-after=5s 3s typst compile --root "$2/$1" -f png --ppi 300 "$1.typ" "$1.png" 2> "$1.log"
 
 RET=$?
+# multi PNG?
+if [ $RET -ne 0 ] && grep -q "cannot export multiple images without a page number template" "$1.log"; then
+    timeout --kill-after=5s 3s typst compile --root "$2/$1" -f png --ppi 300 "$1.typ" "$1-{0p}.png" 2> "$1.log"
+    RET=$?
+fi
+
 if [ $RET -ne 0 ]; then
     if [ $RET -eq 124 ]; then
         MESSAGE="Compilation took too long!"
@@ -32,7 +38,11 @@ if [ $RET -ne 0 ]; then
     fi
 fi
 
-magick "$1.png" -bordercolor "$MAGICK_BG" -trim +repage -border 50 -background "$MAGICK_BG" -flatten -colorspace sRGB "$1.png"
+# Trim/border every page that was produced
+for page in "$1.png" "$1"-*.png; do
+    [ -f "$page" ] || continue
+    magick "$page" -bordercolor "$MAGICK_BG" -trim +repage -border 30 -background "$MAGICK_BG" -flatten -colorspace sRGB "$page"
+done
 
 if [ $RET -ne 0 ]; then
     exit 1

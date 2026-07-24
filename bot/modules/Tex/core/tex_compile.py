@@ -12,7 +12,6 @@ from modules.Tex.module import latex_module as module
 from modules.Tex.resources import (
     default_preamble,
     failed_dir,
-    failed_image_path,
     lualatex_script_path,
     luatex_script_path,
     pdflatex_script_path,
@@ -326,10 +325,8 @@ async def makepythontex(
 @module.init_task
 def setup_structure(client):
     """
-    Set up the initial tex directory structure,
-    including copying the required resources.
+    Set up the initial tex directory structure.
     """
     # Delete and recreate the staging directory, if it exists
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
-    shutil.copy(failed_image_path, "tex")

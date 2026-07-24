@@ -6,9 +6,10 @@ import anyio.to_thread
 import discord
 from anyio import Path as AsyncPath
 from cmdClient import Context  # noqa
-from modules.Tex.core.LatexContext import LatexContext
 from utils.ratelimit import Bucket, BucketFull, BucketOverFull
 from wards import is_admin
+
+from modules.Tex.core.LatexContext import LatexContext
 
 from .core.CodeLayouts import CodeOutputView, build_code_pages
 from .module import code_module as module

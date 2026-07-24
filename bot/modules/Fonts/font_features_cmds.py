@@ -571,7 +571,7 @@ async def cmd_fontfeatures(ctx: Context, flags: dict):
     """
     query = clean_md(ctx.args)
     if not query:
-        return await ctx.error_reply(await ctx.format_usage())
+        return await ctx.reply(await ctx.format_usage())
 
     t_start = time.monotonic()
     styles = await resolve_font_styles(query)
@@ -579,12 +579,12 @@ async def cmd_fontfeatures(ctx: Context, flags: dict):
         suggestions = await suggest_families(query)
         if suggestions:
             suggestion_text = "\n".join(f"- {bf(discord.utils.escape_mentions(s))}" for s in suggestions)
-            return await ctx.error_reply(
-                f"No font family found matching {bf(query)} exactly. Did you mean:\n\n{suggestion_text}"
+            return await ctx.reply(
+                f"No font family found matching {bf(query)} exactly. Did you mean:\n\n{suggestion_text}",
             )
-        return await ctx.error_reply(
+        return await ctx.reply(
             f"No font found matching {bf(query)}.\n"
-            f"Try `{await ctx.best_prefix()}findfont --name {query}` to search by name."
+            f"Try `{await ctx.best_prefix()}findfont --name {query}` to search by name.",
         )
 
     canonical_family = styles[0].family

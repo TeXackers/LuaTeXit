@@ -7,11 +7,13 @@ from modules.Tex.resources import failed_image_path
 __location__ = Path(__file__).parent
 
 # TeX Live's font directories
-extra_font_paths = os.pathsep.join([
-    "/usr/local/texlive/2026/texmf-dist/fonts/opentype",
-    "/usr/local/texlive/2026/texmf-dist/fonts/truetype",
-    str(Path.home() / ".local" / "share" / "fonts"),
-])
+extra_font_paths = os.pathsep.join(
+    [
+        "/usr/local/texlive/2026/texmf-dist/fonts/opentype",
+        "/usr/local/texlive/2026/texmf-dist/fonts/truetype",
+        str(Path.home() / ".local" / "share" / "fonts"),
+    ]
+)
 
 # Load default preamble from file
 with Path.open(__location__ / "default_preamble.typ") as preamble:
@@ -26,4 +28,5 @@ typst_script_path = __location__ / "typst_compiler.sh"
 importable_resources = (
     __location__ / "unicode-math.typ",
     __location__ / "memdesign.typ",
+    __location__ / "typograph.typ",
 )

@@ -4,6 +4,7 @@ output-format = "grouped"
 exclude = [
     "bot/main.py", # order-sensitive
     "bot/cmdClient/__init__.py", # order-sensitive
+    "bot/modules/Code/__init__.py", # order-sensitive
     "bot/modules/Tex/__init__.py", # order-sensitive
     "bot/modules/Tex/core/__init__.py", # order-sensitive
     "bot/modules/Typst/__init__.py", # order-sensitive

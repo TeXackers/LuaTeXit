@@ -1,9 +1,9 @@
 from . import (
-    core,  # has to be loaded first
+    core,  # noqa
     code_cmd,
 )
 
 __all__ = [
-    "core",
     "code_cmd",
+    "core",
 ]

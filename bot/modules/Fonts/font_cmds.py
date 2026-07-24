@@ -39,7 +39,13 @@ async def run_typst_fonts() -> tuple[bytes, bytes]:
     Excludes fonts embedded in the `typst` binary itself.
     """
     proc = await asyncio.create_subprocess_exec(
-        "typst", "fonts", "--ignore-embedded-fonts", "--font-path", extra_font_paths, stdout=PIPE, stderr=PIPE,
+        "typst",
+        "fonts",
+        "--ignore-embedded-fonts",
+        "--font-path",
+        extra_font_paths,
+        stdout=PIPE,
+        stderr=PIPE,
     )
     return await proc.communicate()
 
@@ -156,7 +162,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
         cleaned_chars = ",".join(clean_md(part) for part in flags["char"].split(","))
         requested_chars = glyph_or_unicode(cleaned_chars)
         if not requested_chars:
-            return await ctx.error_reply("Invalid unicode or glyph(s).")
+            return await ctx.reply("Invalid unicode or glyph(s).")
         if len(requested_chars) > 1:
             fclist_chars = ":charset=" + ",".join(requested_chars)
             params_dict["Characters"] = ", ".join(requested_chars)
@@ -164,7 +170,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
             fclist_chars = ":charset=" + str(requested_chars[0])
             params_dict["Characters"] = str(requested_chars[0])
         else:
-            ctx.log(f"Requested characters: {requested_chars}", context="fonts")
+            ctx.log(f"Requested characters: {requested_chars}", context="fonts", context_level=logging.DEBUG)
             return await ctx.error_reply("Something went wrong while processing the characters.")
 
         params_dict["query"] = cleaned_chars
@@ -201,7 +207,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
         fc_out = fc_out.decode("utf-8").split("\n")
 
         if not fc_out:
-            return await ctx.error_reply("No fonts found.")
+            return await ctx.reply("No fonts found.")
 
         # Remove fonts that start with `.`
         fonts = [line.replace("\\", "") for line in fc_out if not line.startswith(".")]
@@ -213,7 +219,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
             params_dict["type"] = "name"
             fonts = [f.title() for f in [f.lower() for f in fonts] if clean_md(flags["name"]).lower() in f]
             if not fonts:
-                return await ctx.error_reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
+                return await ctx.reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
     else:
         # Typst-backed search: reports the family names Typst itself recognises
         t_query = time.monotonic()
@@ -226,7 +232,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
         fonts = [line.strip() for line in typst_out.decode("utf-8").split("\n") if line.strip()]
 
         if not fonts:
-            return await ctx.error_reply("No fonts found.")
+            return await ctx.reply("No fonts found.")
 
         if flags["name"]:
             raw_pattern = flags["name"].strip()
@@ -238,14 +244,14 @@ async def cmd_findfont(ctx: Context, flags: dict):
             try:
                 name_re = re.compile(raw_pattern, re.IGNORECASE)
             except re.error:
-                return await ctx.error_reply(f"Invalid regular expression:\n\n{bf(display_pattern)}.")
+                return await ctx.reply(f"Invalid regular expression:\n\n{bf(display_pattern)}.")
 
             matched = await regex_filter(name_re, fonts)
             if matched is None:
-                return await ctx.error_reply("That pattern took too long to evaluate. Try something simpler.")
+                return await ctx.reply("That pattern took too long to evaluate. Try something simpler.")
             fonts = matched
             if not fonts:
-                return await ctx.error_reply(f"No fonts found matching the pattern:\n\n{bf(display_pattern)}.")
+                return await ctx.reply(f"No fonts found matching the pattern:\n\n{bf(display_pattern)}.")
 
     fc_out_sorted: list[str] = sorted(set(fonts))
     fc_out: list[str] = [f for f in fc_out_sorted if f]

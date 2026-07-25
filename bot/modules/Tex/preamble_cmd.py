@@ -67,14 +67,14 @@ async def cmd_preamble(ctx: Context, flags: dict):
 
     # Get the effective preamble and the viewing header
     if current_preamble and current_preamble["preamble"]:
-        (preamble := current_preamble["preamble"])
-        (header := "custom")
+        preamble = current_preamble["preamble"]
+        header = "custom"
     elif ctx.guild and LatexGuild.get(ctx.guild.id).preamble:
-        (preamble := LatexGuild.get(ctx.guild.id).preamble)
-        (header := "server")
+        preamble = LatexGuild.get(ctx.guild.id).preamble
+        header = "server"
     else:
-        (preamble := default_preamble)
-        (header := "default")
+        preamble = default_preamble
+        header = "default"
     # Get the preamble presets
     # presets = []
 

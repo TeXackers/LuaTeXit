@@ -160,7 +160,7 @@ class Integer(SettingType):
 
         try:
             num = int(userstr)
-        except Exception:
+        except ValueError:
             raise BadUserInput("Couldn't parse provided integer.") from None
 
         if num > cls._max:

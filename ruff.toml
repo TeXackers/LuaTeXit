@@ -61,6 +61,8 @@ ignore = [
     "F",
     "S311",
     "E501",
+    "N", # naming conventions
+    "BLE001", # blind except
     "SLF001", # private
     "RUF001",
     "TC003", # put in TYPE_CHECKING block

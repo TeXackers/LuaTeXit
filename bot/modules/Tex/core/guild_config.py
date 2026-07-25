@@ -92,13 +92,13 @@ class latex_level(ColumnData, IntegerEnum, GuildSetting):
     _delete_on_none = False
 
     @property
-    def embed(self, *args, **kwargs):
+    def embed(self):
         embed = super().embed
         embed.add_field(
             name="Options",
             value=(
                 "`CODEBLOCK`: The strictest level, require a `tex` or `latex` syntax codeblock.\n"
-                "`STRICT`: Also recognise environments, double dollars, `\(...\)` and `\[...\]`.\n"
+                "`STRICT`: Also recognise environments, double dollars, `\\(...\\)` and `\\[...\\]`.\n"
                 "`WEAK`: Also recognise paired single dollars."
             ),
         )

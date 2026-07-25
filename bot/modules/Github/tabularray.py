@@ -67,19 +67,19 @@ async def cmd_tabularray(ctx: Context, flags):
         except github.GithubException as e:
             match int(e.status):
                 case 301:
-                    (reason := "it has been moved permanently [304].")
+                    reason = "it has been moved permanently [304]."
                 case 403:
-                    (reason := "access to the issue/PR is forbidden [403].")
+                    reason = "access to the issue/PR is forbidden [403]."
                 case 404:
-                    (reason := "it does not exist [404].")
+                    reason = "it does not exist [404]."
                 case 410:
-                    (reason := "it has been deleted [410].")
+                    reason = "it has been deleted [410]."
                 case 422:
-                    (reason := "validation failed, or the endpoint has been spammed [422].")
+                    reason = "validation failed, or the endpoint has been spammed [422]."
                 case 503:
-                    (reason := "GitHub is currently unavailable [503].")
+                    reason = "GitHub is currently unavailable [503]."
                 case _:
-                    (reason := f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}].")
+                    reason = f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}]."
             await out_msg.delete()
             return await ctx.error_reply(f"Could not find #\u00a0{query}, because {reason}")
 
@@ -212,15 +212,15 @@ async def cmd_tabularray(ctx: Context, flags):
         except github.GithubException as e:
             match e.status:
                 case 302:
-                    (reason := "it has been moved permanently [302].")
+                    reason = "it has been moved permanently [302]."
                 case 304:
-                    (reason := "it has not been modified since the last request [304].")
+                    reason = "it has not been modified since the last request [304]."
                 case 403:
-                    (reason := "access to the file is forbidden [403].")
+                    reason = "access to the file is forbidden [403]."
                 case 404:
-                    (reason := "it does not exist [404].")
+                    reason = "it does not exist [404]."
                 case _:
-                    (reason := f"of an undocumented (by GitHub) error [Unknown Status Code: {e.status}].")
+                    reason = f"of an undocumented (by GitHub) error [Unknown Status Code: {e.status}]."
             await out_msg.delete()
             return await ctx.error_reply(f"Could not find the requested file/directory, because {reason}")
 

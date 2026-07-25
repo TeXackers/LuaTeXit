@@ -19,7 +19,7 @@ class TypstGuild:
     cached_guilds: ClassVar[dict] = {}
 
     # Stored client for accessing data interfaces
-    _client: ClassVar[None | cmdClient] = None
+    _client: ClassVar[cmdClient | None] = None
 
     # Defaults
     defaults: ClassVar[dict] = {

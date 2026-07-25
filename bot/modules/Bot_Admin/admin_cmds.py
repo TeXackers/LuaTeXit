@@ -282,15 +282,15 @@ async def cmd_issue(ctx: Context, flags):
     except github.GithubException as e:
         match e.status:
             case 403:
-                (reason := "I don't have permission to create issues on this repository [403].")
+                reason = "I don't have permission to create issues on this repository [403]."
             case 404:
-                (reason := f"`{LUATEXIT_REPO}` could not be found [404].")
+                reason = f"`{LUATEXIT_REPO}` could not be found [404]."
             case 410:
-                (reason := "issue creation has been disabled for this repository [410].")
+                reason = "issue creation has been disabled for this repository [410]."
             case 422:
-                (reason := "validation failed -- check the title/body aren't empty [422].")
+                reason = "validation failed -- check the title/body aren't empty [422]."
             case _:
-                (reason := f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}].")
+                reason = f"an undocumented (by GitHub) error occurred [Unknown Status Code: {e.status}]."
         return await ctx.error_reply(f"Could not create the issue, because {reason}")
 
     return await ctx.reply(f"Issue created: {issue.html_url}")

@@ -735,7 +735,7 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
         )
     except Exception as e:
         await preview.edit(content=("Approved, but something unexpected occurred while sending the approval message."))
-        raise e
+        raise
     else:
         await preview.edit(content=(f"Preamble approved! Good work, <@{manager.id}>!"))
     return True
@@ -816,7 +816,7 @@ async def deny_submission(ctx: Context, userid, manager, reason=None):
         )
     except Exception as e:
         await preview.edit(content=("Denied, but something unexpected occurred while sending the rejection message."))
-        raise e
+        raise
     else:
         await preview.edit(content=(f"Preamble denied! Good work, <@{manager.id}>!"))
     return True

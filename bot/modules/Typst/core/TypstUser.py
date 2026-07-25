@@ -85,7 +85,7 @@ class TypstUser:
     cached_users: ClassVar[dict] = {}
 
     # Stored client for accessing data interfaces
-    _client: ClassVar[None | cmdClient] = None
+    _client: ClassVar[cmdClient | None] = None
 
     def __init__(self, uid):
         self.id = uid

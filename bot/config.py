@@ -57,7 +57,11 @@ class Conf:
             self.config.write(conffile)
 
 
+class NoConfigError(RuntimeError):
+    pass
+
+
 def get_conf():
     if conf is None:
-        raise Exception("Retrieving configuration without initialisation.")
+        raise NoConfigError("Retrieving configuration without initialisation.")
     return conf

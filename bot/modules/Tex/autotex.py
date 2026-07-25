@@ -137,7 +137,7 @@ async def latex_message_parser(client: cmdClient, message: Message):
             context=f"mid:{message.id}",
             level=logging.ERROR,
         )
-        raise e
+        raise
     else:
         log("AutoTeX Success.", context=f"{message.id}", level=logging.DEBUG)
     finally:

@@ -1,4 +1,5 @@
 from .Bot_Admin import *
+from .CJK import *
 from .Code import *
 from .Custom import *
 from .Fonts import *

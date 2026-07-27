@@ -200,7 +200,7 @@ def load_hangul_table() -> dict[str, str]:
 def extract_pinlu(value: str) -> list[tuple[str, int]]:
     """
     Extract pinyin from Unihan `kHanyuPinlu` field.
-    
+
     Returns
     -------
     out: list[tuple[str, int]]
@@ -519,12 +519,8 @@ def apply_level_designations(entries: dict[str, dict]) -> None:
         for char in block["characters"]:
             education_tier[char] = block["name"]
 
-    exam_level = {
-        char: block["name"] for block in hanja_exam.values() for char in block["characters"]
-    }
-    kanji_grade = {
-        char: block["name"] for block in kanji_level.values() for char in block["characters"]
-    }
+    exam_level = {char: block["name"] for block in hanja_exam.values() for char in block["characters"]}
+    kanji_grade = {char: block["name"] for block in kanji_level.values() for char in block["characters"]}
     name_only = set(kanji_level.get("nameonly", {}).get("characters", ()))
 
     education_hanja, korean_name = set(), set()
@@ -602,7 +598,9 @@ VARIANT_FALLBACK_FIELDS = [
 
 
 def kanjidictvn_lookup(
-    char: str, variants: dict[str, list[dict]], kanjidictvn: dict[str, list[str]],
+    char: str,
+    variants: dict[str, list[dict]],
+    kanjidictvn: dict[str, list[str]],
 ) -> tuple[list[str], str | None]:
     """
     Looks up the Han-Viet readings for `char` in KanjiDictVN, falling back to
@@ -668,7 +666,7 @@ def split_vietnamese(syllable: str) -> tuple[str, str]:
     ---------
     syllable: str
         A Vietnamese syllable, possibly with diacritics indicating tone.
-    
+
     Returns
     -------
     base: str
@@ -762,7 +760,8 @@ def rank_vietnamese(
             return log_prob(base_model[cb], base) + log_prob(tone_model[ct], tone)
 
         pronunciations["vietnamese"] = sorted(
-            vietnamese, key=lambda r: (-senses[r], -pivot_score(r)),
+            vietnamese,
+            key=lambda r: (-senses[r], -pivot_score(r)),
         )
         reranked += 1
     return reranked
@@ -823,8 +822,7 @@ def build_pronunciations(
         "japanese_kun": dedup(raw.get("kJapaneseKun", "").split()),
         # prioritise table.json over kHangul
         "korean_hangul": dedup(
-            ([hangul_extra] if hangul_extra else [])
-            + [tok.split(":", 1)[0] for tok in raw.get("kHangul", "").split()],
+            ([hangul_extra] if hangul_extra else []) + [tok.split(":", 1)[0] for tok in raw.get("kHangul", "").split()],
         ),
         "korean_romanized": dedup(raw.get("kKorean", "").split()),
         "vietnamese": vietnamese or dedup(raw.get("kVietnamese", "").split()),
@@ -953,6 +951,5 @@ if __name__ == "__main__":
     cache = build_cache()
     CACHE_FILE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
     print(  # noqa: T201
-        f"Wrote {CACHE_FILE} ({CACHE_FILE.stat().st_size / 1_048_576:.1f} MB, "
-        f"{len(cache)} characters)",
+        f"Wrote {CACHE_FILE} ({CACHE_FILE.stat().st_size / 1_048_576:.1f} MB, {len(cache)} characters)",
     )

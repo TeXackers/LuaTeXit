@@ -1,4 +1,5 @@
 from cmdClient import Context  # noqa
+from cmdClient.Format import remove_markdown_delimiters
 from cmdClient.Layouts import Body, Footer, Header, TextEmbed
 from constants import LuaTeXitCC
 from discord.ui import Container, Separator
@@ -39,7 +40,7 @@ async def cmd_readcjk(ctx: Context, flags: dict):
         {prefix}readcjk 滾滾長江東逝水 -c
         {prefix}readcjk 滾滾長江東逝水 -c -p
     """
-    text = ctx.args.strip()
+    text = remove_markdown_delimiters(ctx.args.strip()).replace("```", "").strip()
     if not text:
         return await ctx.error_reply("Please provide some CJK text to transliterate.")
 
@@ -50,8 +51,8 @@ async def cmd_readcjk(ctx: Context, flags: dict):
     results = [(label, transliterate(text, reading)) for reading, label in selected]
 
     # add original text to body
-    body = f"**Original Text**\n```\n{text}\n```\n"
-    body += "\n".join(f"**» {label}**\n```\n{translit}\n```" for label, translit in results)
+    body = f"Original Text\n```\n{text}\n```\n"
+    body += "\n".join(f"» {label}\n```\n{translit}\n```" for label, translit in results)
     footer = f"Requested by {ctx.author}"
 
     if len(body) <= BODY_LIMIT:

@@ -3,16 +3,21 @@ Generic functions for formatting text.
 """
 
 import builtins
+import re
 from collections.abc import Iterable
 from typing import Any
 
 from discord.utils import escape_mentions
+
+CODEBLOCK_RE = re.compile(r"^```(?:[^\n`]*\n)?(.*?)\n?```$", re.DOTALL)
 
 
 def remove_markdown_delimiters(text: str) -> str:
     """Remove markdown delimiters from a string"""
     if not text:
         return text
+    if m := CODEBLOCK_RE.match(text):
+        text = m.group(1)
     for delimiter in ("**", "*", "_", "`", "~~", "||"):
         if text.startswith(delimiter) and text.endswith(delimiter):
             text = text[len(delimiter) : -len(delimiter)]

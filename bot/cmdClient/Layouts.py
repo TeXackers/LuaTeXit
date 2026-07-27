@@ -72,7 +72,7 @@ class TextEmbed(LayoutView):
         super().__init__(timeout=None)
 
         container = Container(
-            Header(header, 1),
+            Header(header, 2),
             Separator(),
             Body(body),
             Footer(footer),

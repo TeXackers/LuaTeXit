@@ -68,7 +68,10 @@ def _designation_table(designations: dict) -> str:
     rows = {
         label: ", ".join(parts)
         for label, parts in (
-            ("China", china), ("Hong Kong", hong_kong), ("Japan", japan), ("Korea", korea),
+            ("China", china),
+            ("Hong Kong", hong_kong),
+            ("Japan", japan),
+            ("Korea", korea),
         )
         if parts
     }
@@ -84,14 +87,16 @@ def _codepoint_to_url(codepoint: str) -> str:
         UNICODE_LOOKUP_URL.format(codepoint[2:]),
     )
 
+
 def _variant_str(variant: dict) -> str:
     return f"{variant['char']} ({_codepoint_to_url(variant['codepoint'])})"
+
 
 @module.cmd(
     "han",
     desc="Looks up a Han character's definition, readings and variants.",
     aliases=["hanzi", "kanji", "hanja"],
-    flags=["raw" ,"r"],
+    flags=["raw", "r"],
 )
 async def cmd_han(ctx: Context, flags: dict):
     """
@@ -129,7 +134,7 @@ async def cmd_han(ctx: Context, flags: dict):
     variants = entry.get("variants", {})
 
     fields: dict[str, str] = {}
-    fields["Unicode"] = _codepoint_to_url(entry['codepoint'])
+    fields["Unicode"] = _codepoint_to_url(entry["codepoint"])
     if defn := readings.get("kDefinition"):
         fields["Definition"] = defn
     if mandarin := pron.get("mandarin"):
@@ -142,7 +147,9 @@ async def cmd_han(ctx: Context, flags: dict):
         fields["Japanese (kun)"] = ", ".join(kun).lower()
     if hangul := pron.get("korean_hangul"):
         romanized = pron.get("korean_romanized")
-        fields["Korean"] = f"{', '.join(hangul)} ({', '.join(romanized).lower()})" if romanized else ", ".join(hangul).lower()
+        fields["Korean"] = (
+            f"{', '.join(hangul)} ({', '.join(romanized).lower()})" if romanized else ", ".join(hangul).lower()
+        )
     if vietnamese := pron.get("vietnamese"):
         fields["Vietnamese"] = ", ".join(vietnamese)
     # if tang := readings.get("kTang"):

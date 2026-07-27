@@ -27,9 +27,29 @@ READING_ALIASES = {
 # Decide which chars hug the text before/after
 OPENING_PUNCT = {"（", "「", "『", "【", "《", "“", "‘"}
 CLOSING_PUNCT = {
-    "。", "，", "、", "；", "：", "？", "！",
-    "）", "」", "』", "】", "》", "”", "’",
-    ".", ",", ";", ":", "?", "!", ")", "]", ">",
+    "。",
+    "，",
+    "、",
+    "；",
+    "：",
+    "？",
+    "！",
+    "）",
+    "」",
+    "』",
+    "】",
+    "》",
+    "”",
+    "’",
+    ".",
+    ",",
+    ";",
+    ":",
+    "?",
+    "!",
+    ")",
+    "]",
+    ">",
 }
 # Harder to tell these ones
 AMBIGUOUS_QUOTES = {'"', "'"}
@@ -74,7 +94,7 @@ def transliterate(text: str, reading: str) -> str:
         The text to transliterate.
     reading : str
         The reading to use for transliteration. One of "cantonese", "korean", "mandarin", "japanese", "vietnamese" (so far).
-    
+
     Returns
     -------
     str
@@ -108,7 +128,9 @@ def transliterate(text: str, reading: str) -> str:
 
         lookup_char = prev_char if ch in REPETITION_MARKS and prev_char is not None else ch
         entry = lookup(lookup_char)
-        passthrough = entry is None and ch not in AMBIGUOUS_QUOTES and ch not in OPENING_PUNCT and ch not in CLOSING_PUNCT
+        passthrough = (
+            entry is None and ch not in AMBIGUOUS_QUOTES and ch not in OPENING_PUNCT and ch not in CLOSING_PUNCT
+        )
 
         if passthrough:
             # Not CJK or recognised punctuation (e.g. a Latin word, digits): left untouched.

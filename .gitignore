@@ -4,6 +4,8 @@ data/**
 logs
 scripts/**
 **/__pycache__
+bot/modules/CJK/assets/**
+!bot/modules/CJK/assets/build_cache.py
 
 # Test
 tests

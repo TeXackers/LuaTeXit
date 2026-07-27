@@ -449,14 +449,288 @@
 // set minus (as opposed to a revserse solidus)
 #let setminus = mathbin("\u{2216}")
 
+// amalgam
+#let amalg = mathbin("\u{2A3F}")
+
 
 /// Relational operators
 #let mathrel(it) = {
   math.class("relation", symbol(it))
 }
-// amalgam
-#let amalg = mathrel("\u{2A3F}")
+// less-than sign
+#let less = mathrel("\u{003C}")
+// equals sign
+#let equal = mathrel("\u{003D}")
+// greater-than sign
+#let greater = mathrel("\u{003E}")
+// close up
+#let closure = mathrel("\u{2050}")
+// leftward arrow
+#let leftarrow = mathrel("\u{2190}")
+// upward arrow
+#let uparrow = mathrel("\u{2191}")
+// rightward arrow
+#let rightarrow = mathrel("\u{2192}")
+// downward arrow
+#let downarrow = mathrel("\u{2193}")
+// left and right arrow
+#let leftrightarrow = mathrel("\u{2194}")
+// up and down arrow
+#let updownarrow = mathrel("\u{2195}")
+// nw pointing arrow
+#let nwarrow = mathrel("\u{2196}")
+// ne pointing arrow
+#let nearrow = mathrel("\u{2197}")
+// se pointing arrow
+#let searrow = mathrel("\u{2198}")
+// sw pointing arrow
+#let swarrow = mathrel("\u{2199}")
+// not left arrow
+#let nleftarrow = mathrel("\u{219A}")
+// not right arrow
+#let nrightarrow = mathrel("\u{219B}")
+// left arrow-wavy
+#let leftwavearrow = mathrel("\u{219C}")
+// right arrow-wavy
+#let rightwavearrow = mathrel("\u{219D}")
+// left two-headed arrow
+#let twoheadleftarrow = mathrel("\u{219E}")
+// up two-headed arrow
+#let twoheaduparrow = mathrel("\u{219F}")
+// right two-headed arrow
+#let twoheadrightarrow = mathrel("\u{21A0}")
+// down two-headed arrow
+#let twoheaddownarrow = mathrel("\u{21A1}")
+// left arrow-tailed
+#let leftarrowtail = mathrel("\u{21A2}")
+// right arrow-tailed
+#let rightarrowtail = mathrel("\u{21A3}")
+// maps to, leftward
+#let mapsfrom = mathrel("\u{21A4}")
+// maps to, upward
+#let mapsto = mathrel("\u{21A5}")
+// maps to, rightward
+#let mapsto = mathrel("\u{21A6}")
+// maps to, downward
+#let mapsdown = mathrel("\u{21A7}")
+// left arrow-hooked
+#let hookleftarrow = mathrel("\u{21A9}")
+// right arrow-hooked
+#let hookrightarrow = mathrel("\u{21AA}")
+// left arrow-looped
+#let looparrowleft = mathrel("\u{21AB}")
+// right arrow-looped
+#let looparrowright = mathrel("\u{21AC}")
+// left and right arr-wavy
+#let leftrightsquigarrow = mathrel("\u{21AD}")
+// not left and right arrow
+#let nleftrightarrow = mathrel("\u{21AE}")
+// downzigzagarrow
+#let downzigzagarrow = mathrel("\u{21AF}")
 
+// lsh a
+#let Lsh = mathrel("\u{21B0}")
+// rsh a;
+#let Rsh = mathrel("\u{21B1}")
+// left down angled arrow
+#let Ldsh = mathrel("\u{21B2}")
+// right down angled arrow
+#let Rdsh = mathrel("\u{21B3}")
+// left curved arrow
+#let curvearrowleft = mathrel("\u{21B6}")
+// right curved arrow
+#let curvearrowright = mathrel("\u{21B7}")
+// left harpoon-up
+#let leftharpoonup = mathrel("\u{21BC}")
+// left harpoon-down
+#let leftharpoondown = mathrel("\u{21BD}")
+// up harpoon-right
+#let upharpoonright = mathrel("\u{21BE}")
+// up harpoon-left
+#let upharpoonleft = mathrel("\u{21BF}")
+
+
+/// Sets
+/// Can't define `in` because it's immutable!!
+///
+// negated set membership
+#let notin = mathrel("\u{2209}")
+// set membership (Small set)
+#let smallin = mathrel("\u{220A}")
+// contains, variant
+#let ni = mathrel("\u{220B}")
+// negated contains, variant
+#let nni = mathrel("\u{220C}")
+// contains (small)
+#let smallni = mathrel("\u{220D}")
+// proportional to
+#let propto = mathrel("\u{221D}")
+// mid
+#let mid = mathrel("\u{2223}")
+// negated mid
+#let nmid = mathrel("\u{2224}")
+// parallel
+#let parallel = mathrel("\u{2225}")
+// not parallel
+#let nparallel = mathrel("\u{2226}")
+// ratio
+#let ratio = mathrel("\u{2236}")
+#let mathrio = ratio
+// two colons
+#let Colon = mathrel("\u{2237}")
+// excess
+#let dashcolon = mathrel("\u{2239}")
+// minus with four dots, geometric properties
+#let dotsminusdots = mathrel("\u{223A}")
+// homothetic kernel contraction
+#let kernelcontraction = mathrel("\u{223B}")
+// similar to
+#let sim = mathrel("\u{223C}")
+// reverse similar
+#let backsim = mathrel("\u{223D}")
+// not similar to
+#let nsim = mathrel("\u{2241}")
+// equals, similar
+#let eqsim = mathrel("\u{2242}")
+// similar, equals
+#let simeq = mathrel("\u{2243}")
+// not similar, equals
+#let nsimeq = mathrel("\u{2244}")
+// similar, equals (alias)
+#let sime = simeq
+#let nsime = nsimeq
+// congruent with
+#let cong = mathrel("\u{2245}")
+// similar, not equals (vert only for 9573 entity)
+#let simneqq = mathrel("\u{2246}")
+// not congruent with
+#let ncong = mathrel("\u{2247}")
+
+// approximately
+#let approx = mathrel("\u{2248}")
+// not approximately
+#let napprox = mathrel("\u{2249}")
+// approximate equals
+#let approxeq = mathrel("\u{224A}")
+// approximate identical to
+#let approxident = mathrel("\u{224B}")
+// asymptotically equal to
+#let asymp = mathrel("\u{224D}")
+// bumpy equals
+#let Bumpeq = mathrel("\u{224E}")
+// bumpy equals, equals
+#let bumpeq = mathrel("\u{224F}")
+// equals, single dot above
+#let doteq = mathrel("\u{2250}")
+// equals, even dot above and below
+#let Doteq = mathrel("\u{2251}")
+// equals, falling dots
+#let fallingdotseq = mathrel("\u{2252}")
+// equals, rising dots
+#let risingdotseq = mathrel("\u{2253}")
+// colon, equals
+#let coloneq = mathrel("\u{2254}")
+// equals, colon
+#let eqcolon = mathrel("\u{2255}")
+// circle on equals sign
+#let eqcirc = mathrel("\u{2256}")
+// circle, equals
+#let circeq = mathrel("\u{2257}")
+// arc, equals; corresponds to
+#let arceq = mathrel("\u{2258}")
+// corresponds to, wedge/equals
+#let wedgeq = mathrel("\u{2259}")
+// logical or, equals
+#let veeeq = mathrel("\u{225A}")
+// star equals
+#let stareq = mathrel("\u{225B}")
+// triangle, equals
+#let triangleq = mathrel("\u{225C}")
+// equals by definition
+#let eqdef = mathrel("\u{225D}")
+// measured by (m over equals)
+#let measeq = mathrel("\u{225E}")
+// equals with question mark
+#let questeq = mathrel("\u{225F}")
+// not equal
+#let ne = mathrel("\u{2260}")
+#let neq = ne
+
+// identical with
+#let equiv = mathrel("\u{2261}")
+// not identical with
+#let nequiv = mathrel("\u{2262}")
+// strict equivalence
+#let Equiv = mathrel("\u{2263}")
+// less than or equal to 
+#let leq = mathrel("\u{2264}")
+// greater than or equal to
+#let geq = mathrel("\u{2265}")
+// less, double equals
+#let leqq = mathrel("\u{2266}")
+// greater, double equals
+#let geqq = mathrel("\u{2267}")
+// less, not double equals
+#let lneqq = mathrel("\u{2268}")
+// greater, not double equals
+#let gneqq = mathrel("\u{2269}")
+// much less than
+#let ll = mathrel("\u{226A}")
+// much greater than
+#let gg = mathrel("\u{226B}")
+// between
+#let between = mathrel("\u{226C}")
+// not asymptotically equal to
+#let nasymp = mathrel("\u{226D}")
+// not less than
+#let nless = mathrel("\u{226E}")
+// not greater than
+#let ngtr = mathrel("\u{226F}")
+// not less-than-or-equal
+#let nleq = mathrel("\u{2270}")
+// not greater-than-or-equal
+#let ngeq = mathrel("\u{2271}")
+// less, similar
+#let lesssim = mathrel("\u{2272}")
+// greater, similar
+#let gtrsim = mathrel("\u{2273}")
+// not less, similar
+#let nlesssim = mathrel("\u{2274}")
+// not greater, similar
+#let ngtrsim = mathrel("\u{2275}")
+// less greater
+#let lessgtr = mathrel("\u{2276}")
+#let lg = lessgtr
+// greater less
+#let gtrless = mathrel("\u{2277}")
+#let gl = gtrless
+// not less, greater
+#let nlessgtr = mathrel("\u{2278}")
+// not greater, less
+#let ngtrless = mathrel("\u{2279}")
+
+// precedes
+#let prec = mathrel("\u{227A}")
+// succeeds
+#let succ = mathrel("\u{227B}")
+// precedes, curly equals
+#let preccurlyeq = mathrel("\u{227C}")
+// succeeds, curly equals
+#let succcurlyeq = mathrel("\u{227D}")
+// precedes, similar
+#let precsim = mathrel("\u{227E}")
+// succeeds, similar
+#let succsim = mathrel("\u{227F}")
+// not precedes
+#let nprec = mathrel("\u{2280}")
+// not succeeds
+#let nsucc = mathrel("\u{2281}")
+
+// subset or is implied by
+#let subset = mathrel("\u{2282}")
+// superset or implies
+#let supset = mathrel("\u{2283}")
+// 
 
 // Ordinary symbols
 #let mathord(it) = {
@@ -604,3 +878,192 @@
 #let updasharrow = mathord("\u{21E1}")
 // Downwards dash arrow
 #let downdasharrow = mathord("\u{21E3}")
+
+
+
+#let mathalpha(it) = {
+  math.class("normal", symbol(it))
+}
+
+/// Normal weight
+/// Upright Greek
+#let mathup = symbol(
+  ("Alpha", "\u{0391}"),
+  ("Beta", "\u{0392}"),
+  ("Gamma", "\u{0393}"),
+  ("Delta", "\u{0394}"),
+  ("Epsilon", "\u{0395}"),
+  ("Zeta", "\u{0396}"),
+  ("Eta", "\u{0397}"),
+  ("Theta", "\u{0398}"),
+  ("Iota", "\u{0399}"),
+  ("Kappa", "\u{039A}"),
+  ("Lambda", "\u{039B}"),
+  ("Mu", "\u{039C}"),
+  ("Nu", "\u{039D}"),
+  ("Xi", "\u{039E}"),
+  ("Omicron", "\u{039F}"),
+  ("Pi", "\u{03A0}"),
+  ("Rho", "\u{03A1}"),
+  ("Sigma", "\u{03A3}"),
+  ("Tau", "\u{03A4}"),
+  ("Upsilon", "\u{03A5}"),
+  ("Phi", "\u{03A6}"),
+  ("Chi", "\u{03A7}"),
+  ("Psi", "\u{03A8}"),
+  ("Omega", "\u{03A9}"),
+  ("varTheta", "\u{03F4}"),
+  // lowercase
+  ("alpha", "\u{03B1}"),
+  ("beta", "\u{03B2}"),
+  ("gamma", "\u{03B3}"),
+  ("delta", "\u{03B4}"),
+  ("epsilon", "\u{03B5}"),
+  ("zeta", "\u{03B6}"),
+  ("eta", "\u{03B7}"),
+  ("theta", "\u{03B8}"),
+  ("iota", "\u{03B9}"),
+  ("kappa", "\u{03BA}"),
+  ("lambda", "\u{03BB}"),
+  ("mu", "\u{03BC}"),
+  ("nu", "\u{03BD}"),
+  ("xi", "\u{03BE}"),
+  ("omicron", "\u{03BF}"),
+  ("pi", "\u{03C0}"),
+  ("rho", "\u{03C1}"),
+  ("sigma", "\u{03C2}"),
+  ("tau", "\u{03C3}"),
+  ("upsilon", "\u{03C4}"),
+  ("phi", "\u{03C5}"),
+  ("chi", "\u{03C6}"),
+  ("psi", "\u{03C7}"),
+  ("omega", "\u{03C8}"),
+  ("varepsilon", "\u{03F5}"),
+  ("vartheta", "\u{03D1}"),
+  ("varpi", "\u{03D6}"),
+  ("varkappa", "\u{03F0}"),
+  ("varrho", "\u{03F1}"),
+  ("varsigma", "\u{03C2}"),
+  ("varphi", "\u{03C6}"),
+  // less common ones
+  ("Digamma", "\u{03DC}"),
+  ("digamma", "\u{03DD}"),
+)
+
+
+
+/// Italic
+#let mathit = symbol(
+  // Latin
+  ("A", "\u{1D434}"),
+  ("B", "\u{1D435}"),
+  ("C", "\u{1D436}"),
+  ("D", "\u{1D437}"),
+  ("E", "\u{1D438}"),
+  ("F", "\u{1D439}"),
+  ("G", "\u{1D43A}"),
+  ("H", "\u{1D43B}"),
+  ("I", "\u{1D43C}"),
+  ("J", "\u{1D43D}"),
+  ("K", "\u{1D43E}"),
+  ("L", "\u{1D43F}"),
+  ("M", "\u{1D440}"),
+  ("N", "\u{1D441}"),
+  ("O", "\u{1D442}"),
+  ("P", "\u{1D443}"),
+  ("Q", "\u{1D444}"),
+  ("R", "\u{1D445}"),
+  ("S", "\u{1D446}"),
+  ("T", "\u{1D447}"),
+  ("U", "\u{1D448}"),
+  ("V", "\u{1D449}"),
+  ("W", "\u{1D44A}"),
+  ("X", "\u{1D44B}"),
+  ("Y", "\u{1D44C}"),
+  ("Z", "\u{1D44D}"),
+  ("a", "\u{1D44E}"),
+  ("b", "\u{1D44F}"),
+  ("c", "\u{1D450}"),
+  ("d", "\u{1D451}"),
+  ("e", "\u{1D452}"),
+  ("f", "\u{1D453}"),
+  ("g", "\u{1D454}"),
+  ("h", "\u{1D455}"),
+  ("i", "\u{1D456}"),
+  ("j", "\u{1D457}"),
+  ("k", "\u{1D458}"),
+  ("l", "\u{1D459}"),
+  ("m", "\u{1D45A}"),
+  ("n", "\u{1D45B}"),
+  ("o", "\u{1D45C}"),
+  ("p", "\u{1D45D}"),
+  ("q", "\u{1D45E}"),
+  ("r", "\u{1D45F}"),
+  ("s", "\u{1D460}"),
+  ("t", "\u{1D461}"),
+  ("u", "\u{1D462}"),
+  ("v", "\u{1D463}"),
+  ("w", "\u{1D464}"),
+  ("x", "\u{1D465}"),
+  ("y", "\u{1D466}"),
+  ("z", "\u{1D467}"),
+  // Greek
+  ("Alpha", "\u{1D6E2}"),
+  ("Beta", "\u{1D6E3}"),
+  ("Gamma", "\u{1D6E4}"),
+  ("Delta", "\u{1D6E5}"),
+  ("Epsilon", "\u{1D6E6}"),
+  ("Zeta", "\u{1D6E7}"),
+  ("Eta", "\u{1D6E8}"),
+  ("Theta", "\u{1D6E9}"),
+  ("Iota", "\u{1D6EA}"),
+  ("Kappa", "\u{1D6EB}"),
+  ("Lambda", "\u{1D6EC}"),
+  ("Mu", "\u{1D6ED}"),
+  ("Nu", "\u{1D6EE}"),
+  ("Xi", "\u{1D6EF}"),
+  ("Omicron", "\u{1D6F0}"),
+  ("Pi", "\u{1D6F1}"),
+  ("Rho", "\u{1D6F2}"),
+  ("varTheta", "\u{1D6F3}"),
+  ("Sigma", "\u{1D6F4}"),
+  ("Tau", "\u{1D6F5}"),
+  ("Upsilon", "\u{1D6F6}"),
+  ("Phi", "\u{1D6F7}"),
+  ("Chi", "\u{1D6F8}"),
+  ("Psi", "\u{1D6F9}"),
+  ("Omega", "\u{1D6FA}"),
+  // greek lowercase
+  ("alpha", "\u{1D6FC}"),
+  ("beta", "\u{1D6FD}"),
+  ("gamma", "\u{1D6FE}"),
+  ("delta", "\u{1D6FF}"),
+  ("varepsilon", "\u{1D700}"),
+  ("zeta", "\u{1D701}"),
+  ("eta", "\u{1D702}"),
+  ("theta", "\u{1D703}"),
+  ("iota", "\u{1D704}"),
+  ("kappa", "\u{1D705}"),
+  ("lambda", "\u{1D706}"),
+  ("mu", "\u{1D707}"),
+  ("nu", "\u{1D708}"),
+  ("xi", "\u{1D709}"),
+  ("omicron", "\u{1D70A}"),
+  ("pi", "\u{1D70B}"),
+  ("rho", "\u{1D70C}"),
+  ("varsigma", "\u{1D70D}"),
+  ("sigma", "\u{1D70E}"),
+  ("tau", "\u{1D70F}"),
+  ("upsilon", "\u{1D710}"),
+  ("phi", "\u{1D711}"),
+  ("chi", "\u{1D712}"),
+  ("psi", "\u{1D713}"),
+  ("omega", "\u{1D714}"),
+  // less known ones
+  ("partial", "\u{1D715}"),
+  ("epsilon", "\u{1D716}"),
+  ("vartheta", "\u{1D717}"),
+  ("varkappa", "\u{1D718}"),
+  ("varphi", "\u{1D719}"),
+  ("varpi", "\u{1D71A}")
+)

@@ -35,9 +35,12 @@ def typst_colour(hexcode: str) -> str:
 
 
 # The format of the source to compile.
-to_compile: str = """#set page(width: 345pt, height: auto, margin: 10pt, fill: {bgcolour})
+to_compile: str = """
+#set page(width: 148mm, height: 210mm, margin: 10pt, fill: {bgcolour})
 #set text(fill: {textcolour})
 {preamble}
+#import "typograph.typ": apply-fc
+#show: apply-fc
 {source}
 """
 

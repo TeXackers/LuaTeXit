@@ -53,24 +53,8 @@
   [L#h(A.offset.x)#text(size: A.size, baseline: A.offset.y)[A]#h(T.x_offset)T#h(E.x_offset)#text(size: E.size, baseline: E.y_offset)[E]#h(X.x_offset)X]
 }
 
-// LuaTeX-ko logo
-#let LuaTeX-ko = {
-  let T = (
-    x_offset: -0.12em    
-  )
-  let E = (
-    x_offset: -0.2em,
-    y_offset: 0.23em,
-    size: 1em
-  )
-  let X = (
-    x_offset: -0.1em
-  )
-  [Lua#h(T.x_offset)T#h(E.x_offset)#text(size: E.size, baseline: E.y_offset)[E]#h(X.x_offset)X‑#sf[k#sl[o]]]
-}
-
 #show "LaTeX": name => LaTeX
-#show "LuaTeX-ko": name => LuaTeX-ko
+
 
 // show how references are formatted (<section>.<number>)
 #show heading.where(level:1): it => {

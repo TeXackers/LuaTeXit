@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting, String

@@ -2,10 +2,10 @@ import asyncio
 import logging
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.lib import ResponseTimedOut, UserCancelled
 from utils.interactive import get_application_emoji_by_name
 from wards import guild_moderator
@@ -126,18 +126,21 @@ async def cmd_prune(ctx: Context, flags: dict):
     # TODO: --role? Maybe?
     # TODO: find_user won't work for users not in the server. Construct a collection based on message list.
 
+    # `@guild_moderator()` requires `in_guild`, guaranteeing a guild
+    guild = cast("discord.Guild", ctx.guild)
+
     # Get the target channel from the flag, if provided; otherwise use the current channel
-    target_channel = ctx.ch
+    target_channel = cast("discord.TextChannel", ctx.ch)
     if flags["ch"]:
         if flags["ch"] is True:
             return await ctx.error_reply(f"**Usage:** {await ctx.best_prefix()}purge ... --ch <channel> ...")
         found_channel = await ctx.find_channel(flags["ch"], interactive=True, chan_type=discord.ChannelType.text)
         if found_channel is None:
             return None
-        target_channel = found_channel
+        target_channel = cast("discord.TextChannel", found_channel)
 
     # First check that we have the permissions we need in the channel
-    perms = target_channel.permissions_for(ctx.guild.me)
+    perms = target_channel.permissions_for(guild.me)
     if not perms.manage_messages or not perms.read_message_history:
         return await ctx.error_reply(
             f"I lack the `MANAGE MESSAGES` and `READ MESSAGE HISTORY` permissions I require to purge {target_channel.mention}.",

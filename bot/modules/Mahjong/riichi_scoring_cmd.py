@@ -1,5 +1,5 @@
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import TextEmbed
 from utils.interactive import get_application_emojis_by_name
 

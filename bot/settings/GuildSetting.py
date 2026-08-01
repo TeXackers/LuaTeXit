@@ -1,8 +1,8 @@
 from typing import Any, ClassVar
 
 import discord
-from cmdClient import Context, cmdClient  # noqa
-from cmdClient.Check import Check  # noqa
+from cmdClient import Context, cmdClient
+from cmdClient.Check import Check
 from utils.lib import prop_tabulate
 
 

@@ -11,7 +11,7 @@ from urllib import parse
 
 import aiohttp
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import bf, hyperlink
 from cmdClient.Layouts import Body, Footer, Header
 from discord import Colour, File, MediaGalleryItem

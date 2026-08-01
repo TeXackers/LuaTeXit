@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Boolean
 

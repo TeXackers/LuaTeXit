@@ -1,14 +1,14 @@
 import asyncio
 import datetime
 import difflib
-from collections.abc import Awaitable
 from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 import anyio
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import Body, Footer, Header
 from cmdClient.lib import ResponseTimedOut, SafeCancellation, UserCancelled
 from constants import LuaTeXitCC
@@ -255,7 +255,7 @@ def tex_pagination_v2(
     Break up source LaTeX code into a number of `Container` pages,
     with the code in codeblocks of maximum `block_length` chars.
     """
-    blocks = split_text(text, block_length, code=True, syntax="tex", maxheight=30) if text else [None]
+    blocks: list[str | None] = split_text(text, block_length, code=True, syntax="tex", maxheight=30) if text else [None]
     return _tex_container_pages(blocks, basetitle, header, author, time, colour, extra_fields, footer)
 
 
@@ -293,7 +293,7 @@ async def tex_pagination_diff_v2(
         ),
     )
 
-    blocks = split_text(diff, block_length, code=True, syntax="diff") if diff else [None]
+    blocks: list[str | None] = split_text(diff, block_length, code=True, syntax="diff") if diff else [None]
     return _tex_container_pages(blocks, basetitle, header, author, time, colour, extra_fields, footer)
 
 
@@ -350,7 +350,7 @@ async def view_preamble(
     file_react=False,
     file_message=None,
     **pagination_args,
-) -> Awaitable[discord.Message | None]:
+) -> discord.Message | None:
     pages = tex_pagination(preamble, basetitle=title, **pagination_args)
     out_msg = await ctx.pager(pages, start_page=start_page, locked=False)
 
@@ -398,7 +398,7 @@ async def view_preamble_diff(
 
 async def view_preamble_diff_v2(
     ctx: Context,
-    preamble_old: str,
+    preamble_old: str | None,
     preamble_pending: str,
     title: str,
     **pagination_args,
@@ -409,12 +409,13 @@ async def view_preamble_diff_v2(
 
 
 async def confirm(ctx: Context, question: str, preamble: str, **kwargs):
-    out_msg = await view_preamble(ctx, preamble, f"{question} (y/n)", **kwargs)
+    out_msg = cast("discord.Message | None", await view_preamble(ctx, preamble, f"{question} (y/n)", **kwargs))
     result_msg = await ctx.listen_for(["y", "yes", "n", "no"], timeout=120)
 
     result = result_msg.content.lower()
     with suppress(Exception):
-        await out_msg.delete()
+        if out_msg is not None:
+            await out_msg.delete()
         await result_msg.delete()
 
     return result not in ["n", "no"]
@@ -650,7 +651,7 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
             embed=embed,
         )
         try:
-            result_msg = await ctx.listen_for(("y", "yes", "n", "no", "c", "cancel"), timeout=20)
+            result_msg = await ctx.listen_for(["y", "yes", "n", "no", "c", "cancel"], timeout=20)
             resp = result_msg.content.lower()
             with suppress(Exception):
                 await result_msg.delete()
@@ -723,6 +724,7 @@ async def approve_submission(ctx: Context, userid, manager, reason=None):
             user = await ctx.client.fetch_user(userid)
         except discord.NotFound:
             await preview.edit(content="Approved, but user not known to Discord, couldn't send the approval message.")
+            return None
 
     try:
         await user.send(embed=embed, content=user.mention)
@@ -804,6 +806,7 @@ async def deny_submission(ctx: Context, userid, manager, reason=None):
             user = await ctx.client.fetch_user(userid)
         except discord.NotFound:
             await preview.edit(content="Denied, but user not known to Discord, couldn't send the rejection message.")
+            return None
 
     try:
         await user.send(embed=embed, content=user.mention)

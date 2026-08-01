@@ -1,6 +1,6 @@
 import logging
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.lib import SafeCancellation
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import GuildSetting, ListData, StringList

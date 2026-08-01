@@ -1,4 +1,4 @@
-from cmdClient import Context  # noqa
+from cmdClient import Context
 
 from .core.TypstContext import TypstContext
 from .module import typst_module as module

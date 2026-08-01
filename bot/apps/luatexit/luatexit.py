@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from cmdClient import Module, cmdClient  # noqa
+from cmdClient import Module, cmdClient
 
 __location__ = Path(__file__).parent.resolve()
 HELP_FILE = __location__ / "help.md"

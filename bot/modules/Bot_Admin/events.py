@@ -1,5 +1,5 @@
 import discord
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 from utils.lib import mail
 
 from .module import bot_admin_module as module

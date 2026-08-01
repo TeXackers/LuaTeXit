@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, cast
 
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 
 
 class _tableData:
@@ -9,13 +9,13 @@ class _tableData:
     """
 
     # Name of table interface to use for storage access
-    _table_interface_name = None
+    _table_interface_name: str | None = None
 
     # Name of the column storing the guild id
-    _guildid_column = "guildid"
+    _guildid_column: str = "guildid"
 
     # Name of the column with the desired data
-    _data_column = None
+    _data_column: str | None = None
 
     @classmethod
     def _get_table_interface(cls, client: cmdClient):
@@ -84,7 +84,7 @@ class ListData(_tableData):
 
         # Handle required deletions
         if to_remove:
-            params = {cls._guildid_column: guildid, cls._data_column: to_remove}
+            params = {cls._guildid_column: guildid, cast("str", cls._data_column): to_remove}
             table.delete_where(**params)
 
         # Handle required insertions
@@ -104,7 +104,7 @@ class ColumnData(_tableData):
     _delete_on_none = True
 
     # Constraint used for writing upsert. By default uses _guildid_column
-    _upsert_constraint = None
+    _upsert_constraint: str | None = None
 
     @classmethod
     def _reader(cls, client: cmdClient, guildid: int, **kwargs):
@@ -129,7 +129,7 @@ class ColumnData(_tableData):
             table.delete_where(**params)
         else:
             # Handle insert or update
-            params[cls._data_column] = data
+            params[cast("str", cls._data_column)] = data
             table.upsert(constraint=cls._upsert_constraint or cls._guildid_column, **params)
 
 

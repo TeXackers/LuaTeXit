@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import cast
 
 import discord
 import modules  # noqa
@@ -8,6 +9,7 @@ from cmdClient import cmdClient
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 from logger import attach_log_client, other_log_filter, log, log_fmt
 from paraArgs import args
+from paraModule import paraModule
 
 # Always load modules last
 from paraData import versionModule  # noqa
@@ -111,7 +113,7 @@ else:
 log("Initialising modules")
 for module in client.modules:
     if module.enabled:
-        module.initialise_data(client)
+        cast("paraModule", module).initialise_data(client)
 
 # If the schema was requested, write it here and exit
 if schema_file is not None:
@@ -195,9 +197,10 @@ async def on_ready():
     attach_log_client(client)
 
     shard_msg: str = f" (Shard {shard_num}/{SHARD_COUNT})" if SHARD_COUNT > 1 else ""
+    client_user = cast("discord.ClientUser", client.user)  # guaranteed set once logged in
 
     log_msg = (
-        f"{client.user.name}({client.user.id}) using {client.app_info['app']}.conf in {len(client.guilds)} guilds{shard_msg} with {len(client.modules)} modules + {len(client.cmds)} ({len(client.cmd_names)} incl. aliases) cmds"
+        f"{client_user.name}({client_user.id}) using {client.app_info['app']}.conf in {len(client.guilds)} guilds{shard_msg} with {len(client.modules)} modules + {len(client.cmds)} ({len(client.cmd_names)} incl. aliases) cmds"
     )
     log(log_msg)
 
@@ -223,8 +226,9 @@ async def on_message(message: discord.Message):
 
         # Hack to make sure `ctx.guild.me` is not None
         if message.guild.me is None:
-            me = await message.guild.fetch_member(client.user.id)
-            message.guild._members[client.user.id] = me
+            client_user = cast("discord.ClientUser", client.user)  # guaranteed set once logged in
+            me = await message.guild.fetch_member(client_user.id)
+            message.guild._members[client_user.id] = me
 
     await client.parse_message(message)
 

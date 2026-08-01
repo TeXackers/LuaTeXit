@@ -1,7 +1,7 @@
 import datetime
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from constants import LuaTeXitCC
 from utils.lib import prop_tabulate
 

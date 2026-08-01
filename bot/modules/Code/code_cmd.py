@@ -5,7 +5,7 @@ from contextlib import suppress
 import anyio.to_thread
 import discord
 from anyio import Path as AsyncPath
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from utils.ratelimit import Bucket, BucketFull, BucketOverFull
 from wards import is_admin
 

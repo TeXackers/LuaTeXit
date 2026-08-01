@@ -4,7 +4,7 @@ from enum import Enum
 from typing import ClassVar
 
 import discord
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 from logger import log
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import Channel, ColumnData, GuildSetting, IntegerEnum, ListData, MemberList, SettingList

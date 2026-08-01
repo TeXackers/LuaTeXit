@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import NewType
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import bf, footnote
 from fontTools import unicodedata as ot_unicodedata
 from fontTools.ttLib import TTFont

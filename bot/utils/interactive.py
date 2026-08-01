@@ -385,7 +385,7 @@ async def pager(
     destination: discord.abc.Messageable | None = None,
     start_page=0,
     **kwargs,
-):
+) -> discord.Message:
     """
     Shows the user each page from the provided list `pages` one at a time,
     providing reactions to page back and forth between pages.

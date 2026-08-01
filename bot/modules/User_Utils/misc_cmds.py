@@ -1,9 +1,10 @@
 import string
 from contextlib import suppress
+from typing import cast
 
 import aiohttp
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from utils.lib import prop_tabulate, split_text
 from wards import in_guild
 
@@ -144,6 +145,7 @@ async def cmd_quote(ctx: Context, flags: dict[str, bool]):
             out_msg = await out_msg.edit(embed=embed)
         except discord.NotFound:
             await ctx.reply(embed=embed)
+        return None
 
     # Anonymous flag has no impact on the forwarding format, only allow use if raw is also being used.
     if flags["a"] and not flags["r"]:
@@ -228,7 +230,7 @@ async def cmd_invitebot(ctx: Context):
     if userid == ctx.author.id:
         return await ctx.reply("Hey, do you want to come hang out?")
 
-    if userid == ctx.client.user.id:
+    if userid == cast("discord.ClientUser", ctx.client.user).id:
         return await ctx.reply(
             "Sure, I would love to!\n"
             "My official invite link is: {}\n"

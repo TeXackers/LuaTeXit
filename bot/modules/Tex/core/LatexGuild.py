@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from cmdClient import cmdClient  # noqa
+from cmdClient import cmdClient
 
 from modules.Tex.module import latex_module as module
 

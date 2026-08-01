@@ -16,7 +16,7 @@ import datetime
 
 import discord
 import psutil
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import GenericFullEmbed
 from utils.lib import tabulate
 from wards import get_team_info

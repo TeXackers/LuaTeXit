@@ -1,6 +1,6 @@
 import json
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import bf, heading, hyperlink, remove_markdown_delimiters
 from cmdClient.Layouts import TextEmbed
 from constants import LuaTeXitCC

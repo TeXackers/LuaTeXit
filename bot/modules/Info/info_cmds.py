@@ -2,7 +2,7 @@ import random
 from typing import cast
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import it
 from cmdClient.Layouts import Body, Footer, Header, SectionWithThumbnail, TextEmbed
 from constants import LuaTeXitCC
@@ -334,6 +334,8 @@ async def cmd_guildinfo(ctx: Context) -> None:
     """
 
     server = cast("Guild", ctx.server)  # guaranteed non-None by @in_guild()
+    owner = server.owner  # not guaranteed cached (may be None)
+    client_user = cast("discord.ClientUser", ctx.client.user)
 
     total = len(server.channels)
 
@@ -342,7 +344,7 @@ async def cmd_guildinfo(ctx: Context) -> None:
 
     desc_text = tabulate(
         {
-            "Owner": f"{server.owner.display_name}",
+            "Owner": f"{owner.display_name}" if owner else "Unknown",
             "Created": f"{discord.utils.format_dt(server.created_at, 'f')} ({discord.utils.format_dt(server.created_at, 'R')})",
             "Members": f"{humans} 🫃, {bots} 🤖  |  {bots + humans} total",
             "Large?": "Yes" if server.large else "No",
@@ -350,10 +352,10 @@ async def cmd_guildinfo(ctx: Context) -> None:
             "Premium": f"Level {server.premium_tier} | {server.premium_subscription_count} boost{'s' if server.premium_subscription_count != 1 else ''} total",
         },
     )
-    server_icon = await get_server_avatar(ctx, server.id, ctx.client.user.id) or str(server.icon)
+    server_icon = await get_server_avatar(ctx, server.id, client_user.id) or str(server.icon)
 
     container = Container(
-        accent_colour=server.owner.colour if server.owner.colour.value else discord.Colour.teal(),
+        accent_colour=owner.colour if owner and owner.colour.value else discord.Colour.teal(),
     )
     if server.banner:
         container.add_item(
@@ -398,17 +400,27 @@ async def cmd_channelinfo(ctx: Context) -> None:
 
     # Definitions to shorten the character count
     server = cast("Guild", ctx.server)
-    gch = cast("list[discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel]", server.channels)
+    gch = cast(
+        "list[discord.TextChannel | discord.VoiceChannel | discord.StageChannel | discord.CategoryChannel]",
+        server.channels,
+    )
     me = server.me
     user = cast("Member", ctx.author)
 
     # Disallow selecting channels that the user and bot cannot see.
     valid = [ch for ch in gch if (ch.permissions_for(user).read_messages) and (ch.permissions_for(me).read_messages)]
-    ch = cast("discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel", ctx.ch)
+    ChannelInfoChannel = (
+        discord.TextChannel | discord.VoiceChannel | discord.StageChannel | discord.CategoryChannel | discord.Thread
+    )
+    ch = cast("ChannelInfoChannel", ctx.ch)
     if ctx.args:
-        ch = await ctx.find_channel(ctx.args, interactive=True, collection=valid)
-        if not ch:
+        found = cast(
+            "discord.TextChannel | discord.VoiceChannel | discord.StageChannel | discord.CategoryChannel | None",
+            await ctx.find_channel(ctx.args, interactive=True, collection=valid),
+        )
+        if not found:
             return None
+        ch = found
 
     desc_fields = {
         "Name": f"{ch.mention}" if not isinstance(ch, discord.CategoryChannel) else f"{ch.name}",
@@ -418,18 +430,20 @@ async def cmd_channelinfo(ctx: Context) -> None:
         "NSFW?": "Yes" if getattr(ch, "nsfw", False) else "No",
     }
 
-    match type(ch):
-        case discord.VoiceChannel | discord.StageChannel:
+    match ch:
+        case discord.VoiceChannel() | discord.StageChannel():
             desc_fields["User limit"] = f"{ch.user_limit}" if ch.user_limit else "Unlimited"
-        case discord.Thread:
+        case discord.Thread():
             desc_fields["Last active"] = (
                 f"{discord.utils.format_dt(ch.last_message.created_at, 'R')}" if ch.last_message else "No messages"
             )
-        case discord.CategoryChannel:
+        case discord.CategoryChannel():
             desc_fields["# Channels"] = f"{len(ch.channels)}"
 
     desc_fields["Created"] = (
         f"{discord.utils.format_dt(ch.created_at, 'f')} ({discord.utils.format_dt(ch.created_at, 'R')})"
+        if ch.created_at
+        else "Unknown"
     )
 
     desc_text = tabulate(desc_fields)
@@ -461,19 +475,19 @@ async def cmd_avatar(ctx: Context, flags) -> None:
         global: Display the user's global avatar, if set.
     """
     if not ctx.args:
-        user = cast("Member | User", ctx.author)
+        user = ctx.author
         colour = user.accent_colour if user.accent_colour is not None else LuaTeXitCC["purple"]
     else:
-        user = cast("Member | User", await ctx.find_member(ctx.args, interactive=True))
+        user = await ctx.find_member(ctx.args, interactive=True)
         if not user:
-            ctx.error_reply("User not found.")
+            return await ctx.error_reply("User not found.")
         colour = user.accent_colour if user.accent_colour is not None else LuaTeXitCC["purple"]
 
     # avatar
     if flags["global"]:
         avatar_url = user.display_avatar.url
         using = "display avatar"
-    elif ctx.guild and user.guild_avatar is not None:
+    elif isinstance(user, discord.Member) and user.guild_avatar is not None:
         avatar_url = user.guild_avatar.url
         using = "server avatar"
     else:
@@ -484,11 +498,15 @@ async def cmd_avatar(ctx: Context, flags) -> None:
     if flags["global"]:
         banner_url = await get_user_banner(ctx, user.id)
         b_using = "display banner"
-    elif ctx.guild and user.guild_banner is not None:
+    elif isinstance(user, discord.Member) and user.guild_banner is not None:
         banner_url = user.guild_banner.url
         b_using = "server banner"
     else:
-        banner_url = user.display_banner.url if user.display_banner else await get_user_banner(ctx, user.id)
+        banner_url = (
+            user.display_banner.url
+            if isinstance(user, discord.Member) and user.display_banner
+            else await get_user_banner(ctx, user.id)
+        )
         b_using = "display banner (in lieu)"
 
     container = Container(accent_colour=colour)
@@ -506,7 +524,7 @@ async def cmd_avatar(ctx: Context, flags) -> None:
             container.add_item(Body(f"**{user}**'s {b_using}"))
             container.add_item(
                 discord.ui.MediaGallery(
-                    discord.MediaGalleryItem(banner_url, description=f"Banner for {user.display_name}"),
+                    discord.MediaGalleryItem(cast("str", banner_url), description=f"Banner for {user.display_name}"),
                 ),
             )
         case _, _:
@@ -518,7 +536,7 @@ async def cmd_avatar(ctx: Context, flags) -> None:
             )
             container.add_item(
                 discord.ui.MediaGallery(
-                    discord.MediaGalleryItem(banner_url, description=f"Banner for {user.display_name}"),
+                    discord.MediaGalleryItem(cast("str", banner_url), description=f"Banner for {user.display_name}"),
                 ),
             )
     container.add_item(Footer(f"{discord.utils.format_dt(ctx.msg.created_at, 's')} | Requested by: {ctx.author}"))

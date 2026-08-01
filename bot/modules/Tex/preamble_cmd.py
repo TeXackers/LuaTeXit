@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 import discord
-from cmdClient import Context, cmdClient  # noqa
+from cmdClient import Context, cmdClient
 from cmdClient.lib import ResponseTimedOut
 from utils.lib import substitute_ranges
 

@@ -1,7 +1,8 @@
 import string
+from typing import Any, cast
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from wards import guild_moderator
 
 from .module import guild_admin_module as module
@@ -16,21 +17,25 @@ async def cmd_rmrole(ctx: Context):
     Description:
         Deletes a role given by partial name or mention.
     """
+    # `@guild_moderator()` requires `in_guild`, guaranteeing a guild and a Member author
+    guild = cast("discord.Guild", ctx.guild)
+    author = cast("discord.Member", ctx.author)
+
     if not ctx.arg_str:
         return await ctx.error_reply("Please provide a role to delete.")
-    role: discord.Role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
+    role = await ctx.find_role(ctx.arg_str, create=False, interactive=True)
     if not role:
         return None
     # Various checks to avoid hard errors and prevent abuse.
     if role.managed:
         return await ctx.error_reply("Roles managed by an integration cannot be deleted.")
-    if (role > ctx.author.top_role) and (ctx.guild.owner != ctx.author):
+    if (role > author.top_role) and (guild.owner != author):
         return await ctx.error_reply("You cannot delete a role above you in the role hierarchy.")
-    if role > ctx.guild.me.top_role:
+    if role > guild.me.top_role:
         return await ctx.error_reply("I cannot delete a role above me in the role hierarchy.")
-    if not ctx.guild.me.guild_permissions.manage_roles:
+    if not guild.me.guild_permissions.manage_roles:
         return await ctx.error_reply("I lack the permissions to delete the role.")
-    if role == ctx.guild.default_role:
+    if role == guild.default_role:
         return await ctx.error_reply("The default role cannot be deleted.")
     try:
         await role.delete(reason=f"Moderator: {ctx.author}")
@@ -64,6 +69,9 @@ async def cmd_editrole(ctx: Context, flags):
         {prefix}erole Member --colour #0047AB --name Noob
         {prefix}erole Regular --pos above Member
     """
+    # `@guild_moderator()` requires `in_guild`, guaranteeing a guild
+    guild = cast("discord.Guild", ctx.guild)
+
     if not ctx.arg_str:
         return await ctx.error_reply("Please provide a role to edit.")
 
@@ -71,11 +79,11 @@ async def cmd_editrole(ctx: Context, flags):
     role = await ctx.find_role(params[0], create=True, interactive=True)
     if not role:
         return None
-    edits = {}
-    if role >= ctx.guild.me.top_role:
+    edits: dict[str, Any] = {}
+    if role >= guild.me.top_role:
         return await ctx.error_reply("I can't edit a role equal to or above my top role.")
 
-    if not ctx.guild.me.guild_permissions.manage_roles:
+    if not guild.me.guild_permissions.manage_roles:
         return await ctx.error_reply("I require the permission `Manage Roles` to run this command.")
 
     if flags["colour"] or flags["color"]:
@@ -125,6 +133,7 @@ async def cmd_editrole(ctx: Context, flags):
                 (" ".join(pos_flag.split(" ")[1:])).strip(),
                 create=False,
                 interactive=True,
+                allow_notfound=False,
             )
             position = target_role.position + 1
         elif pos_flag.startswith("below"):
@@ -132,13 +141,14 @@ async def cmd_editrole(ctx: Context, flags):
                 (" ".join(pos_flag.split(" ")[1:])).strip(),
                 create=False,
                 interactive=True,
+                allow_notfound=False,
             )
             position = target_role.position
         else:
             return await ctx.error_reply("An invalid argument was passed to `--pos`. Use `help editrole` for usage.")
 
     if position is not None:
-        if position > ctx.guild.me.top_role.position:
+        if position > guild.me.top_role.position:
             return await ctx.error_reply("The target position is higher than my top role.")
         if position == 0:
             return await ctx.error_reply("The role can't be below the default server role.")

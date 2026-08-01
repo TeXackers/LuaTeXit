@@ -2,7 +2,7 @@ import re
 from typing import TYPE_CHECKING
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import GenericFullEmbed
 from constants import LuaTeXitCC
 from utils.lib import tabulate

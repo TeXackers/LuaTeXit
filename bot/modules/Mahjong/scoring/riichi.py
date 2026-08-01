@@ -4,6 +4,7 @@ Riichi (Japanese) mahjong scoring engine, per [riichi.md](riichi.md)
 
 from collections import Counter
 from dataclasses import dataclass, field
+from typing import cast
 
 from modules.Mahjong.hand import ORPHAN_KINDS, Group, decompose_hand, is_seven_pairs, is_thirteen_orphans
 from modules.Mahjong.tiles import (
@@ -132,7 +133,7 @@ class RiichiScoreResult:
     fu: int | None
     lines: list[ScoreLine]
     is_yakuman: bool
-    limit_name: str
+    limit_name: str | None
     payments: dict[str, int]
     total_points: int
     hand_tiles: list[str]
@@ -196,7 +197,8 @@ def describe_yakuman(multiplier: int) -> str:
 
 def _touches_terminal_or_honor(group: Group) -> bool:
     if group.kind in ("triplet", "kan"):
-        return is_terminal(group.tile) or is_honor(group.tile)
+        tile = cast("str", group.tile)
+        return is_terminal(tile) or is_honor(tile)
     return group.start in (1, 7)  # sequence starting at 1 or 7 includes a 1 or a 9
 
 
@@ -245,7 +247,8 @@ def _compute_fu(
     for g in eff_groups:
         if g.kind == "sequence":
             continue
-        is_term = is_terminal(g.tile) or is_honor(g.tile)
+        tile = cast("str", g.tile)
+        is_term = is_terminal(tile) or is_honor(tile)
         if g.kind == "kan":
             fu += (32 if is_term else 16) if g.concealed else (16 if is_term else 8)
         else:
@@ -365,8 +368,9 @@ def _score_standard(
     suits_present = {suit_of(t) for t in all_tiles if suit_of(t)}
     single_suit = next(iter(suits_present)) if len(suits_present) == 1 else None
 
-    wind_triplets = [g for g in triplets if is_wind(g.tile)]
-    dragon_triplets = [g for g in triplets if is_dragon(g.tile)]
+    # `triplets` is already filtered to kind in ("triplet", "kan"), which always set `tile`.
+    wind_triplets = [g for g in triplets if is_wind(cast("str", g.tile))]
+    dragon_triplets = [g for g in triplets if is_dragon(cast("str", g.tile))]
 
     # --- yakuman shapes ---
     if len(dragon_triplets) == 3:
@@ -416,9 +420,9 @@ def _score_standard(
     if hctx.concealed and flags.tsumo:
         lines.append(ScoreLine(f"[門前清自摸和]({yaku_link('tsumo')})", 1, "tsumo"))
     for g in triplets:
-        if is_dragon(g.tile):
+        if is_dragon(cast("str", g.tile)):
             lines.append(ScoreLine("役牌", 1, f"{g.tile} triplet"))
-        elif is_wind(g.tile):
+        elif is_wind(cast("str", g.tile)):
             match_seat = g.tile == flags.seat_wind
             match_round = g.tile == flags.round_wind
             if match_seat and match_round:
@@ -466,7 +470,7 @@ def _score_standard(
 
     starts: dict[int, set[str]] = {}
     for g in sequences:
-        starts.setdefault(g.start, set()).add(g.suit)
+        starts.setdefault(cast("int", g.start), set()).add(cast("str", g.suit))
     if any(len(s) == 3 for s in starts.values()):
         lines.append(
             ScoreLine(
@@ -508,9 +512,10 @@ def _score_standard(
 
     trip_by_number: dict[int, set[str]] = {}
     for g in triplets:
-        s = suit_of(g.tile)
+        tile = cast("str", g.tile)
+        s = suit_of(tile)
         if s:
-            trip_by_number.setdefault(number_of(g.tile), set()).add(s)
+            trip_by_number.setdefault(cast("int", number_of(tile)), set()).add(s)
     if any(len(s) == 3 for s in trip_by_number.values()):
         lines.append(
             ScoreLine(f"[三色同刻]({yaku_link('sanshoku doukou')})", 2, "same-numbered triplet in all three suits")

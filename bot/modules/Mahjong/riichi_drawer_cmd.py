@@ -1,6 +1,6 @@
-from typing import override
+from typing import cast, override
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from utils.interactive import get_application_emojis_by_name
 
 from .display import render_note
@@ -25,8 +25,9 @@ class RiichiDrawerView(BaseDrawerView):
                 f"- {line.name}: {render_note(self.emojis_by_name, line.note)} ({describe_yakuman(line.points)})"
                 for line in result.lines
             )
-            summary = result.limit_name
-            short_label = result.limit_name
+            # `limit_name` is always set when `is_yakuman` is True
+            summary = cast("str", result.limit_name)
+            short_label = cast("str", result.limit_name)
         else:
             breakdown = "\n".join(
                 f"- {line.name}: {render_note(self.emojis_by_name, line.note)} ({line.points}飜)"

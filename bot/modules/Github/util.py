@@ -2,7 +2,7 @@ import re
 
 import discord
 from discord import Colour, Embed
-from github.Repository import Repository  # noqa
+from github.Repository import Repository
 from utils.lib import split_text
 
 from .GithubColours import GITHUB_LANG2COLOUR, GithubColour

@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from registry import Column, ColumnType, tableInterface, tableSchema
 from settings import ChannelList, GuildSetting, ListData
 from wards import guild_manager

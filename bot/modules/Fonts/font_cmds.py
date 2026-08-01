@@ -7,7 +7,7 @@ from asyncio.subprocess import PIPE
 from dataclasses import dataclass
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import bf, footnote
 from iso639 import Language, LanguageNotFoundError
 from utils.cache import async_ttl_cache

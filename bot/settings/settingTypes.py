@@ -2,10 +2,10 @@ from enum import Enum
 from typing import Any, ClassVar
 
 import discord
-from cmdClient import Context, cmdClient  # noqa
+from cmdClient import Context, cmdClient
 from cmdClient.lib import SafeCancellation
 
-from settings.GuildSetting import GuildSetting  # noqa
+from settings.GuildSetting import GuildSetting
 
 from .errors import BadUserInput
 

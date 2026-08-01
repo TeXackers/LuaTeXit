@@ -5,7 +5,7 @@ import anyio
 import discord
 import github
 from anyio import Path as AsyncPath
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from github import Auth, Github
 from wards import is_admin, is_dev, is_owner
 

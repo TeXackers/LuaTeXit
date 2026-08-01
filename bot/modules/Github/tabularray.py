@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import github
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from github import Auth, Github
 from utils.interactive import get_application_emoji_by_name
 

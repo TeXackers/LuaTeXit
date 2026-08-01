@@ -3,7 +3,7 @@ from contextlib import suppress
 from datetime import datetime
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.lib import ResponseTimedOut, UserCancelled
 from wards import is_admin, is_reviewer
 
@@ -239,11 +239,11 @@ async def user_admin(ctx: Context, userid: int):
 
             # Display the preamble for judgement
             judging = pending_preamble
-            sub_msg = await view_preamble_v2(
+            sub_msg = await view_preamble_diff_v2(
                 ctx,
-                current_preamble,
-                judging["pending_preamble"],
-                "Preamble submission",
+                preamble_old=current_preamble,
+                preamble_pending=judging["pending_preamble"],
+                title="Preamble submission",
                 author="{} ({})".format(judging["username"], userid),
                 time=datetime.fromtimestamp(judging["submission_time"], tz=discord.utils.utcnow().astimezone().tzinfo),
                 header=judging["submission_summary"],

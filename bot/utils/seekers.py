@@ -1,8 +1,32 @@
 import asyncio
+from typing import Literal, overload
 
 import discord
 from cmdClient import Context
 from cmdClient.lib import InvalidContext, ResponseTimedOut, SafeCancellation, UserCancelled
+
+
+@overload
+async def find_role(
+    ctx: Context,
+    userstr: str,
+    create: bool = ...,
+    interactive: bool = ...,
+    collection=...,
+    *,
+    allow_notfound: Literal[False],
+) -> discord.Role: ...
+
+
+@overload
+async def find_role(
+    ctx: Context,
+    userstr: str,
+    create: bool = ...,
+    interactive: bool = ...,
+    collection=...,
+    allow_notfound: Literal[True] = ...,
+) -> discord.Role | None: ...
 
 
 @Context.util

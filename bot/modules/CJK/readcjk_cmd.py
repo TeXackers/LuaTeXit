@@ -1,4 +1,4 @@
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Format import remove_markdown_delimiters
 from cmdClient.Layouts import Body, Footer, Header, TextEmbed
 from constants import LuaTeXitCC

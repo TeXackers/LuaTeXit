@@ -1,7 +1,12 @@
-from cmdClient import Context  # noqa
+from typing import TYPE_CHECKING, cast
+
+from cmdClient import Context
 from cmdClient.lib import ResponseTimedOut
 from utils.lib import substitute_ranges
 from wards import guild_admin, in_guild
+
+if TYPE_CHECKING:
+    import discord
 
 from .core.LatexGuild import LatexGuild
 from .core.preamble_utils import confirm, preamblelog, view_preamble
@@ -44,7 +49,10 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
     Related:
         preamble, config, texconfig
     """
-    lguild = LatexGuild.get(ctx.guild.id)
+    # `@in_guild()` guarantees we are in a guild
+    guild = cast("discord.Guild", ctx.guild)
+
+    lguild = LatexGuild.get(guild.id)
     guild_preamble = lguild.preamble
     guild_preamble_data = ctx.client.data.guild_latex_preambles
 
@@ -52,7 +60,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
     preamble = guild_preamble or default_preamble
 
     # Human readable guild information for logging headers
-    log_str = f"{ctx.guild.name} ({ctx.guild.id})"
+    log_str = f"{guild.name} ({guild.id})"
 
     # Handle resetting the preamble
     if flags["reset"]:
@@ -75,7 +83,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
             return await ctx.error_reply("Cancelling preamble reset, the guild preamble was not modified.")
 
         # Now reset the preamble
-        guild_preamble_data.delete_where(guildid=ctx.guild.id)
+        guild_preamble_data.delete_where(guildid=guild.id)
         lguild.load()
 
         # Logging
@@ -192,7 +200,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
 
         # Finally save the new preamble
         if new_preamble is not None:
-            guild_preamble_data.insert(allow_replace=True, guildid=ctx.guild.id, preamble=new_preamble)
+            guild_preamble_data.insert(allow_replace=True, guildid=guild.id, preamble=new_preamble)
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
             await preamblelog(
@@ -272,7 +280,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
 
         # Finally save the new preamble
         if new_submission is not None:
-            guild_preamble_data.insert(allow_replace=True, guildid=ctx.guild.id, preamble=new_submission)
+            guild_preamble_data.insert(allow_replace=True, guildid=guild.id, preamble=new_submission)
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
             await preamblelog(
@@ -315,7 +323,7 @@ async def cmd_gpreamble(ctx: Context, flags: dict[str, bool]):
 
         # Finally save the new preamble
         if new_submission is not None:
-            guild_preamble_data.insert(allow_replace=True, guildid=ctx.guild.id, preamble=new_submission)
+            guild_preamble_data.insert(allow_replace=True, guildid=guild.id, preamble=new_submission)
             lguild.load()
             await ctx.reply("The guild preamble has been updated.")
             await preamblelog(

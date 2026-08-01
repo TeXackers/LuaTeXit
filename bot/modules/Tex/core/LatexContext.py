@@ -8,7 +8,7 @@ from typing import ClassVar
 
 import discord
 from anyio import Path as AsyncPath
-from cmdClient import Context, cmdClient  # noqa
+from cmdClient import Context, cmdClient
 from logger import log
 from utils.ratelimit import Bucket, BucketFull, BucketOverFull
 

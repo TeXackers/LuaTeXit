@@ -1,6 +1,6 @@
 import re
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.lib import ResponseTimedOut
 
 from .core.TypstUser import TypstUser, set_user_preamble

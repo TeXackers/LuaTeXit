@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import github
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from github import Auth, Github
 from utils.interactive import get_application_emoji_by_name
 
@@ -144,7 +144,7 @@ async def cmd_github_lookup(ctx: Context, flags):
                 author={
                     "name": repo.owner.login,
                     "url": repo.owner.html_url,
-                    "icon_url": f"https://avatars.githubusercontent.com/u/{repo.owner.id}?v=4",
+                    "avatar_url": f"https://avatars.githubusercontent.com/u/{repo.owner.id}?v=4",
                 },
                 created_at=repo.created_at,
                 footer_text=f"Last updated: {discord.utils.format_dt(repo.updated_at, 'R')} | Requested by: {ctx.author.display_name or ctx.author.name}",
@@ -213,7 +213,7 @@ async def cmd_github_lookup(ctx: Context, flags):
             author={
                 "name": issue.user.login,
                 "url": issue.user.html_url,
-                "icon_url": f"https://avatars.githubusercontent.com/u/{issue.user.id}?v=4",
+                "avatar_url": f"https://avatars.githubusercontent.com/u/{issue.user.id}?v=4",
             },
             created_at=issue.created_at,
             footer_text=f"{_state_msg} {discord.utils.format_dt(_last_update, 'R')} | Requested by: {ctx.author.display_name}",

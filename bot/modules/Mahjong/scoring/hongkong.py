@@ -196,13 +196,14 @@ def _score_standard_decomp(
     if len(triplets) == 4:
         regular.append(ScoreLine("對對糊", 3, "every group is a pung/kong"))
 
-    dragon_triplets = [g for g in triplets if is_dragon(g.tile)]
+    # `triplets` is already filtered to kind in ("triplet", "kan"), which always set `tile`.
+    dragon_triplets = [g for g in triplets if is_dragon(cast("str", g.tile))]
     if len(dragon_triplets) == 2 and is_dragon(pair):
         regular.append(ScoreLine("小三元", 3, "two dragon triplets + dragon pair"))
     elif len(dragon_triplets) == 3:
         regular.append(ScoreLine("大三元", 5, "three dragon triplets"))
 
-    wind_triplets = [g for g in triplets if is_wind(g.tile)]
+    wind_triplets = [g for g in triplets if is_wind(cast("str", g.tile))]
     if len(wind_triplets) == 3 and is_wind(pair):
         regular.append(ScoreLine("小四喜", 6, "three wind triplets + the fourth wind as pair"))
     elif len(wind_triplets) == 4:
@@ -223,12 +224,12 @@ def _score_standard_decomp(
 
     wind_dragon: list[ScoreLine] = []
     for g in triplets:
-        if is_wind(g.tile):
+        if is_wind(cast("str", g.tile)):
             if g.tile == flags.seat_wind:
                 wind_dragon.append(ScoreLine("門風", 1, f"{g.tile} triplet matches seat wind"))
             if g.tile == flags.round_wind:
                 wind_dragon.append(ScoreLine("圈風", 1, f"{g.tile} triplet matches round wind"))
-        elif is_dragon(g.tile):
+        elif is_dragon(cast("str", g.tile)):
             match g.tile:
                 case "middle":  # red 中
                     wind_dragon.append(ScoreLine("紅中", 1, f"{g.tile} triplet"))

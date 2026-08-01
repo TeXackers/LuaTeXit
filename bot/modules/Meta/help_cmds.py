@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from constants import sorted_cats
 from utils.lib import tabulate
 from wards import is_admin

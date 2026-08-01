@@ -4,7 +4,7 @@ import traceback
 from io import StringIO
 from typing import TYPE_CHECKING
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from wards import is_dev, is_owner
 
 from .module import bot_admin_module as module

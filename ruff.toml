@@ -20,8 +20,6 @@ exclude = [
 skip-magic-trailing-comma = false
 
 [lint]
-future-annotations = true
-
 # https://docs.astral.sh/ruff/rules/
 extend-select = [
     "A",        # var names masking builtins

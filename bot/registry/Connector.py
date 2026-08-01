@@ -1,7 +1,11 @@
 import logging
 from itertools import chain
+from typing import TYPE_CHECKING, Any
 
 from logger import log
+
+if TYPE_CHECKING:
+    from .tableInterface import tableInterface
 
 
 # TODO: Versioning
@@ -20,6 +24,22 @@ class Connector:
 
     # Arguments to pass to each cursor
     cursor_args = {}
+
+    # The underlying DBAPI connection, set to a real connection object by subclasses
+    conn: Any
+
+    # Data interfaces attached at runtime via `attach_interface`, see modules'
+    # `data_init_task` hooks for the attaching call sites.
+    guild_latex_channels: "tableInterface"
+    guild_latex_config: "tableInterface"
+    guild_latex_preambles: "tableInterface"
+    guild_typst_config: "tableInterface"
+    user_latex_config: "tableInterface"
+    user_latex_preambles: "tableInterface"
+    user_pending_preambles: "tableInterface"
+    user_time_settings: "tableInterface"
+    user_typst_config: "tableInterface"
+    user_typst_preambles: "tableInterface"
 
     def __init__(self, **dbopts):
         self.interfaces = {}  # Dict of attached data interfaces

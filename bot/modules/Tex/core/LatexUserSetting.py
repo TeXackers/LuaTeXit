@@ -1,7 +1,7 @@
 from typing import ClassVar, override
 
 import discord
-from cmdClient import Context, cmdClient  # noqa
+from cmdClient import Context, cmdClient
 from constants import LuaTeXitCC
 from settings import BadUserInput, Boolean, Integer, IntegerEnum, SettingType, String
 from utils.lib import prop_tabulate, tabulate

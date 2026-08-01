@@ -75,6 +75,8 @@ def log(message, context="CLIENT", level=logging.INFO, post=True):
 
 # Live logger that posts to the logging channels
 async def live_log(message, context, level):
+    if _client is None:
+        return
     context_clean = str(context).capitalize()
     if level >= logging.INFO:
         log_chid = _client.conf.get("log_channel")

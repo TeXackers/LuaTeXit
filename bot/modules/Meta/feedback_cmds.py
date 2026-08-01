@@ -1,5 +1,5 @@
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from constants import LuaTeXitCC
 
 from .module import meta_module as module

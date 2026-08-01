@@ -1,12 +1,13 @@
 import random
 import re
 import urllib.parse
+from typing import cast
 
 import discord
 from aiohttp import ClientSession, ClientTimeout
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import TextEmbed
 from utils.cache import async_ttl_cache
 from utils.interactive import get_application_emoji_by_name
@@ -187,13 +188,16 @@ class MarkdownConverter:
 def search_n_parse(soup: BeautifulSoup) -> tuple[str, str, list[str], list[str]]:
     title = soup.find("h1")
 
-    if title and title.contents and "Not Found" in str(title.contents[0]):
+    if title is None:
+        return ("", "", [], [])
+
+    if title.contents and "Not Found" in str(title.contents[0]):
         return ("", "", [], [])
 
     try:
-        if title and title.contents and len(title.contents) > 2 and "is Gone" in str(title.contents[2]):
+        if title.contents and len(title.contents) > 2 and "is Gone" in str(title.contents[2]):
             div = soup.find("div", attrs={"class": "left"})
-            desc = div.text
+            desc = div.text if div else ""
             return (title.text, desc, [], [])
     except IndexError:
         pass
@@ -206,27 +210,28 @@ def search_n_parse(soup: BeautifulSoup) -> tuple[str, str, list[str], list[str]]
     table = soup.find("table")
     prop_list = []
     value_list = []
+    if table is None:
+        return (title, emb_desc, prop_list, value_list)
     for tr in table.find_all("tr"):
         tds = tr.find_all("td")
         ignored = ["TDS archive", "Licenses", "Copyright", "Maintainer"]
         if tds[0].text in ignored:
             continue
 
-        brs = tds[1].find_all("br")
-        if brs is not None:
-            for _ in brs:
-                tds[1].br.replace_with(", ")
+        for br in tds[1].find_all("br"):
+            br.replace_with(", ")
 
         links = tds[1].find_all("a")
         if links:
             for link in links:
+                href = cast("str", link.attrs["href"])
                 if tds[0].text == "Documentation":
                     link.insert_after(", ")
-                if link.text == urllib.parse.urljoin(ctan_url, link.attrs["href"]):
+                if link.text == urllib.parse.urljoin(ctan_url, href):
                     md_link = link.text
                 else:
-                    md_link = "[{}]({})".format(link.text, urllib.parse.urljoin(ctan_url, link.attrs["href"]))
-                tds[1].a.replace_with(md_link)
+                    md_link = f"[{link.text}]({urllib.parse.urljoin(ctan_url, href)})"
+                link.replace_with(md_link)
 
         prop_list.append(tds[0].text)
         value_list.append(tds[1].text.rstrip(", "))
@@ -313,9 +318,11 @@ async def cmd_ctan(ctx: Context):
         desc = f"From {result_url}"
         if title:
             desc += f"\nDirect page found at [{ctx.args}]({url})"
-        search_title = soup.find("h1").text
+        h1 = soup.find("h1")
+        search_title = h1.text if h1 else ""
         embed = discord.Embed(title=search_title, description=desc)
-        stats = soup.find("p").text
+        p = soup.find("p")
+        stats = p.text if p else ""
         if "no matching" in stats:
             # shows up when you search for unexpected chars, i.e. `[]`
             idx = stats.rfind("You have")
@@ -328,10 +335,11 @@ async def cmd_ctan(ctx: Context):
         urls = soup.find_all("a", attrs={"class": "hit-type-pkg"})
         md_links = []
         for url in urls:
-            if url.text == urllib.parse.urljoin(ctan_url, url.attrs["href"]):
+            href = cast("str", url.attrs["href"])
+            if url.text == urllib.parse.urljoin(ctan_url, href):
                 md_link = url.text
             else:
-                md_link = "[{}]({})".format(url.text, urllib.parse.urljoin(ctan_url, url.attrs["href"]))
+                md_link = f"[{url.text}]({urllib.parse.urljoin(ctan_url, href)})"
             md_links.append(md_link)
         field_value = "\n".join(md_links)
         embed.add_field(name=stats, value=field_value)

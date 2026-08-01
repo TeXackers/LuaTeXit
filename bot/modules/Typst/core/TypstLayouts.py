@@ -87,7 +87,12 @@ class TypstOutputView(LayoutView):
     async def interaction_check(self, interaction: Interaction) -> bool:
         if interaction.user == self.author:
             return True
-        if interaction.guild and interaction.channel.permissions_for(interaction.user).manage_messages:
+        if (
+            interaction.guild
+            and isinstance(interaction.user, Member)
+            and interaction.channel is not None
+            and interaction.channel.permissions_for(interaction.user).manage_messages
+        ):
             return True
         await interaction.response.send_message("You can't control this output.", ephemeral=True)
         return False

@@ -1,6 +1,6 @@
 import re
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from wards import is_reviewer
 
 from .core.LatexContext import LatexContext

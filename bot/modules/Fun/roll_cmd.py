@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 
 from .module import fun_module as module
 

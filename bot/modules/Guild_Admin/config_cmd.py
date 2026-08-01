@@ -1,5 +1,5 @@
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from settings import BadUserInput
 from utils.lib import prop_tabulate
 from wards import guild_manager, in_guild

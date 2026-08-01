@@ -4,7 +4,7 @@ from config import get_conf
 from utils.cache import async_ttl_cache
 from typing import TYPE_CHECKING
 
-from discord import TeamMemberRole
+from discord import Member, TeamMemberRole
 
 if TYPE_CHECKING:
     from discord import AppInfo, Team
@@ -77,6 +77,10 @@ async def in_guild(ctx: Context, *args, **kwargs):
 
 @check(name="GUILD_MODERATOR", msg="This may only be done by a moderator!", requires=[in_guild])
 async def guild_moderator(ctx: Context, *args, **kwargs):
+    # `requires=[in_guild]` guarantees a Member author
+    if not isinstance(ctx.author, Member):
+        return False
+
     has_mod = ctx.author.guild_permissions.administrator
     has_mod = has_mod or ctx.author.guild_permissions.manage_guild
 
@@ -91,9 +95,9 @@ async def guild_moderator(ctx: Context, *args, **kwargs):
 
 @check(name="GUILD_MANAGER", msg="You need the `manage guild` permission to do this!", requires=[in_guild])
 async def guild_manager(ctx: Context, *args, **kwargs):
-    return ctx.author.guild_permissions.manage_guild
+    return isinstance(ctx.author, Member) and ctx.author.guild_permissions.manage_guild
 
 
 @check(name="GUILD_ADMIN", msg="You need the `administrator` permission to do this!", requires=[in_guild])
 async def guild_admin(ctx: Context, *args, **kwargs):
-    return ctx.author.guild_permissions.administrator
+    return isinstance(ctx.author, Member) and ctx.author.guild_permissions.administrator

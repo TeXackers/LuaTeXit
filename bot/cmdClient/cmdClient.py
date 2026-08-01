@@ -10,16 +10,19 @@ from bisect import bisect
 from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, override
+from typing import TYPE_CHECKING, Any, ClassVar, cast, override
 
 if TYPE_CHECKING:
+    from registry.Connector import Connector
+    from settings.config import _guild_config
+
     from .Module import Module
 
 import discord
 from cachetools import LRUCache
 from discord import Message
 
-from .Command import Command  # noqa
+from .Command import Command
 from .Context import Context, FlatContext
 from .logger import current_mid, log
 from .Module import Module
@@ -30,6 +33,11 @@ LUATEXIT_ID = 871978350393065572
 class cmdClient(discord.Client):
     prefix: str | None
     conf: Any
+    log: Callable[..., None]
+    app: str
+    sharded: bool
+    guild_config: "_guild_config"
+    data: "Connector"
 
     baseModule: ClassVar[type[Module]] = Module
     default_module: ClassVar[Module | None]
@@ -125,8 +133,9 @@ class cmdClient(discord.Client):
         """
         await self.launch_modules()
 
+        client_user = cast("discord.ClientUser", self.user)  # defs set once `on_ready` fires
         ready_str = (
-            f"{self.user} ({self.user.id or 'Unknown ID'}) launching in {len(self.guilds)} guilds\n"
+            f"{self.user} ({client_user.id or 'Unknown ID'}) launching in {len(self.guilds)} guilds\n"
             f"Default prefix: {self.prefix}\n"
             f"Commands: {len(self.cmds)}\n"
             f"GOTOV"
@@ -171,8 +180,8 @@ class cmdClient(discord.Client):
                 await self.on_message(after)
 
     async def flat_command_response_cleaner(self, flatctx: FlatContext):
-        ch = self.get_channel(flatctx.ch)
-        if ch is not None:
+        ch = self.get_channel(flatctx.ch) if flatctx.ch is not None else None
+        if isinstance(ch, discord.abc.Messageable):
             for msgid in flatctx.sent_messages:
                 with suppress(Exception):
                     msg = await ch.fetch_message(msgid)
@@ -180,7 +189,8 @@ class cmdClient(discord.Client):
 
     async def active_command_response_cleaner(self, ctx: Context):
         with suppress(discord.NotFound):
-            if ctx.guild and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
+            channel_types = (discord.TextChannel, discord.VoiceChannel, discord.StageChannel)
+            if ctx.guild and isinstance(ctx.ch, channel_types) and ctx.ch.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.ch.delete_messages(ctx.sent_messages)
             else:
                 await asyncio.gather(*(msg.delete() for msg in ctx.sent_messages))
@@ -286,7 +296,9 @@ class cmdClient(discord.Client):
             if fn.is_file() and fn.suffix == ".py":
                 path: Path = fn.absolute()
                 module_name: str = "bot_module_" + str(fn)
-                spec: importlib.machinery.ModuleSpec = importlib.util.spec_from_file_location(module_name, path)
+                spec = importlib.util.spec_from_file_location(module_name, path)
+                if spec is None or spec.loader is None:
+                    continue
                 module: types.ModuleType = importlib.util.module_from_spec(spec)
 
                 sys.path.append(dirpath)

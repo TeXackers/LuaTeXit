@@ -2,7 +2,7 @@ import logging
 import traceback
 
 import discord
-from cmdClient import Context, cmdClient  # noqa
+from cmdClient import Context, cmdClient
 from discord import Message
 from logger import log
 

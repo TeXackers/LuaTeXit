@@ -75,6 +75,7 @@ class AuthorInfo(TypedDict):
 
     Modify as necessary later down the track.
     """
+
     name: str
     url: str
     avatar_url: str

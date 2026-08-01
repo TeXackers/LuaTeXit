@@ -3,7 +3,7 @@ import random
 from datetime import datetime
 
 import discord
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from cmdClient.Layouts import Body, Footer, Header
 from constants import LuaTeXitCC
 from discord.ui import Container, LayoutView, MediaGallery, Separator

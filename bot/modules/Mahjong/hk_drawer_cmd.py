@@ -1,6 +1,6 @@
 from typing import override
 
-from cmdClient import Context  # noqa
+from cmdClient import Context
 from utils.interactive import get_application_emojis_by_name
 
 from .display import render_note

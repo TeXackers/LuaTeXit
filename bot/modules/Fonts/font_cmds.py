@@ -4,6 +4,7 @@ import os
 import re
 import time
 from asyncio.subprocess import PIPE
+from dataclasses import dataclass
 
 import discord
 from cmdClient import Context  # noqa
@@ -133,6 +134,12 @@ def clean_md(text: str) -> str:
     return text.strip()
 
 
+@dataclass
+class SearchParams:
+    query: str | None = None
+    search_type: str | None = None
+
+
 @module.cmd(
     "findfont",
     desc="Looks for fonts supporting a given argument",
@@ -155,8 +162,7 @@ async def cmd_findfont(ctx: Context, flags: dict):
     t_start = time.monotonic()
     fclist_chars: str = ""
     fclist_lang: str = ""
-    params_dict: dict = {"query": None, "type": None}
-    loading = await get_application_emoji_by_name(ctx.client, "loading")
+    params = SearchParams()
 
     if flags["char"]:
         cleaned_chars = ",".join(clean_md(part) for part in flags["char"].split(","))
@@ -165,16 +171,14 @@ async def cmd_findfont(ctx: Context, flags: dict):
             return await ctx.reply("Invalid unicode or glyph(s).")
         if len(requested_chars) > 1:
             fclist_chars = ":charset=" + ",".join(requested_chars)
-            params_dict["Characters"] = ", ".join(requested_chars)
         elif len(requested_chars) == 1:
             fclist_chars = ":charset=" + str(requested_chars[0])
-            params_dict["Characters"] = str(requested_chars[0])
         else:
             ctx.log(f"Requested characters: {requested_chars}", context="fonts", context_level=logging.DEBUG)
             return await ctx.error_reply("Something went wrong while processing the characters.")
 
-        params_dict["query"] = cleaned_chars
-        params_dict["type"] = "character" if len(requested_chars) == 1 else "characters"
+        params.query = cleaned_chars
+        params.search_type = "character" if len(requested_chars) == 1 else "characters"
 
     if flags["lang"]:
         requested_language: Language
@@ -189,8 +193,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
             except LanguageNotFoundError as e:
                 return await ctx.error_reply(f"{e}")
 
-        params_dict["query"] = requested_language.name
-        params_dict["type"] = "language"
+        params.query = requested_language.name
+        params.search_type = "language"
 
         fclist_lang: str = ":lang=" + str(requested_language.part1 or requested_language.part2t)
 
@@ -215,8 +219,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
         fonts = [line.split(",")[0].strip() for line in fonts]
 
         if flags["name"]:
-            params_dict["query"] = clean_md(flags["name"])
-            params_dict["type"] = "name"
+            params.query = clean_md(flags["name"])
+            params.search_type = "name"
             fonts = [f.title() for f in [f.lower() for f in fonts] if clean_md(flags["name"]).lower() in f]
             if not fonts:
                 return await ctx.reply(f"No fonts found matching the name:\n\n{bf(clean_md(flags['name']))}.")
@@ -238,8 +242,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
             raw_pattern = flags["name"].strip()
             # Escape for display only
             display_pattern = discord.utils.escape_mentions(discord.utils.escape_markdown(raw_pattern))
-            params_dict["query"] = display_pattern
-            params_dict["type"] = "name"
+            params.query = display_pattern
+            params.search_type = "name"
 
             try:
                 name_re = re.compile(raw_pattern, re.IGNORECASE)
@@ -256,8 +260,8 @@ async def cmd_findfont(ctx: Context, flags: dict):
     fc_out_sorted: list[str] = sorted(set(fonts))
     fc_out: list[str] = [f for f in fc_out_sorted if f]
     footnote_text = (
-        f"searching for {bf(params_dict['query'])} by {bf(params_dict['type'])}"
-        if params_dict["query"] and params_dict["type"]
+        f"searching for {bf(params.query)} by {bf(params.search_type)}"
+        if params.query and params.search_type
         else "Showing all fonts"
     )
     title_text = (

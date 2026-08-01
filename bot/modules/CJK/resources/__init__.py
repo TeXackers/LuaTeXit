@@ -1,3 +1,12 @@
-from .lookup import lookup, transliterate
+from .lookup import Char, Codepoint, Designations, ReadingKey, UnihanEntry, Variant, lookup, transliterate
 
-__all__ = ["lookup", "transliterate"]
+__all__ = [
+    "Char",
+    "Codepoint",
+    "Designations",
+    "ReadingKey",
+    "UnihanEntry",
+    "Variant",
+    "lookup",
+    "transliterate",
+]

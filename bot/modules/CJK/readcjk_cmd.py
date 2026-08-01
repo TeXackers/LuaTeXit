@@ -5,14 +5,14 @@ from constants import LuaTeXitCC
 from discord.ui import Container, Separator
 
 from .module import cjk_module as module
-from .resources import transliterate
+from .resources import ReadingKey, transliterate
 
 # (transliterate() reading key, display label, flags that select it)
-LANGUAGES = [
-    ("cantonese", "Cantonese", ("c",)),
-    ("mandarin", "Mandarin", ("p", "m")),
-    ("korean", "Korean", ("k",)),
-    ("vietnamese", "Vietnamese", ("v",)),
+LANGUAGES: list[tuple[ReadingKey, str, tuple[str, ...]]] = [
+    (ReadingKey("cantonese"), "Cantonese", ("c",)),
+    (ReadingKey("mandarin"), "Mandarin", ("p", "m")),
+    (ReadingKey("korean"), "Korean", ("k",)),
+    (ReadingKey("vietnamese"), "Vietnamese", ("v",)),
 ]
 
 BODY_LIMIT = 1000

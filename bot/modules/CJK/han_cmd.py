@@ -7,7 +7,7 @@ from constants import LuaTeXitCC
 from utils.lib import tabulate
 
 from .module import cjk_module as module
-from .resources import lookup
+from .resources import Char, Codepoint, Designations, Variant, lookup
 
 VARIANT_LABELS = {
     "kSimplifiedVariant": "Simplified",
@@ -22,7 +22,7 @@ VARIANT_LABELS = {
 UNICODE_LOOKUP_URL = "https://util.unicode.org/UnicodeJsps/character.jsp?a={}"
 
 
-def _designation_table(designations: dict) -> str:
+def _designation_table(designations: Designations) -> str:
     """
     Renders the lists a character is designated under, grouped by country.
 
@@ -78,7 +78,7 @@ def _designation_table(designations: dict) -> str:
     return tabulate(rows) if rows else ""
 
 
-def _codepoint_to_url(codepoint: str) -> str:
+def _codepoint_to_url(codepoint: Codepoint) -> str:
     """
     Converts a codepoint string like 'U+4E00' to a markdown hyperlink.
     """
@@ -88,7 +88,7 @@ def _codepoint_to_url(codepoint: str) -> str:
     )
 
 
-def _variant_str(variant: dict) -> str:
+def _variant_str(variant: Variant) -> str:
     return f"{variant['char']} ({_codepoint_to_url(variant['codepoint'])})"
 
 
@@ -116,6 +116,7 @@ async def cmd_han(ctx: Context, flags: dict):
         return await ctx.error_reply("Please provide a Han character to look up, e.g. `han 雄`.")
     if len(char) != 1:
         return await ctx.error_reply("Please provide exactly one character at a time.")
+    char = Char(char)
 
     entry = lookup(char)
     if entry is None:

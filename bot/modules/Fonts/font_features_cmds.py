@@ -5,6 +5,7 @@ import time
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
+from typing import NewType
 
 import discord
 from cmdClient import Context  # noqa
@@ -21,6 +22,17 @@ from .ot_language_tags import OT_LANGUAGE_TAGS
 """
 Provides the fontfeatures command.
 """
+
+FeatureTag = NewType("FeatureTag", str)
+"""str: A raw OpenType feature tag"""
+FontspecKey = NewType("FontspecKey", str)
+"""str: A fontspec-style feature key"""
+FontspecValue = NewType("FontspecValue", str)
+"""str: A fontspec value name for a feature key"""
+ScriptTag = NewType("ScriptTag", str)
+"""str: An OpenType `script` tag"""
+LanguageTag = NewType("LanguageTag", str)
+"""str: An OpenType `language` system tag"""
 
 # Supported/Unsupported OT feature tags (and their equivalent fontspec key-values)
 FEATURE_GROUPS: dict[str, dict[str, str] | list[str]] = {
@@ -178,23 +190,29 @@ FEATURE_GROUPS: dict[str, dict[str, str] | list[str]] = {
         "vjmo",
     ],
 }
-OTHER_GROUP = "Other"
-NUMBERED_GROUPS = {"CharacterVariants", "StylisticSet"}  # these show up as just numbers
+OTHER_GROUP = FontspecKey("Other")
+NUMBERED_GROUPS: set[FontspecKey] = {
+    FontspecKey("CharacterVariants"),
+    FontspecKey("StylisticSet"),
+}  # these show up as just numbers
 CV_TAG_RE = re.compile(r"^cv\d\d$")
 
-TAG_TO_GROUP: dict[str, str] = {
-    tag: group for group, tags in FEATURE_GROUPS.items() for tag in tags if not tag.endswith("XX")
+TAG_TO_GROUP: dict[FeatureTag, FontspecKey] = {
+    FeatureTag(tag): FontspecKey(group)
+    for group, tags in FEATURE_GROUPS.items()
+    for tag in tags
+    if not tag.endswith("XX")
 }
 # OpenType tag to fontspec value name
-TAG_TO_VALUE: dict[str, str] = {
-    tag: value
+TAG_TO_VALUE: dict[FeatureTag, FontspecValue] = {
+    FeatureTag(tag): FontspecValue(value)
     for _, tags in FEATURE_GROUPS.items()
     if isinstance(tags, dict)
     for tag, value in tags.items()
     if not tag.endswith("XX")
 }
-NUMBERED_GROUP_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(rf"^{tag[:-2]}\d\d$"), group)
+NUMBERED_GROUP_PATTERNS: list[tuple[re.Pattern[str], FontspecKey]] = [
+    (re.compile(rf"^{tag[:-2]}\d\d$"), FontspecKey(group))
     for group, tags in FEATURE_GROUPS.items()
     for tag in tags
     if tag.endswith("XX")
@@ -232,7 +250,7 @@ class NameID(IntEnum):
     VARIATIONS_PS_NAME_PREFIX = 25
 
 
-def group_for(tag: str) -> str:
+def group_for(tag: FeatureTag) -> FontspecKey:
     """Resolve raw OpenType feature tag to its fontspec-style category."""
     if tag in TAG_TO_GROUP:
         return TAG_TO_GROUP[tag]
@@ -243,8 +261,8 @@ def group_for(tag: str) -> str:
 
 
 def display_values(
-    tag: str,
-    group: str,
+    tag: FeatureTag,
+    group: FontspecKey,
     cv_variations: dict[str, int] | None = None,
     annotation_counts: list[int] | None = None,
 ) -> list[str]:
@@ -271,7 +289,7 @@ def display_values(
 class FontStyle:
     family: str
     style: str
-    file: str
+    file: Path
     index: int
 
 
@@ -290,7 +308,9 @@ async def resolve_font_styles(family_query: str) -> list[FontStyle]:
         if not line.strip():
             continue
         family, style, file, index = line.split("|", 3)
-        styles.append(FontStyle(family=family.split(",")[0], style=style.split(",")[0], file=file, index=int(index)))
+        styles.append(
+            FontStyle(family=family.split(",")[0], style=style.split(",")[0], file=Path(file), index=int(index)),
+        )
     return styles
 
 
@@ -310,7 +330,7 @@ async def match_regular(family: str) -> FontStyle | None:
     matched_family, style, file, index = line.split("|", 3)
     if family.lower() not in (f.strip().lower() for f in matched_family.split(",")):
         return None
-    return FontStyle(family=matched_family.split(",")[0], style=style.split(",")[0], file=file, index=int(index))
+    return FontStyle(family=matched_family.split(",")[0], style=style.split(",")[0], file=Path(file), index=int(index))
 
 
 async def suggest_families(query: str, limit: int = 8) -> list[str]:
@@ -328,7 +348,7 @@ async def suggest_families(query: str, limit: int = 8) -> list[str]:
     return sorted(f for f in families if needle in f.lower())[:limit]
 
 
-def _script_label(tag: str) -> str:
+def _script_label(tag: ScriptTag) -> str:
     """Human-readable name for an OpenType `script` tag, e.g. `arab` -> `Arabic` and so on."""
     if tag.strip() == "DFLT":
         return "Default"
@@ -341,7 +361,7 @@ def _script_label(tag: str) -> str:
         return tag.strip()
 
 
-def _language_label(tag: str) -> str:
+def _language_label(tag: LanguageTag) -> str:
     """Human-readable name for an OpenType `language` tag, e.g. `ARA ` -> `Arabic`."""
     code = OT_LANGUAGE_TAGS.get(tag)
     if not code:
@@ -373,10 +393,13 @@ def _scripts_supported(font: TTFont) -> list[tuple[str, str]]:
 
     entries: list[tuple[str, str]] = []
     for script_tag in sorted(scripts):
-        script_label = _script_label(script_tag)
+        script_label = _script_label(ScriptTag(script_tag))
         entries.append((script_tag.strip(), script_label))
         entries.extend(
-            (f"{script_tag.strip()}.{lang_tag.strip()}", f"{script_label}/{_language_label(lang_tag)}")
+            (
+                f"{script_tag.strip()}.{lang_tag.strip()}",
+                f"{script_label}/{_language_label(LanguageTag(lang_tag))}",
+            )
             for lang_tag in sorted(scripts[script_tag])
         )
     return entries
@@ -440,7 +463,7 @@ def _font_info(font: TTFont) -> dict[str, str]:
 @dataclass
 class FontData:
     info: dict[str, str]
-    tables: dict[str, list[str]]
+    tables: dict[str, list[FeatureTag]]
     scripts: list[tuple[str, str]]
     cv_variations: dict[str, int]
     nalt_counts: list[int]
@@ -473,7 +496,7 @@ def _character_variant_counts(font: TTFont) -> dict[str, int]:
     return counts
 
 
-def _feature_lookup_indices(font: TTFont, tag: str) -> set[int]:
+def _feature_lookup_indices(font: TTFont, tag: FeatureTag) -> set[int]:
     """Every LookupList index referenced by `tag`'s FeatureRecord(s) across GSUB/GPOS."""
     indices: set[int] = set()
     for table_tag in ("GSUB", "GPOS"):
@@ -505,7 +528,7 @@ def _annotation_alternate_counts(font: TTFont) -> list[int]:
         return []
 
     counts: set[int] = set()
-    for index in _feature_lookup_indices(font, "nalt"):
+    for index in _feature_lookup_indices(font, FeatureTag("nalt")):
         lookup = lookup_list.Lookup[index]
         for subtable in lookup.SubTable:
             subtable = getattr(subtable, "ExtSubTable", subtable)
@@ -515,7 +538,7 @@ def _annotation_alternate_counts(font: TTFont) -> list[int]:
     return sorted(counts)
 
 
-def _read_font_data(path: str, index: int) -> FontData:
+def _read_font_data(path: Path, index: int) -> FontData:
     """Parse a font file's info, GSUB/GPOS feature tags and supported scripts.
 
     Returns
@@ -524,13 +547,13 @@ def _read_font_data(path: str, index: int) -> FontData:
     """
     font = TTFont(path, fontNumber=index, lazy=True)
 
-    tables: dict[str, list[str]] = {}
+    tables: dict[str, list[FeatureTag]] = {}
     for tag in ("GSUB", "GPOS"):
         if tag not in font:
             continue
         feature_list = font[tag].table.FeatureList
         if feature_list is not None:
-            tables[tag] = sorted({record.FeatureTag for record in feature_list.FeatureRecord})
+            tables[tag] = sorted({FeatureTag(record.FeatureTag) for record in feature_list.FeatureRecord})
 
     return FontData(
         info=_font_info(font),
@@ -541,7 +564,7 @@ def _read_font_data(path: str, index: int) -> FontData:
     )
 
 
-async def read_font_data(path: str, index: int) -> FontData:
+async def read_font_data(path: Path, index: int) -> FontData:
     """Parse a font file's info, GSUB/GPOS feature tags, and supported scripts on a worker thread."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _read_font_data, path, index)
@@ -598,16 +621,16 @@ async def cmd_fontfeatures(ctx: Context, flags: dict):
         return await ctx.error_reply(f"Could not read the font file for {bf(family)}.")
 
     all_tags = sorted({tag for tags in data.tables.values() for tag in tags})
-    footnote_text = f"{Path(chosen.file).name} · {chosen.style}"
+    footnote_text = f"{chosen.file.name} · {chosen.style}"
 
     if (flags["fontspec"] or flags["fs"]) and all_tags:
-        grouped: dict[str, list[str]] = {}
+        grouped: dict[FontspecKey, list[str]] = {}
         for tag in all_tags:
             group = group_for(tag)
             grouped.setdefault(group, []).extend(display_values(tag, group, data.cv_variations, data.nalt_counts))
 
         lines: list[str] = []
-        for group in (*FEATURE_GROUPS.keys(), OTHER_GROUP):
+        for group in (*(FontspecKey(name) for name in FEATURE_GROUPS), OTHER_GROUP):
             if group not in grouped:
                 continue
             values_fmt = " ".join(f"`{value}`" for value in grouped[group])
